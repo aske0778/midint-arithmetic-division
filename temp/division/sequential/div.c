@@ -65,6 +65,38 @@ bigint_t init(prec_t m) {
 }
 
 /**
+ * @brief Computes the base og bigint_t to the power of n
+ * 
+ * @param n the power to raise the base to
+ * @param m the total number of digits in the bigint_t
+ */
+bigint_t bpow(int n, prec_t m) {
+    bigint_t B = init(m);
+    B[0] = 1;
+    shift(n, B, B, m);
+    return B;
+}
+
+/**
+ * @brief Sets all digits of a bigint_t to zero except the first digit
+ */
+void set(bigint_t u, digit_t d, prec_t m) {
+    for (int i = 0; i < m; i++) {
+        u[i] = 0;
+    }
+    u[0] = d;
+}
+
+/**
+ * @brief Zeroes all digits of a bigint_t
+ */
+void zero(bigint_t u, prec_t m) {
+    for (int i = 0; i < m; i++) {
+        u[i] = 0;
+    }
+}
+
+/**
  * @brief The precision of the bigint_t
  */
 prec_t prec(bigint_t u, prec_t m) {
@@ -77,24 +109,26 @@ prec_t prec(bigint_t u, prec_t m) {
     return acc + 1;
 }
 
+
+
 /**
  * @brief Shifts a bigint_t to the left or right depending on sign of n
  * 
  * @param n The sign and number of shifts
  * @param u The input bigint_t
- * @param v bigint_t where result is stored
+ * @param r bigint_t where result is stored
  * @param m The number of digits in u
  */
-void shift(int n, bigint_t u, bigint_t v, prec_t m) {
+void shift(int n, bigint_t u, bigint_t r, prec_t m) {
     if (n >= 0) {   // Right shift
         for (int i = m - 1; i >= 0; i--) {
             int offset = i - n;
-            v[i] = (offset >= 0) ? u[offset] : 0;
+            r[i] = (offset >= 0) ? u[offset] : 0;
         }
     } else {        // Left shift
         for (int i = 0; i < m; i++) {
             int offset = i - n;
-            v[i] = (offset < m) ? u[offset] : 0;
+            r[i] = (offset < m) ? u[offset] : 0;
         }
     }
 }
@@ -165,44 +199,88 @@ void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m) {
     mpz_clear(a); mpz_clear(b); mpz_clear(r);
 }
 
-// /**
-//  * @brief Calculates B^h-v*w and returns the result in B
-//  * 
-//  * @param v 
-//  * @param w 
-//  * @param h 
-//  * @param l 
-//  * @param B Returns value in this bigint_t
-//  * @param m 
-//  * @return int 
-//  */
-// int powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m) {
-//     int L = prec(v, m) + prec(w, m) - l + 1;
-//     if (ez(v,m) || ez(w,m) || L >= h) {
-//         bigint_t Bh = init(m);
-//         shift(h, B, Bh, m);
-//         mult(v, w, B, m);
-//         sub(Bh, B, B, m);
-//         free(Bh);
-//     } else {
-//         bigint_t P = multmod();
-//         if (ez(P,m)) { return 0; }
-//         else if () {
-
-//         } else {
-//             bigint_t BL = init(m);
-//             shift(L, B, BL, m);     // In prototype they do shift(L, BL, BL, m) where BL only contains single 1
-//             sub(BL, P, )
-//         }
-//     }
-
-// }
-
+/**
+ * @brief Calculates (a * b) rem B^d
+ * @todo Implement this
+ */
+void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m) {
+    mult(a, b, r, m);
+    
+    // TODO: calculate remainder
+}
 
 
 /**
- * @brief Refines accuracy of shifted inverse
+ * @brief Calculates B^h-v*w and returns the result in B
  * 
+ * @param v 
+ * @param w 
+ * @param h 
+ * @param l 
+ * @param B Returns value in this bigint_t
+ * @param m 
+ */
+void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m) {
+    int L = prec(v, m) + prec(w, m) - l + 1;
+    if (ez(v,m) || ez(w,m) || L >= h) {
+        bigint_t Bh = init(m);
+        shift(h, B, Bh, m);
+        mult(v, w, B, m);
+        sub(Bh, B, B, m);
+        free(Bh);
+    } else {
+        bigint_t P = init(m);
+        multmod(v, w, L, P, m);
+        if (ez(P,m)) {
+            zero(B, m);
+        }
+        else if (P[L-1] == 0) {
+            zero(B, m);
+            sub(B, P, B, m);
+        } else {
+            bigint_t Bl = bpow(L, m);
+            sub(Bl, P, B, m);
+            free(Bl);
+        }
+        free(P);
+    }
+}
+
+/**
+ * @brief Refines accuracy of shifted inverse
+ * @note Naive implementation
+ */
+void refine1(bigint_t v, int h, int k, bigint_t w, int l, prec_t m) {
+    int g = 1;
+    h = h + g;
+    shift(k-k-l, w, w, m);
+    while (h - k > l) {
+        step(h, v, w, 0, l, 0, m);
+        l = min(2*l-1, h-k);
+    }
+    shift(-g, w, w, m);
+}
+
+/**
+ * @brief Refines accuracy of shifted inverse
+ * @note Only accurate intermediate digits are computed
+ */
+void refine2(bigint_t v, int h, int k, bigint_t w, int l, prec_t m) {
+    int g = 2;
+    shift(g, w, w, m);
+    while (h - k > l) {
+        int n = min(h-k+1-l, l);
+        step(k+l+n+g, v, w, n, l, g, m);
+        shift(-1, w, w, m);
+        l = l + n - 1;
+    }
+    shift(-g, w, w, m);
+}
+
+/**
+ * @brief Refines accuracy of shifted inverse
+ * @note Optimized refined version. Use this.
+ *
  * @param v Input divisor
  * @param h The precision of the input divisor
  * @param k 
@@ -210,39 +288,44 @@ void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m) {
  * @param l Current number of digits in w
  * @param m The number of digits in v
  */
-void refine1(bigint_t v, int h, int k, bigint_t w, int l, prec_t m) {
-    int g = 1;
-    h = h + g;
-    shift(k-k-l, w, w, m);
-    while (h - k > l) {
-        w = step(); // TODO: Implement step
-        l = min(2*l-1, h-k);
-    }
-    shift(-g, w, w, m);
-}
-
-void refine2(bigint_t v, int h, int k, bigint_t w, int l, prec_t m) {
-    int g = 2;
-    shift(g, w, w, m);
-    while (h - k > l) {
-        m = min(h-k+1-l, l);
-        w = step(); // TODO: Implement step
-        shift(-1, w, w, m);
-        l = l + m - 1;
-    }
-    shift(-g, w, w, m);
-}
-
 void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m) {
     int s;
     int g = 2;
+    bigint_t v0 = init(m);
     shift(g, w, w, m);
     while (h - k > l) {
-        m = min(h-k+1-l, l);
+        int n = min(h-k+1-l, l);
         s = max(0,  k-2*l+1-g);
-        w = step(); // TODO: Implement step
+        shift(-s, v, v0, m);
+        step(k+l+n-s+g, v0, w, n, l, g, m);
         shift(-1, w, w, m);
-        l = l + m - 1;
+        l = l + n - 1;
     }
     shift(-g, w, w, m);
 }
+
+
+/**
+ * @brief 
+ * 
+ * @param h precision - 1
+ * @param v input divisor
+ * @param w return bigint_t
+ * @param n number of digits needed (renamed from m)
+ * @param l number of correct leading digits in w
+ * @param g 
+ * @param m total number of digits in v
+ */
+void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m) {
+    bigint_t tmp = init(m);
+
+    powdiff(v, w, h-m, l-g, tmp, m);
+    mult(w, tmp, tmp, m);
+    shift(2*m-h, tmp, tmp, m);
+    shift(n, w, w, m);
+    add(w, tmp, w, m); 
+    free(tmp);
+}
+
+
+
