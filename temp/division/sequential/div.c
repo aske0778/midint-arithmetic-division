@@ -327,5 +327,15 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m) {
     free(tmp);
 }
 
+/**
+ * @brief Writes the shiftet inverse of a bigint_t to w
+ * 
+ * @param v the input bigint_t
+ * @param w the output shiftet inverse
+ * @param h precision - 1
+ * @param m the total number of digits in v
+ */
+void shinv(bigint_t v, int h, bigint_t w, prec_t m) {
 
+}
 
