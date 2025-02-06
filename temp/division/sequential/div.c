@@ -45,9 +45,12 @@ bool lt(bigint_t a, bigint_t b, prec_t m) {
     for (int i = 0; i < m; i++) {
         if (a[i] < b[i]) {
             return 1;
-        } 
+        } else if (a[i] > b[i]) {
+            return 0;
+        } else {
+            continue;
+        }
     }
-    return 0;
 }
 
 /**
