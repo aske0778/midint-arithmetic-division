@@ -42,15 +42,14 @@ bool ez(bigint_t u, prec_t m) {
  * @brief Returns a < b for two bigint_ts
  */
 bool lt(bigint_t a, bigint_t b, prec_t m) {
-    for (int i = 0; i < m; i++) {
+    for (int i = m-1; i >= 0; i--) {
         if (a[i] < b[i]) {
             return 1;
         } else if (a[i] > b[i]) {
             return 0;
-        } else {
-            continue;
         }
     }
+    return 0;
 }
 
 /**
@@ -215,6 +214,34 @@ void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m) {
 }
 
 /**
+ * @brief bigint_t division
+ * @note Uses long division algorithm
+ * https://en.wikipedia.org/wiki/Division_algorithm#Long_division
+ * 
+ * @param n numerator
+ * @param d denominator
+ * @param q quotient
+ * @param r remainder
+ * @param m Total size of bigint_ts
+ */
+void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
+    if (ez(d, m)) {
+        printf("Division by zero\n");
+        return;
+    }
+    zero(q, m);
+    zero(r, m);
+    for (int i = m-1; i >= 0; i--) {
+        shift(-1, r, r, m);
+        r[0] = n[i];
+        if (ge(r, d, m)) {
+            sub(r, d, r, m);
+            q[i] = 1;
+        }
+    }
+}
+
+/**
  * @brief Calculates (a * b) rem B^d
  * @todo Implement this
  */
@@ -348,9 +375,28 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m) {
  * @param v the input bigint_t
  * @param w the output shiftet inverse
  * @param h precision - 1
+ * @param k
  * @param m the total number of digits in v
  */
-void shinv(bigint_t v, int h, bigint_t w, prec_t m) {
+void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m) {
+
+    bigint_t B = bpow(1, m);
+    bigint_t Bh = bpow(h, m);
+    bigint_t Bk = bpow(k, m);
+
+
+    if (lt(v, B, m)) { }
+    if (lt(v, Bh, m)) { }
+    if (eq(v, Bk, m)) { }
+
+    if (lt(v, Bh, m)) { }
+
+    int l = min(k, 2);
+    // TODO: Implement this line
+    bigint_t B2l = bpow(2*l, m);
+    sub(B2l, V, w, m);
+
+
 
 }
 
