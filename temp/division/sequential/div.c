@@ -176,7 +176,7 @@ void shift(int n, bigint_t u, bigint_t r, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void add(bigint_t u, bigint_t v, bigint_t w, prec_t m)
+void add_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 {
     mpz_t a;
     mpz_t b;
@@ -205,7 +205,7 @@ void add(bigint_t u, bigint_t v, bigint_t w, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void sub(bigint_t u, bigint_t v, bigint_t w, prec_t m)
+void sub_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 {
     mpz_t a;
     mpz_t b;
@@ -234,8 +234,7 @@ void sub(bigint_t u, bigint_t v, bigint_t w, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m)
-{
+void mult_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m) {
     mpz_t a;
     mpz_t b;
     mpz_t r;
@@ -255,32 +254,22 @@ void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m)
     mpz_clear(r);
 }
 
-/**
- * @brief bigint_t division
- * @note Uses long division algorithm
- * https://en.wikipedia.org/wiki/Division_algorithm#Long_division
- * 
- * @param n numerator
- * @param d denominator
- * @param q quotient
- * @param r remainder
- * @param m Total size of bigint_ts
- */
-void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
-    if (ez(d, m)) {
-        printf("Division by zero\n");
-        return;
-    }
-    zero(q, m);
-    zero(r, m);
-    for (int i = m-1; i >= 0; i--) {
-        shift(-1, r, r, m);
-        r[0] = n[i];
-        if (ge(r, d, m)) {
-            sub(r, d, r, m);
-            q[i] = 1;
-        }
-    }
+void div_gmp(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m) {
+    set(q, 0, m);
+    set(r, 0, m);
+
+    mpz_t a; mpz_init(a); mpz_import(a, m, -1, sizeof(digit_t), 0, 0, u);
+    mpz_t b; mpz_init(b); mpz_import(b, m, -1, sizeof(digit_t), 0, 0, v);
+    mpz_t c; mpz_init(c);
+    mpz_t d; mpz_init(d);
+
+    mpz_div(c, a, b);
+    mpz_mul(d, b, c);
+    mpz_sub(b, a, d);
+
+    mpz_export(q, NULL, -1, sizeof(digit_t), 0, 0, c);
+    mpz_export(r, NULL, -1, sizeof(digit_t), 0, 0, b);
+    mpz_clear(a); mpz_clear(b); mpz_clear(c); mpz_clear(d);
 }
 
 /**
@@ -320,7 +309,7 @@ void div(bigint_t n, digit_t d, bigint_t q, prec_t m) {
 void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
     zero(r, m);
-    mult(a, b, r, d);
+    mult_gmp(a, b, r, d);
 }
 
 /**
@@ -340,8 +329,8 @@ void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     {
         bigint_t Bh = init(m);
         shift(h, B, Bh, m);
-        mult(v, w, B, m);
-        sub(Bh, B, B, m);
+        mult_gmp(v, w, B, m);
+        sub_gmp(Bh, B, B, m);
         free(Bh);
     }
     else
@@ -355,12 +344,12 @@ void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         else if (P[L - 1] == 0)
         {
             zero(B, m);
-            sub(B, P, B, m);
+            sub_gmp(B, P, B, m);
         }
         else
         {
             bigint_t Bl = bpow(L, m);
-            sub(Bl, P, B, m);
+            sub_gmp(Bl, P, B, m);
             free(Bl);
         }
         free(P);
@@ -447,10 +436,10 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
     bigint_t tmp = init(m);
 
     powdiff(v, w, h - m, l - g, tmp, m);
-    mult(w, tmp, tmp, m);
+    mult_gmp(w, tmp, tmp, m);
     shift(2 * m - h, tmp, tmp, m);
     shift(n, w, w, m);
-    add(w, tmp, w, m);
+    add_gmp(w, tmp, w, m);
     free(tmp);
 }
 
@@ -478,14 +467,59 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m) {
 
     int l = min(k, 2);
     // TODO: Implement this line
+    bigint_t V = init(m);
     bigint_t B2l = bpow(2*l, m);
-    sub(B2l, V, w, m);
+    sub_gmp(B2l, V, w, m);
     quo(w, V, w, m);
-    add(w, 1, w, m);
+    add_gmp(w, 1, w, m);
 
     if (h - k <= l) {
         shift(h-k-l, w, w, m);
         return;
     }
     refine(v, h, k, w, l, m);
+
+    free(B);
+    free(Bh);
+    free(Bk);
+    free(V);
+    free(B2l);
 }
+
+/**
+ * @brief Divides two bigint_ts and returns the quotient and remainder
+ * 
+ * @param n numerator
+ * @param d denominator
+ * @param q quotient is returned here
+ * @param r remainder is returned here
+ * @param m Total number of digits in n and d
+ */
+void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
+    int h = prec(n, m);
+    int k = prec(d, m) - 1;
+
+    // TODO: perform k == 1 check
+
+    // Calculate quotient
+    shinv(d, q, h, k, m);
+    mult_gmp(n, q, q, m);
+    shift(-h, q, q, m);
+
+    // Calculate remainder
+    mult_gmp(d, q, r, m);
+    sub_gmp(n, r, r, m);
+
+    // TODO: adjust approximation with regards to lambda = {0, 1}
+}
+
+
+
+int main() {
+    
+}
+
+
+
+
+
