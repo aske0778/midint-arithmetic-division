@@ -294,21 +294,23 @@ void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
  * @param r remainder
  * @param m Total size of bigint_ts
  */
-void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
-    if (ez(d, m)) {
-        printf("Division by zero\n");
-        return;
-    }
-    zero(q, m);
-    zero(r, m);
-    for (int i = m-1; i >= 0; i--) {
-        shift(-1, r, r, m);
-        r[0] = n[i];
-        if (ge(r, d, m)) {
-            sub(r, d, r, m);
-            q[i] = 1;
-        }
-    }
+void div(bigint_t n, digit_t d, bigint_t q, prec_t m) {
+    // if (d == 0) {
+    //     printf("Division by zero\n");
+    //     return;
+    // }
+    // zero(q, m);
+    // digit_t r = 0;
+    // for (int i = m-1; i >= 0; i--) {
+    //     // shift(-1, r, r, m);
+    //     r = r << 32;
+    //     r += n[i];
+    //     if (r >= d) {
+    //         r - d;
+    //         sub(r, d, r, m);
+    //         q[i] = 1;
+    //     }
+    // }
 }
 
 /**
@@ -317,9 +319,8 @@ void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m) {
  */
 void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
-    mult(a, b, r, m);
-
-    // TODO: calculate remainder
+    zero(r, m);
+    mult(a, b, r, d);
 }
 
 /**
@@ -469,7 +470,7 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m) {
     bigint_t Bk = bpow(k, m);
 
 
-    if (lt(v, B, m)) { }
+    if (lt(v, B, m))  { }
     if (lt(v, Bh, m)) { }
     if (eq(v, Bk, m)) { }
 
@@ -479,7 +480,12 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m) {
     // TODO: Implement this line
     bigint_t B2l = bpow(2*l, m);
     sub(B2l, V, w, m);
+    quo(w, V, w, m);
+    add(w, 1, w, m);
 
-
-
+    if (h - k <= l) {
+        shift(h-k-l, w, w, m);
+        return;
+    }
+    refine(v, h, k, w, l, m);
 }
