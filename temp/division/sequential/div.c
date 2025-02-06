@@ -39,6 +39,18 @@ bool ez(bigint_t u, prec_t m) {
 }
 
 /**
+ * @brief Returns a < b for two bigint_ts
+ */
+bool lt(bigint_t a, bigint_t b, prec_t m) {
+    for (int i = 0; i < m; i++) {
+        if (a[i] < b[i]) {
+            return 1;
+        } 
+    }
+    return 0;
+}
+
+/**
  * @brief Checks if two bigint_ts are equal
  */
 bool eq(bigint_t u, bigint_t v, prec_t m) {
