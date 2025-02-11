@@ -8,11 +8,6 @@
 #include <gmp.h>
 #include "helper.h"
 
-typedef uint32_t digit_t;
-typedef digit_t *bigint_t;
-typedef uint32_t prec_t;
-typedef int bool;
-
 /**
  * @brief Checks if a bigint_t is equal to zero
  */
