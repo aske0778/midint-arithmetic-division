@@ -306,7 +306,7 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
         printf("Division by zero\n");
         return;
     }
-    digit_t r = 0;
+    uint64_t r = 0;
     for (int i = m - 1; i >= 0; i--)
     {
         r = (r << 32) + n[i];
@@ -562,7 +562,7 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
  * @param r remainder is returned here
  * @param m Total number of digits in n and d
  */
-void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
+void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
 {
     int h = prec(n, m);
     int k = prec(d, m) - 1;
