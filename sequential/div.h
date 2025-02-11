@@ -454,7 +454,7 @@ void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
     // TODO: perform k == 1 check
 
     // Calculate quotient
-    shinv(d, q, h, k, m);
+    shinv(d, h, k, q, m);
     mult_gmp(n, q, q, m);
     shift(-h, q, q, m);
 
@@ -465,8 +465,8 @@ void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
     if (!lt(r, d, m))
     {
         bigint_t a = bpow(0, m);
-        add(q, a, q, m);
-        sub(r, d, r, m);
+        add_gmp(q, a, q, m);
+        sub_gmp(r, d, r, m);
     }
 }
 
