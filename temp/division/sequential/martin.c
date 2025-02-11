@@ -91,20 +91,6 @@ bigint_t init(prec_t m)
 }
 
 /**
- * @brief Computes the base og bigint_t to the power of n
- *
- * @param n the power to raise the base to
- * @param m the total number of digits in the bigint_t
- */
-bigint_t bpow(int n, prec_t m)
-{
-    bigint_t B = init(m);
-    B[0] = 1;
-    shift(n, B, B, m);
-    return B;
-}
-
-/**
  * @brief Sets all digits of a bigint_t to zero except the first digit
  */
 void set(bigint_t u, digit_t d, prec_t m)
@@ -137,7 +123,7 @@ prec_t prec(bigint_t u, prec_t m)
     {
         if (u[i] != 0)
         {
-            acc = i + 1;
+            acc = i;
         }
     }
     return acc + 1;
@@ -169,6 +155,20 @@ void shift(int n, bigint_t u, bigint_t r, prec_t m)
             r[i] = (offset < m) ? u[offset] : 0;
         }
     }
+}
+
+/**
+ * @brief Computes the base of bigint_t to the power of n
+ *
+ * @param n the power to raise the base to
+ * @param m the total number of digits in the bigint_t
+ */
+bigint_t bpow(int n, prec_t m)
+{
+    bigint_t B = init(m);
+    B[0] = 1;
+    shift(n, B, B, m);
+    return B;
 }
 
 /**
@@ -294,7 +294,6 @@ void div_gmp(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
  * @param n numerator
  * @param d denominator
  * @param q quotient
- * @param r remainder
  * @param m Total size of bigint_ts
  */
 void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
@@ -313,6 +312,23 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
             q[i] = r / d;
             r = r % d;
         }
+    }
+}
+
+void multd(bigint_t u, digit_t d, bigint_t w, prec_t m)
+{
+    uint64_t buff[m];
+    for (int i = 0; i < m; i++)
+    {
+        buff[i] = ((uint64_t)u[i]) * ((uint64_t)d);
+    }
+    for (int i = 0; i < m - 1; i++)
+    {
+        buff[i + 1] += buff[i] >> 32;
+    }
+    for (int i = 0; i < m; i++)
+    {
+        w[i] = (uint32_t)buff[i];
     }
 }
 
@@ -368,6 +384,29 @@ void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         }
         free(P);
     }
+}
+
+/**
+ * @brief
+ *
+ * @param h precision - 1
+ * @param v input divisor
+ * @param w return bigint_t
+ * @param n number of digits needed (renamed from m)
+ * @param l number of correct leading digits in w
+ * @param g
+ * @param m total number of digits in v
+ */
+void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
+{
+    bigint_t tmp = init(m);
+
+    powdiff(v, w, h - m, l - g, tmp, m);
+    mult_gmp(w, tmp, tmp, m);
+    shift(2 * m - h, tmp, tmp, m);
+    shift(n, w, w, m);
+    add_gmp(w, tmp, w, m);
+    free(tmp);
 }
 
 /**
@@ -432,29 +471,6 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         l = l + n - 1;
     }
     shift(-g, w, w, m);
-}
-
-/**
- * @brief
- *
- * @param h precision - 1
- * @param v input divisor
- * @param w return bigint_t
- * @param n number of digits needed (renamed from m)
- * @param l number of correct leading digits in w
- * @param g
- * @param m total number of digits in v
- */
-void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
-{
-    bigint_t tmp = init(m);
-
-    powdiff(v, w, h - m, l - g, tmp, m);
-    mult_gmp(w, tmp, tmp, m);
-    shift(2 * m - h, tmp, tmp, m);
-    shift(n, w, w, m);
-    add_gmp(w, tmp, w, m);
-    free(tmp);
 }
 
 /**
@@ -558,4 +574,9 @@ void div(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
 
 int main()
 {
+    uint64_t r = 1;
+    r = (r << 32); // This shifts r 32 bits to the left
+    printf("Hello, World!\n");
+    printf("Value of r: %llu\n", r); // Print the value of r
+    return 0;                        // Return 0 as the return code
 }
