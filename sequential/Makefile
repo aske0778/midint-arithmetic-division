@@ -1,10 +1,11 @@
+UNAME_S := $(shell uname -s)
 
 COMPILER = gcc
 
 FLAGS = -lgmp
-
-#For Mac
-#$(COMPILER) test.c -o test.exe -L/opt/homebrew/lib -I/opt/homebrew/include -lgmp && ./test.exe
+ifeq ($(UNAME_S), Darwin)
+	FLAGS += -L/opt/homebrew/lib -I/opt/homebrew/include
+endif
 
 default:
 	$(COMPILER) test.c $(FLAGS) -o test.exe && ./test.exe
