@@ -530,25 +530,24 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
     }
 
     int l = min(k, 2);
-    // TODO: Implement this line
-    bigint_t V = init(m);
-    bigint_t B2l = bpow(2 * l, m);
-    sub_gmp(B2l, V, w, m);
-    quo(w, V, w, m);
-    add_gmp(w, 1, w, m);
-
-    if (h - k <= l)
-    {
-        shift(h - k - l, w, w, m);
-        return;
+    __uint128_t V; 
+    for (int i = 0; i < l; i++) {
+        V += v[k-l+i] << 32*i;
     }
-    refine(v, h, k, w, l, m);
+
+    __uint128_t b2l = (__uint128_t) 1 << 32*2*l; 
+    __uint128_t tmp = (b2l - V) / V + 1;
+
+    if (h - k <= l) {
+        shift(h - k - l, w, w, m);
+    } else {
+        refine(v, h, k, w, l, m);
+    }
 
     free(B);
     free(Bh);
     free(Bk);
     free(V);
-    free(B2l);
 }
 
 /**
