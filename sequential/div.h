@@ -373,8 +373,9 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
  * @param k
  * @param m the total number of digits in v
  */
-void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
+void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 {
+    int k = prec(v, m) - 1;
     bool rp = 0;
     bigint_t B = bpow(1, m);
     bigint_t Bh = bpow(h, m);
@@ -449,12 +450,11 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
 void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
 {
     int h = prec(n, m);
-    int k = prec(d, m) - 1;
 
     // TODO: perform k == 1 check
 
     // Calculate quotient
-    shinv(d, h, k, q, m);
+    shinv(d, h, q, m);
     mult_gmp(n, q, q, m);
     shift(-h, q, q, m);
 
