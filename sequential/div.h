@@ -385,7 +385,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 
     if (lt(v, B, m))
     {
-        quo(Bh, (digit_t)v, w, m);
+        quo(Bh, v[0], w, m);
         rp = 1;
     }
     if (lt(Bh, v, m))

@@ -1,6 +1,14 @@
 #include "div.h"
 
 
+void prnt(char* str, bigint_t u, prec_t m) {
+    printf("%s: [", str);
+    for (int i = 0; i < m; i++) {
+        printf("%d, ", u[i]);
+    }
+    printf("]\n");
+}
+
 
 
 
@@ -31,14 +39,14 @@ int main(int argc, char* argv[]) {
         if (q_own[i] != q_gmp[i] || r_own[i] != r_gmp[i]) {
             printf("---------------------------------------------------\n");
             printf("Inputs:\n");
-            printf("  u", u, m);
-            printf("  v", v, m);
+            prnt("  u", u, m);
+            prnt("  v", v, m);
             printf("Output:\n");
-            printf("  q", q_own, m);
-            printf("  r", r_own, m);
+            prnt("  q", q_own, m);
+            prnt("  r", r_own, m);
             printf("GMP:\n");
-            printf("  q", q_gmp, m);
-            printf("  r", r_gmp, m);
+            prnt("  q", q_gmp, m);
+            prnt("  r", r_gmp, m);
             printf("---------------------------------------------------\n");
             printf("[%d/%d] IS VALID\n", i, m-1);
             return 1;
