@@ -153,8 +153,7 @@ prec_t prec(bigint_t u, prec_t m)
  */
 void shift(int n, bigint_t u, bigint_t r, prec_t m)
 {
-    if (n >= 0)
-    { // Right shift
+    if (n >= 0){ // Right shift
         for (int i = m - 1; i >= 0; i--)
         {
             int offset = i - n;
@@ -313,6 +312,30 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
             q[i] = r / d;
             r = r % d;
         }
+    }
+}
+
+/**
+ * @brief Multiplication of bigint_t with digit_t
+ * 
+ * @param a Input bigint_t
+ * @param b Input digit_t
+ * @param r Result bigint_t
+ * @param m Size of bigint_t
+ */
+void multd(bigint_t a, digit_t b, bigint_t r, prec_t m) {
+    uint64_t buf[m];
+
+    for (int i = 0; i < m; i++) {
+        buf[i] = ((uint64_t) a[i]) * (uint64_t) b;
+    }
+
+    for (int i = 1; i < m-1; i++) {
+        buf[i+1] += buf[i] >> 32;
+    }
+
+    for (int i = 0; i < m; i++) {
+        r[i] = (digit_t) buf[i];
     }
 }
 
