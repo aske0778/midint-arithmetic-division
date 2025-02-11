@@ -156,7 +156,8 @@ prec_t prec(bigint_t u, prec_t m)
  */
 void shift(int n, bigint_t u, bigint_t r, prec_t m)
 {
-    if (n >= 0){ // Right shift
+    if (n >= 0)
+    { // Right shift
         for (int i = m - 1; i >= 0; i--)
         {
             int offset = i - n;
@@ -320,25 +321,29 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
 
 /**
  * @brief Multiplication of bigint_t with digit_t
- * 
+ *
  * @param a Input bigint_t
  * @param b Input digit_t
  * @param r Result bigint_t
  * @param m Size of bigint_t
  */
-void multd(bigint_t a, digit_t b, bigint_t r, prec_t m) {
+void multd(bigint_t a, digit_t b, bigint_t r, prec_t m)
+{
     uint64_t buf[m];
 
-    for (int i = 0; i < m; i++) {
-        buf[i] = ((uint64_t) a[i]) * (uint64_t) b;
+    for (int i = 0; i < m; i++)
+    {
+        buf[i] = ((uint64_t)a[i]) * (uint64_t)b;
     }
 
-    for (int i = 1; i < m-1; i++) {
-        buf[i+1] += buf[i] >> 32;
+    for (int i = 1; i < m - 1; i++)
+    {
+        buf[i + 1] += buf[i] >> 32;
     }
 
-    for (int i = 0; i < m; i++) {
-        r[i] = (digit_t) buf[i];
+    for (int i = 0; i < m; i++)
+    {
+        r[i] = (digit_t)buf[i];
     }
 }
 
@@ -533,17 +538,21 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
     }
 
     int l = min(k, 2);
-    __uint128_t V; 
-    for (int i = 0; i < l; i++) {
-        V += v[k-l+i] << 32*i;
+    __uint128_t V;
+    for (int i = 0; i < l; i++)
+    {
+        V += v[k - l + i] << 32 * i;
     }
 
-    __uint128_t b2l = (__uint128_t) 1 << 32*2*l; 
+    __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
     __uint128_t tmp = (b2l - V) / V + 1;
 
-    if (h - k <= l) {
+    if (h - k <= l)
+    {
         shift(h - k - l, w, w, m);
-    } else {
+    }
+    else
+    {
         refine(v, h, k, w, l, m);
     }
 
@@ -578,8 +587,12 @@ void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
     mult_gmp(d, q, r, m);
     sub_gmp(n, r, r, m);
 
-    // TODO: adjust approximation with regards to lambda = {0, 1}
+    if (!lt(r, d, m))
+    {
+        bigint_t a = bpow(0, m);
+        add(q, a, q, m);
+        sub(r, d, r, m);
+    }
 }
-
 
 #endif // SEQ_DIV
