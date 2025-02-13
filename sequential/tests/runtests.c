@@ -5,6 +5,7 @@
 #include "test-multmod.h"
 #include "test-multd.h"
 #include "test-bpow.h"
+#include "test-powdiff.h"
 
 
 int main(int argc, char* argv[]) {
@@ -24,6 +25,7 @@ int main(int argc, char* argv[]) {
     printf("Test multd: \t%s\n", testMultd(m) ? "FAILED" : "PASSED");
     printf("Test bpow: \t%s\n", testBpow(m) ? "FAILED" : "PASSED");
     printf("Test multmod: \t%s\n", testMultmod(m) ? "FAILED" : "PASSED");
+    printf("Test powdiff: \t%s\n", testPowdiff(m) ? "FAILED" : "PASSED");
 
 }
 
