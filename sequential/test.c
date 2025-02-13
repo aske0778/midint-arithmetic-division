@@ -13,7 +13,7 @@ void prnt(char* str, bigint_t u, prec_t m) {
 
 
 int main(int argc, char* argv[]) {
-    if (argc != 1) {
+    if (argc != 2) {
         printf("Usage-fixd: %s 0 <m> <space-seperated big-ints>\n", argv[0]);
         printf("Usage-rand: %s 1 <m>\n", argv[0]);
         exit(1);
@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
     bigint_t r_own = init(m);
     bigint_t q_gmp = init(m);
     bigint_t r_gmp = init(m); 
+
 
     div_shinv(u, v, q_own, r_own, m);
     div_gmp(u, v, q_gmp, r_gmp, m);
