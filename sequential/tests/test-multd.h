@@ -1,23 +1,7 @@
 #include "../div.h"
 
 
-void prnt(char* str, bigint_t u, prec_t m) {
-    printf("%s: [", str);
-    for (int i = 0; i < m; i++) {
-        printf("%u, ", u[i]);
-    }
-    printf("]\n");
-}
-
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        printf("Usage-fixd: %s 0 <m> <space-seperated big-ints>\n", argv[0]);
-        printf("Usage-rand: %s 1 <m>\n", argv[0]);
-        exit(1);
-    }
-
-    prec_t m = atoi(argv[1]);
-
+int testMultd(prec_t m) {
     bigint_t u = init(m);
     bigint_t v = init(m);
 
@@ -32,27 +16,41 @@ int main(int argc, char* argv[]) {
     multd(u, d1, u, m);
     multd(v, d2, v, m);
 
-    uint32_t* u_correct = (uint32_t*)malloc(m * (sizeof(uint32_t)));
+    uint32_t* u_correct = (uint32_t*)calloc(m, sizeof(uint32_t));
     u_correct[6] = 300;
 
-    uint32_t* v_correct = (uint32_t*)malloc(m * (sizeof(uint32_t)));
-    v_correct[8] = 800;
+    uint32_t* v_correct = (uint32_t*)calloc(m, sizeof(uint32_t));
+    v_correct[4] = 4294967292;
+    v_correct[5] = 3;
 
     for (int i = 0; i < m; i++) {
         if (u[i] != u_correct[i]) {
             printf("Input:\n");
             prnt("  u", u, m);
             printf("INVALID AT INDEX %u: [%u/%u]\n", i, u[i], u_correct[i]);
+
+            free(u);
+            free(v);
+            free(u_correct);
+            free(v_correct);
             return 1;
         }
         if (v[i] != v_correct[i]) {
             printf("Input:\n");
             prnt("  v", v, m);
             printf("INVALID AT INDEX %u: [%u/%u]\n", i, v[i], v_correct[i]);
+
+            free(u);
+            free(v);
+            free(u_correct);
+            free(v_correct);
             return 1;
         }
     }
-    printf("MULTD IS VALID\n");
+    free(u);
+    free(v);
+    free(u_correct);
+    free(v_correct);
     return 0;
 }
 

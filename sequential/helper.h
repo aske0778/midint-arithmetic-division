@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <gmp.h>
+#include <string.h>
 
 typedef uint32_t digit_t;
 typedef digit_t *bigint_t;
@@ -126,10 +127,21 @@ prec_t prec(bigint_t u, prec_t m)
     {
         if (u[i] != 0)
         {
-            acc = i + 1;
+            acc = i;
         }
     }
     return acc + 1;
+}
+
+/**
+ * @brief Prints a string followed by the bigint_t
+ */
+void prnt(char* str, bigint_t u, prec_t m) {
+    printf("%s: [", str);
+    for (int i = 0; i < m; i++) {
+        printf("%u, ", u[i]);
+    }
+    printf("]\n");
 }
 
 #endif // HELPER
