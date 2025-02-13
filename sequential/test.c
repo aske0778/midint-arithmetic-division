@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    prec_t m = atoi(argv[0]);
+    prec_t m = atoi(argv[1]);
 
     bigint_t u = init(m);
     bigint_t v = init(m);
