@@ -106,6 +106,12 @@ void set(bigint_t u, digit_t d, prec_t m)
     u[0] = d;
 }
 
+prec_t findk(bigint_t u, prec_t m) {
+    prec_t k = 0;
+    for (int i=0; i<m; i++) { k = (u[i] != 0) ? i : k; }
+    return k;
+}
+
 /**
  * @brief Zeroes all digits of a bigint_t
  */
@@ -143,5 +149,14 @@ void prnt(char* str, bigint_t u, prec_t m) {
     }
     printf("]\n");
 }
+
+void randBigInt(bigint_t u, prec_t m)
+{
+    for (int i = 0; i < m; i++)
+    {
+        u[i] = (uint32_t)rand();
+    }
+}
+
 
 #endif // HELPER

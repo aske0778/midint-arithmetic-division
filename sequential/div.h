@@ -276,6 +276,30 @@ void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         free(P);
     }
 }
+// {
+//     int L = prec(v, m) + prec(w, m) - l + 1;
+//     bigint_t bh = bpow(h, m);
+//     if (ez(v, m) || ez(w, m)) {
+//         if (lt(P, bh, m))
+//             sub_gmp(bh, P, P, m);
+//         else {
+//             sub_gmp(P, bh, P, m);
+//         }
+//     }
+//     else {
+//         multmod(v, w, L, P, m);
+//         if (!ez(P, m)) {
+//             bigint_t bL = bpow(L, m);
+//             if (lt(P, bL, m))
+//                 sub_gmp(bL, P, P, m);
+//             else {
+//                 sub_gmp(P, bL, P, m);
+//             }
+//             free(bL);
+//         }
+//     }
+//     free(bh);
+// }
 
 /**
  * @brief
@@ -362,6 +386,7 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         l = l + n - 1;
     }
     shift(-g, w, w, m);
+    free(v0);
 }
 
 /**
@@ -373,10 +398,11 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
  * @param k
  * @param m the total number of digits in v
  */
-void shinv(bigint_t v, int h, bigint_t w, prec_t m)
+void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
 {
-    int k = prec(v, m) - 1;
+    // int k = prec(v, m) - 1;
     bool rp = 0;
+
     bigint_t B = bpow(1, m);
     bigint_t Bh = bpow(h, m);
     bigint_t Bk = bpow(k, m);
@@ -409,20 +435,26 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     free(Bh);
     free(Bk);
     free(v2);
+
     if (rp)
     {
         return;
     }
 
     int l = min(k, 2);
-    __uint128_t V;
-    for (int i = 0; i < l; i++)
+    __uint128_t V = 0;
+    for (int i = 0; i <= l; i++)
     {
-        V += v[k - l + i] << 32 * i;
+        V += ((__uint128_t)v[k - l + i]) << (32 * i);
     }
 
     __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
     __uint128_t tmp = (b2l - V) / V + 1;
+
+    w[0] = (digit_t)(tmp);
+    w[1] = (digit_t)(tmp >> 32);
+    w[2] = (digit_t)(tmp >> 64);
+    w[3] = (digit_t)(tmp >> 96);
 
     if (h - k <= l)
     {
@@ -430,12 +462,9 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     }
     else
     {
+        printf("HERE");
         refine3(v, h, k, w, l, m);
     }
-
-    free(B);
-    free(Bh);
-    free(Bk);
 }
 
 /**
@@ -447,26 +476,28 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
  * @param r remainder is returned here
  * @param m Total number of digits in n and d
  */
-void div_shinv(bigint_t n, bigint_t d, bigint_t q, bigint_t r, prec_t m)
+void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
-    int h = prec(n, m);
+    int h = findk(u, m) + 1;
+    int k = findk(v, m);
 
     // TODO: perform k == 1 check
 
     // Calculate quotient
-    shinv(d, h, q, m);
-    mult_gmp(n, q, q, m);
+    shinv(v, h, k, q, m);
+    mult_gmp(u, q, q, m);
     shift(-h, q, q, m);
 
     // Calculate remainder
-    mult_gmp(d, q, r, m);
-    sub_gmp(n, r, r, m);
+    mult_gmp(v, q, r, m);
+    sub_gmp(u, r, r, m);
 
-    if (!lt(r, d, m))
+    if (!lt(r, v, m))
     {
         bigint_t a = bpow(0, m);
         add_gmp(q, a, q, m);
-        sub_gmp(r, d, r, m);
+        sub_gmp(r, v, r, m);
+        free(a);
     }
 }
 

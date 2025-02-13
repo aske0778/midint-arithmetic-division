@@ -12,6 +12,8 @@ endif
 default:
 	$(COMPILER) test.c $(FLAGS) -o test.exe && ./test.exe $(M)
 
+default:
+	$(COMPILER) test.c $(FLAGS) -o test.exe && ./test.exe $(M)
 
 test: 
 	$(COMPILER) tests/runtests.c $(FLAGS) -o tests/runtests.exe && ./tests/runtests.exe

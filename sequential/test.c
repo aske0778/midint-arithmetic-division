@@ -1,15 +1,6 @@
+#include <time.h>
 #include "div.h"
-
-
-void prnt(char* str, bigint_t u, prec_t m) {
-    printf("%s: [", str);
-    for (int i = 0; i < m; i++) {
-        printf("%d, ", u[i]);
-    }
-    printf("]\n");
-}
-
-
+// #include "thorbjorn/div.c"
 
 
 int main(int argc, char* argv[]) {
@@ -24,8 +15,11 @@ int main(int argc, char* argv[]) {
     bigint_t u = init(m);
     bigint_t v = init(m);
 
-    set(u, 5, m);
-    set(v, 8, m);
+    
+    srand(time(0));
+    randBigInt(u, m);
+    randBigInt(v, m);
+
 
     bigint_t q_own = init(m);
     bigint_t r_own = init(m);
@@ -53,6 +47,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+    
     printf("IS VALID\n");
     return 0;
 }
