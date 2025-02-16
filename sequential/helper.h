@@ -106,9 +106,13 @@ void set(bigint_t u, digit_t d, prec_t m)
     u[0] = d;
 }
 
-prec_t findk(bigint_t u, prec_t m) {
+prec_t findk(bigint_t u, prec_t m)
+{
     prec_t k = 0;
-    for (int i=0; i<m; i++) { k = (u[i] != 0) ? i : k; }
+    for (int i = 0; i < m; i++)
+    {
+        k = (u[i] != 0) ? i : k;
+    }
     return k;
 }
 
@@ -142,9 +146,11 @@ prec_t prec(bigint_t u, prec_t m)
 /**
  * @brief Prints a string followed by the bigint_t
  */
-void prnt(char* str, bigint_t u, prec_t m) {
+void prnt(char *str, bigint_t u, prec_t m)
+{
     printf("%s: [", str);
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; i++)
+    {
         printf("%u, ", u[i]);
     }
     printf("]\n");
@@ -158,5 +164,13 @@ void randBigInt(bigint_t u, prec_t m)
     }
 }
 
+// copy digits to big-int `u` from big-int `v`
+void cpy(bigint_t u, bigint_t v, prec_t m)
+{
+    for (int i = 0; i < m; i++)
+    {
+        u[i] = v[i];
+    }
+}
 
 #endif // HELPER

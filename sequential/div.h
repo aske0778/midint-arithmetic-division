@@ -44,10 +44,10 @@ void shift(int n, bigint_t u, bigint_t r, prec_t m)
  */
 bigint_t bpow(int n, prec_t m)
 {
-    bigint_t B = init(m);
-    B[0] = 1;
-    shift(n, B, B, m);
-    return B;
+    bigint_t a = init(m);
+    a[0] = 1;
+    shift(n, a, a, m);
+    return a;
 }
 
 /**
@@ -243,63 +243,52 @@ void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
  * @param B Returns value in this bigint_t
  * @param m
  */
-void powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
+bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 {
-    int L = prec(v, m) + prec(w, m) - l + 1;
+    prec_t L = prec(v, m) + prec(w, m) - l + 1;
+    prec_t sign = 1;
     if (ez(v, m) || ez(w, m) || L >= h)
     {
-        bigint_t Bh = init(m);
-        shift(h, B, Bh, m);
+        bigint_t Bh = bpow(h, m);
         mult_gmp(v, w, B, m);
-        sub_gmp(Bh, B, B, m);
+
+        if (lt(B, Bh, m))
+            sub_gmp(Bh, B, B, m);
+        else
+        {
+            sub_gmp(B, Bh, B, m);
+            sign = 0;
+        }
         free(Bh);
     }
     else
     {
-        bigint_t P = init(m);
-        multmod(v, w, L, P, m);
-        if (ez(P, m))
+        multmod(v, w, L, B, m);
+        if (ez(B, m))
         {
             zero(B, m);
         }
-        else if (P[L - 1] == 0)
+        else if (B[L - 1] == 0)
         {
-            zero(B, m);
-            sub_gmp(B, P, B, m);
+            sign = 0;
         }
         else
         {
+
             bigint_t Bl = bpow(L, m);
-            sub_gmp(Bl, P, B, m);
+            sub_gmp(Bl, B, B, m);
+            if (lt(B, Bl, m))
+                sub_gmp(Bl, B, B, m);
+            else
+            {
+                sub_gmp(B, Bl, B, m);
+                sign = 0;
+            }
             free(Bl);
         }
-        free(P);
     }
+    return sign;
 }
-// {
-//     int L = prec(v, m) + prec(w, m) - l + 1;
-//     bigint_t bh = bpow(h, m);
-//     if (ez(v, m) || ez(w, m)) {
-//         if (lt(P, bh, m))
-//             sub_gmp(bh, P, P, m);
-//         else {
-//             sub_gmp(P, bh, P, m);
-//         }
-//     }
-//     else {
-//         multmod(v, w, L, P, m);
-//         if (!ez(P, m)) {
-//             bigint_t bL = bpow(L, m);
-//             if (lt(P, bL, m))
-//                 sub_gmp(bL, P, P, m);
-//             else {
-//                 sub_gmp(P, bL, P, m);
-//             }
-//             free(bL);
-//         }
-//     }
-//     free(bh);
-// }
 
 /**
  * @brief
@@ -316,47 +305,17 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
 {
     bigint_t tmp = init(m);
 
-    powdiff(v, w, h - m, l - g, tmp, m);
+    prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
     mult_gmp(w, tmp, tmp, m);
-    shift(2 * m - h, tmp, tmp, m);
+    shift(2 * n - h, tmp, tmp, m);
     shift(n, w, w, m);
-    add_gmp(w, tmp, w, m);
+
+    if (sign)
+        add_gmp(w, tmp, w, m);
+    else
+        sub_gmp(w, tmp, w, m);
+
     free(tmp);
-}
-
-/**
- * @brief Refines accuracy of shifted inverse
- * @note Naive implementation
- */
-void refine1(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
-{
-    int g = 1;
-    h = h + g;
-    shift(k - k - l, w, w, m);
-    while (h - k > l)
-    {
-        step(h, v, w, 0, l, 0, m);
-        l = min(2 * l - 1, h - k);
-    }
-    shift(-g, w, w, m);
-}
-
-/**
- * @brief Refines accuracy of shifted inverse
- * @note Only accurate intermediate digits are computed
- */
-void refine2(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
-{
-    int g = 2;
-    shift(g, w, w, m);
-    while (h - k > l)
-    {
-        int n = min(h - k + 1 - l, l);
-        step(k + l + n + g, v, w, n, l, g, m);
-        shift(-1, w, w, m);
-        l = l + n - 1;
-    }
-    shift(-g, w, w, m);
 }
 
 /**
@@ -373,7 +332,7 @@ void refine2(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
 void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
 {
     int s;
-    int g = 2;
+    int g = m / 4; // på grund af 4x padding
     bigint_t v0 = init(m);
     shift(g, w, w, m);
     while (h - k > l)
@@ -462,7 +421,6 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
     }
     else
     {
-        printf("HERE");
         refine3(v, h, k, w, l, m);
     }
 }
@@ -478,27 +436,38 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
  */
 void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
-    int h = findk(u, m) + 1;
-    int k = findk(v, m);
+    int h = prec(u, m);
+    int k = prec(v, m) - 1;
 
-    // TODO: perform k == 1 check
+    prec_t p = m * 4;
+
+    // 3. allocate and initialize some big integers
+    bigint_t a = init(p);
+    cpy(a, u, m); // `a = u`
+    bigint_t b = init(p);
+    cpy(b, v, m);         // `b = v`
+    bigint_t c = init(p); // `c = 0`
 
     // Calculate quotient
-    shinv(v, h, k, q, m);
-    mult_gmp(u, q, q, m);
-    shift(-h, q, q, m);
+    shinv(b, h, k, c, p);
+    mult_gmp(a, c, b, p);
+    shift(-h, b, b, p);
+    cpy(q, b, m);
 
     // Calculate remainder
-    mult_gmp(v, q, r, m);
-    sub_gmp(u, r, r, m);
+    mult_gmp(v, q, a, m);
+    sub_gmp(u, a, r, m);
 
     if (!lt(r, v, m))
     {
         bigint_t a = bpow(0, m);
         add_gmp(q, a, q, m);
         sub_gmp(r, v, r, m);
-        free(a);
     }
+
+    free(a);
+    free(b);
+    free(c);
 }
 
 #endif // SEQ_DIV
