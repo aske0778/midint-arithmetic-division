@@ -8,9 +8,9 @@
 
 __device__ inline void
 BlockwiseShift( const int n,
-           const digit_t* u,
-           digit_t* r,
-           const prec_t m ) {
+           const uint32_t* u,
+           uint32_t* r,
+           const uint32_t m ) {
     int idx = blockIdx.y * blockDim.x + threadIdx.x;
     int offset = idx - n;
     

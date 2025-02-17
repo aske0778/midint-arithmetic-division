@@ -2,20 +2,57 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
-#include <gmp.h>
 #include "../ker-division.cu.h"
-#include "../../sequential/helper.h"
+// #include "../sequential/helper.h"
+// #include "../sequential/div.h"
 #include "../../cuda/helper.h"
-#include "../../sequential/div.h"
 
 
 __global__ void CallShift(
-    const n,
-    const digit* u,
-    digit_t* r,
-    const prec m) {
+    const int n,
+    const uint32_t* u,
+    uint32_t* r,
+    const uint32_t m) {
         BlockwiseShift(n, u, r, m);
     }
+
+
+// template<class uint_t>  // m is the size of the big word in Base::uint_t units
+// void testBasicOps ( int n, int runs ) {    
+//     uint_t* d_as;
+//     size_t mem_size_nums = n * sizeof(uint_t);
+    
+//     cudaMalloc((void**) &d_as, mem_size_nums);
+    
+//     const size_t B = 256;
+    
+//     // timing instrumentation shifting
+//     {
+//         CallShift<<<1, B>>>(n, d_as);
+//         cudaDeviceSynchronize();
+//         gpuAssert( cudaPeekAtLastError() );
+    
+    
+//         uint64_t elapsed;
+//         struct timeval t_start, t_end, t_diff;
+//         gettimeofday(&t_start, NULL); 
+        
+//         for(int i=0; i<runs; i++) {
+//             additionKer<uint_t><<< (n+B-1)/B, B >>>(n, d_as);
+//         }
+        
+//         cudaDeviceSynchronize();
+
+//         gettimeofday(&t_end, NULL);
+//         timeval_subtract(&t_diff, &t_end, &t_start);
+//         elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / runs;
+
+//         gpuAssert( cudaPeekAtLastError() );
+
+//         printf( "Base Addition runs in: %.2f us\n", (double)elapsed );        
+//     }
+//     cudaFree(d_as);
+// }
 
 
 
@@ -26,26 +63,26 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    prec_t m = 10;
+    uint32_t m = 10;
+    int size = m * sizeof(uint32_t);
 
-    bigint_t u = init(m);
-    bigint_t v = init(m);
-    bigint_t v_D;
+    uint32_t u[10] = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint32_t* v = (uint32_t*)malloc(size);
+    uint32_t* v_D;
+    cudaMalloc(&v_D, size);
 
-    set(u, 1, m);
-    set(v, 1, m);
+    // set(u, 1, m);
+    // u = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    cudaMalloc($v_D, m * sizeof(digit_t));
-    cudaMemcpy(v_D, v, m * sizeof(digit_t), cudaMemcpyHostToDevice);
-
-    shift(2, u, u, m);
-    shift(4, u, u, m);
+    cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
 
 
     int threadsPerBlock = 256;
     CallShift<<<1, threadsPerBlock>>>(6, v_D, v_D, m);
-    cudaMemcpy(v, v_D, m * sizeof(digit_t), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+
     gpuAssert( cudaPeekAtLastError() );
+    cudaMemcpy(v, v_D, size, cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < m; i++) {
         if (v[i] != u[i]) {
