@@ -71,11 +71,7 @@ int main(int argc, char* argv[]) {
     uint32_t* v_D;
     cudaMalloc(&v_D, size);
 
-    // set(u, 1, m);
-    // u = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
     cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
-
 
     int threadsPerBlock = 256;
     CallShift<<<1, threadsPerBlock>>>(6, v_D, v_D, m);
@@ -88,13 +84,15 @@ int main(int argc, char* argv[]) {
         if (v[i] != u[i]) {
             printf("INVALID AT INDEX %d: [%d/%d]\n", i, v[i], u[i]);
 
-            free(u);
+            // free(u);
             free(v);
+            cudaFree(v_D);
             return 1;
         }
     }
-    free(u);
-    cudaFree(v);
+    // free(u);
+    free(v);
+    cudaFree(v_D);
     return 0;
 }
 

@@ -1,8 +1,9 @@
 #ifndef KERNEL_DIVISION
 #define KERNEL_DIVISION
 
-#include "../cuda/ker-fft-help.cu.h"
-#include "../cuda/ker-helpers.cu.h"
+#include "../cuda/helper.h"
+// #include "../cuda/ker-fft-help.cu.h"
+// #include "../cuda/ker-helpers.cu.h"
 
 
 
