@@ -6,12 +6,46 @@
 // #include "../cuda/ker-helpers.cu.h"
 
 
+/**
+ * @brief Sets the first element to d and zeros the rest
+ */
+template<uint32_t Q>
+__device__ inline void
+set( uint32_t* u,
+     const uint32_t d,
+     const uint32_t m ) {
+    
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m) {
+            u[idx] = 0;
+        }
+    }
+    if (threadIdx.x == 0) {
+        u[0] = d;
+    }
+}
+
+
+
+/**
+ * @brief 
+ * @todo Contains bug
+ * 
+ * @tparam Q 
+ * @param n 
+ * @param u 
+ * @param res 
+ * @param m 
+ * @return __device__ 
+ */
 template<uint32_t Q>
 __device__ inline void
 BlockwiseShift( const int n,
-           const uint32_t* u,
-           uint32_t* res,
-           const uint32_t m ) {
+                const uint32_t* u,
+                uint32_t* res,
+                const uint32_t m ) {
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -31,32 +65,46 @@ BlockwiseShift( const int n,
 }
 
 
-
+/**
+ * @brief 
+ * @todo Contains bug
+ * 
+ * @tparam Q 
+ * @param u 
+ * @param d 
+ * @param v 
+ * @param buf 
+ * @param m 
+ * @return __device__ 
+ */
 template<int Q>
 __device__ inline void
-BlockwiseMultD( uint32_t* a,
-                uint32_t  b,
+BlockwiseMultD( uint32_t* u,
+                uint32_t  d,
                 uint32_t* v,
+                volatile uint64_t* buf,
                 const uint32_t m ) {
-    uint64_t buf[m];
-
+                    
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        buf[idx] = ((uint64_t)a[idx]) * (uint64_t)b;
+        buf[idx] = ((uint64_t)u[idx]) * (uint64_t)d;
     }
+    __syncthreads();
 
-    #pragma unroll
-    for (int i = 1; i < Q; i++) {
+    // #pragma unroll
+    for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        buf[idx + 1] += buf[idx ] >> 32;
+        buf[idx + 1] += (buf[idx] >> 32);
     }
+    __syncthreads();
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
         v[idx] = (uint32_t)buf[idx];
     }
+    __syncthreads();
 }
 
 

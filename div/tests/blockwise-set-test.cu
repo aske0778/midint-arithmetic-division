@@ -3,16 +3,17 @@
 #include <math.h>
 #include <stdint.h>
 #include "../ker-division.cu.h"
-// #include "../sequential/helper.h"
-// #include "../sequential/div.h"
 #include "../../cuda/helper.h"
 
-__global__ void CallShift(
-    const int n,
-    const uint32_t* u,
-    uint32_t* r,
+__global__ void CallSet(
+    uint32_t* u,
+    const uint32_t d,
     const uint32_t m) {
-        BlockwiseShift<8>(n, u, r, m);
+        extern __shared__ char sh_mem[];
+        uint32_t* shmem_u32 = (uint32_t*)sh_mem;
+        __syncthreads();
+        set<2>(shmem_u32, d, m);
+        __syncthreads();
     }
 
 void printSlice(uint32_t* u, char name, int i, uint32_t m) {
@@ -26,27 +27,10 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     printf("]\n");
 }
 
-void shift(int n, uint32_t* u, uint32_t* r, uint32_t m)
-{
-    if (n >= 0)
-    { // Right shift
-        for (int i = m - 1; i >= 0; i--)
-        {
-            int offset = i - n;
-            r[i] = (offset >= 0) ? u[offset] : 0;
-        }
-    }
-    else
-    { // Left shift
-        for (int i = 0; i < m; i++)
-        {
-            int offset = i - n;
-            r[i] = (offset < m) ? u[offset] : 0;
-        }
-    }
+void sequential_set(uint32_t* u, uint32_t d, uint32_t m) {
+    for (int i=1; i<m; i++) { u[i] = 0; }
+    u[0] = d;
 }
-
-
 
 int main(int argc, char* argv[]) {
     if (argc != 1) {
@@ -56,41 +40,36 @@ int main(int argc, char* argv[]) {
     }
 
 
-    uint32_t m = 100;
+    uint32_t m = 1000;
     int size = m * sizeof(uint32_t);
-
-    // uint32_t u[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     uint32_t* u = (uint32_t*)malloc(size);
     uint32_t* v = (uint32_t*)malloc(size);
     uint32_t* v_D;
     cudaMalloc(&v_D, size);
 
-    for (int j = 0; j < 10; j++) {
-        srand(time(NULL));
-        int shiftBy = (rand() % 110) - 10;
+    for (int j = 0; j < 100; j++) {
+        int randInt = (rand() % 110) - 10;
 
         randomInit<uint32_t>(u, m);
         cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
 
-        shift(shiftBy, u, u, m);
+        sequential_set(u, randInt, m);
 
         int threadsPerBlock = 256;
-        CallShift<<<1, threadsPerBlock>>>(shiftBy, v_D, v_D, m);
+        CallSet<<<1, threadsPerBlock, size>>>(v_D, randInt, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
         cudaMemcpy(v, v_D, size, cudaMemcpyDeviceToHost);
 
-        printf("%d\n", shiftBy);
         for (int i = 0; i < m; i++) {
             if (v[i] != u[i]) {
                 printf("ERROR AT ITERATION: %d\n", j);
-                printSlice(u, 'u', i, m);
                 printSlice(v, 'v', i, m);
+                printSlice(u, 'u', i, m);
 
                 printf("INVALID AT INDEX %d: [%d/%d]\n", i, v[i], u[i]);
 
-                // free(u);
                 free(v);
                 cudaFree(v_D);
                 return 1;
@@ -98,10 +77,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // free(u);
     free(v);
     cudaFree(v_D);
-    printf("shift: VALID\n");
+    printf("set: VALID\n");
     return 0;
 }
 
