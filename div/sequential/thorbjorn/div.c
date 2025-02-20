@@ -23,7 +23,7 @@
 
 typedef uint32_t digit_t;
 typedef digit_t *bigint_t;
-typedef int prec_t;
+typedef uint32_t prec_t;
 typedef int bool;
 
 /** HELPERS INT **/
@@ -101,17 +101,6 @@ void set(bigint_t u, digit_t d, prec_t m)
         u[i] = 0;
     }
     u[0] = d;
-}
-
-// prints a string `s` followed big-int `u` to stdout
-void prnt(char *s, bigint_t u, prec_t m)
-{
-    printf("%s: [", s);
-    for (int i = 0; i < m; i++)
-    {
-        printf("%u,", u[i]);
-    }
-    printf("]\n");
 }
 
 /** PRIMARY **/
@@ -368,48 +357,21 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
 
     // multiply, powerdiff and shift
     bool sign = powerdiff(v, w, h - n, l - g, P, m);
+    // prnt("P", P, m);
+    // prnt("p", P, m);
+    //  prnt("w", w, m);
     mult(w, P, w, m);
+    // prnt("w", w, m);
     shift(2 * n - h, w, w, m);
-
-    // add/subtract the two terms
+    // prnt("w", w, m);
+    //  add/subtract the two terms
     if (sign)
         sub(w, w0, w, m);
     else
         add(w, w0, w, m);
-
     // cleanup
     free(w0);
     free(P);
-}
-
-// DOES NOT VALIDATE, USE REFINE2 OR REFINE3 INSTEAD
-// refine1 function as described in the paper s.t. it writes result to `w`
-void refine1(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
-{
-    int g = 1;
-    h += g;
-    shift(h - k - l, w, w, m); // scale initial value to full length
-    while (h - k > l)
-    {
-        step(h, v, w, 0, l, 0, m);
-        l = min(2 * l - 1, h - k); // number of correct digits
-    }
-    shift(-g, w, w, m);
-}
-
-// refine2 function as described in the paper s.t. it writes result to `w`
-void refine2(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
-{
-    int g = m / 4; // `m` guard digits; NOTE `m/4` because we use 4times buffer
-    shift(g, w, w, m);
-    while (h - k > l)
-    {
-        int n = min(h - k + 1 - l, l); // how much to grow
-        step(k + l + n + g, v, w, n, l, g, m);
-        shift(-1, w, w, m);
-        l += n - 1;
-    }
-    shift(-g, w, w, m);
 }
 
 // refine3 function as described in the paper s.t. it writes result to `w`
@@ -418,18 +380,21 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
     int g = m / 4; // `m` guard digits; NOTE `m/4` because we use 4times buffer
     shift(g, w, w, m);
     bigint_t v0 = init(m);
-
     while (h - k > l)
     {
         int n = min(h - k + 1 - l, l);
+
         int s = max(0, k - (2 * l) + 1 - g); // how to scale v
+
         shift(-s, v, v0, m);
+
         step(k + l + n - s + g, v0, w, n, l, g, m);
         shift(-1, w, w, m);
         l += n - 1;
     }
 
     shift(-g, w, w, m);
+    // prnt("res1", w, m);
     free(v0);
 }
 
@@ -561,9 +526,12 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // 5. compute the quotient
     shinv(b, h, k, c, p); // `c = shinv_h b`
-    mult(a, c, b, p);     // `b = a * c`
-    shift(-h, b, b, p);   // `b = shift_(-h) b`
-    cpy(q, b, m);         // `q = b`
+
+    mult(a, c, b, p); // `b = a * c`
+
+    shift(-h, b, b, p); // `b = shift_(-h) b`
+
+    cpy(q, b, m); // `q = b`
 
     // 6. compute the remainder and check whether 𝛿 = {0,1}
     mult(v, q, a, m); // `a = v * q`
@@ -610,10 +578,23 @@ void div_gmp(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
     mpz_clear(d);
 }
 
-void randBigInt(bigint_t u, prec_t m)
-{
-    for (int i = 0; i < m; i++)
-    {
-        u[i] = (uint32_t)rand();
-    }
-}
+// /**
+//  * @brief Prints a string followed by the bigint_t
+//  */
+// void prnt(char *str, bigint_t u, prec_t m)
+// {
+//     printf("%s: [", str);
+//     for (int i = 0; i < m; i++)
+//     {
+//         printf("%u, ", u[i]);
+//     }
+//     printf("]\n");
+// }
+
+// void randBigInt(bigint_t u, prec_t m)
+// {
+//     for (int i = 0; i < m; i++)
+//     {
+//         u[i] = (uint32_t)rand();
+//     }
+// }

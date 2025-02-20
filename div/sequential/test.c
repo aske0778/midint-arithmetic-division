@@ -1,6 +1,6 @@
 #include <time.h>
 #include "div.h"
-// #include "thorbjorn/div.c"
+#include "thorbjorn/div.c"
 
 int main(int argc, char *argv[])
 {
@@ -17,25 +17,31 @@ int main(int argc, char *argv[])
     bigint_t v = init(m);
     bigint_t q_own = init(m);
     bigint_t r_own = init(m);
+    bigint_t q_thor = init(m);
+    bigint_t r_thor = init(m);
     bigint_t q_gmp = init(m);
     bigint_t r_gmp = init(m);
 
     srand(time(NULL));
-    randBigInt(u, m);
-    randBigInt(v, m - 2);
+    randBigInt(u, m - 1);
+    randBigInt(v, m - 3);
 
-    div_shinv(u, v, q_own, r_own, m);
+    div_shinv(u, v, q_thor, r_thor, m);
+    div_shinv_(u, v, q_own, r_own, m);
     div_gmp(u, v, q_gmp, r_gmp, m);
 
-    printf("Inputs:\n");
-    prnt("  u", u, m);
-    prnt("  v", v, m);
-    printf("Output:\n");
-    prnt("  q", q_own, m);
-    prnt("  r", r_own, m);
-    printf("GMP:\n");
-    prnt("  q", q_gmp, m);
-    prnt("  r", r_gmp, m);
+    // printf("Inputs:\n");
+    // prnt("  u", u, m);
+    // prnt("  v", v, m);
+    // printf("Output:\n");
+    // prnt("  q", q_own, m);
+    // prnt("  r", r_own, m);
+    // printf("Thor:\n");
+    // prnt("  q_thor", q_thor, m);
+    // prnt("  r_thor", r_thor, m);
+    // printf("GMP:\n");
+    // prnt("  q", q_gmp, m);
+    // prnt("  r", r_gmp, m);
 
     for (int i = 0; i < m; i++)
     {

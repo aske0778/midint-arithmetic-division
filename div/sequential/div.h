@@ -16,7 +16,7 @@
  * @param r bigint_t where result is stored
  * @param m The number of digits in u
  */
-void shift(int n, bigint_t u, bigint_t r, prec_t m)
+void shift_(int n, bigint_t u, bigint_t r, prec_t m)
 {
     if (n >= 0)
     { // Right shift
@@ -42,11 +42,11 @@ void shift(int n, bigint_t u, bigint_t r, prec_t m)
  * @param n the power to raise the base to
  * @param m the total number of digits in the bigint_t
  */
-bigint_t bpow(int n, prec_t m)
+bigint_t bpow_(int n, prec_t m)
 {
-    bigint_t a = init(m);
+    bigint_t a = init_(m);
     a[0] = 1;
-    shift(n, a, a, m);
+    shift_(n, a, a, m);
     return a;
 }
 
@@ -58,7 +58,7 @@ bigint_t bpow(int n, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void add_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
+void add_gmp_(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 {
     mpz_t a;
     mpz_t b;
@@ -71,7 +71,7 @@ void add_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
     mpz_import(b, m, -1, sizeof(digit_t), 0, 0, v);
     mpz_add(r, a, b);
 
-    set(w, 0, m);
+    set_(w, 0, m);
     mpz_export(w, NULL, -1, sizeof(digit_t), 0, 0, r);
 
     mpz_clear(a);
@@ -87,7 +87,7 @@ void add_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void sub_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
+void sub_gmp_(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 {
     mpz_t a;
     mpz_t b;
@@ -100,7 +100,7 @@ void sub_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
     mpz_import(b, m, -1, sizeof(digit_t), 0, 0, v);
     mpz_sub(r, a, b);
 
-    set(w, 0, m);
+    set_(w, 0, m);
     mpz_export(w, NULL, -1, sizeof(digit_t), 0, 0, r);
 
     mpz_clear(a);
@@ -116,7 +116,7 @@ void sub_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
  * @param w bigint_t where result is stored
  * @param m The number of digits in u and v
  */
-void mult_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
+void mult_gmp_(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 {
     mpz_t a;
     mpz_t b;
@@ -129,7 +129,7 @@ void mult_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
     mpz_import(b, m, -1, sizeof(digit_t), 0, 0, v);
     mpz_mul(r, a, b);
 
-    set(w, 0, m);
+    set_(w, 0, m);
     mpz_export(w, NULL, -1, sizeof(digit_t), 0, 0, r);
 
     mpz_clear(a);
@@ -137,10 +137,10 @@ void mult_gmp(bigint_t u, bigint_t v, bigint_t w, prec_t m)
     mpz_clear(r);
 }
 
-void div_gmp(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
+void div_gmp_(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
-    set(q, 0, m);
-    set(r, 0, m);
+    set_(q, 0, m);
+    set_(r, 0, m);
 
     mpz_t a;
     mpz_init(a);
@@ -176,7 +176,7 @@ void div_gmp(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
  * @param r remainder
  * @param m Total size of bigint_ts
  */
-void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
+void quo_(bigint_t n, digit_t d, bigint_t q, prec_t m)
 {
     if (d == 0)
     {
@@ -203,7 +203,7 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
  * @param r Result bigint_t
  * @param m Size of bigint_t
  */
-void multd(bigint_t a, digit_t b, bigint_t r, prec_t m)
+void multd_(bigint_t a, digit_t b, bigint_t r, prec_t m)
 {
     uint64_t buf[m];
 
@@ -227,10 +227,10 @@ void multd(bigint_t a, digit_t b, bigint_t r, prec_t m)
  * @brief Calculates (a * b) rem B^d
  * @todo Implement this
  */
-void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
+void multmod_(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
-    zero(r, m);
-    mult_gmp(a, b, r, d);
+    zero_(r, m);
+    mult_gmp_(a, b, r, d);
 }
 
 /**
@@ -243,30 +243,30 @@ void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
  * @param B Returns value in this bigint_t
  * @param m
  */
-bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
+bool powdiff_(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 {
-    prec_t L = prec(v, m) + prec(w, m) - l + 1;
+    prec_t L = prec_(v, m) + prec_(w, m) - l + 1;
     prec_t sign = 1;
-    if (ez(v, m) || ez(w, m) || L >= h)
+    if (ez_(v, m) || ez_(w, m) || L >= h)
     {
-        bigint_t Bh = bpow(h, m);
-        mult_gmp(v, w, B, m);
+        bigint_t Bh = bpow_(h, m);
+        mult_gmp_(v, w, B, m);
 
-        if (lt(B, Bh, m))
-            sub_gmp(Bh, B, B, m);
+        if (lt_(B, Bh, m))
+            sub_gmp_(Bh, B, B, m);
         else
         {
-            sub_gmp(B, Bh, B, m);
+            sub_gmp_(B, Bh, B, m); // else case nogensinde aktuelt?
             sign = 0;
         }
         free(Bh);
     }
     else
     {
-        multmod(v, w, L, B, m);
-        if (ez(B, m))
+        multmod_(v, w, L, B, m);
+        if (ez_(B, m))
         {
-            zero(B, m);
+            zero_(B, m);
         }
         else if (B[L - 1] == 0)
         {
@@ -275,13 +275,13 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         else
         {
 
-            bigint_t Bl = bpow(L, m);
-            sub_gmp(Bl, B, B, m);
-            if (lt(B, Bl, m))
-                sub_gmp(Bl, B, B, m);
+            bigint_t Bl = bpow_(L, m);
+            sub_gmp_(Bl, B, B, m);
+            if (lt_(B, Bl, m))
+                sub_gmp_(Bl, B, B, m);
             else
             {
-                sub_gmp(B, Bl, B, m);
+                sub_gmp_(B, Bl, B, m);
                 sign = 0;
             }
             free(Bl);
@@ -301,19 +301,21 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
  * @param g
  * @param m total number of digits in v
  */
-void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
+void step_(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
 {
-    bigint_t tmp = init(m);
+    bigint_t tmp = init_(m);
 
-    prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
-    mult_gmp(w, tmp, tmp, m);
-    shift(2 * n - h, tmp, tmp, m);
-    shift(n, w, w, m);
+    prec_t sign = powdiff_(v, w, h - n, l - g, tmp, m);
 
+    mult_gmp_(w, tmp, tmp, m);
+    // prnt("w", w, m);
+    shift_(2 * n - h, tmp, tmp, m);
+    shift_(n, w, w, m);
+    // prnt("w", w, m);
     if (sign)
-        add_gmp(w, tmp, w, m);
+        add_gmp_(w, tmp, w, m);
     else
-        sub_gmp(w, tmp, w, m);
+        sub_gmp_(w, tmp, w, m);
 
     free(tmp);
 }
@@ -329,22 +331,27 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
  * @param l Current number of digits in w
  * @param m The number of digits in v
  */
-void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
+void refine3_(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
 {
     int s;
-    int g = m / 4; // på grund af 4x padding
-    bigint_t v0 = init(m);
-    shift(g, w, w, m);
+    int g = 2; // på grund af 4x padding
+    bigint_t v0 = init_(m);
+    shift_(g, w, w, m);
     while (h - k > l)
     {
-        int n = min(h - k + 1 - l, l);
-        s = max(0, k - 2 * l + 1 - g);
-        shift(-s, v, v0, m);
-        step(k + l + n - s + g, v0, w, n, l, g, m);
-        shift(-1, w, w, m);
+        int n = min_(h - k + 1 - l, l);
+
+        s = max_(0, k - 2 * l + 1 - g);
+
+        shift_(-s, v, v0, m);
+
+        step_(k + l + n - s + g, v0, w, n, l, g, m);
+        shift_(-1, w, w, m);
         l = l + n - 1;
     }
-    shift(-g, w, w, m);
+
+    shift_(-g, w, w, m);
+    // prnt("res1", w, m);
     free(v0);
 }
 
@@ -357,37 +364,38 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
  * @param k
  * @param m the total number of digits in v
  */
-void shinv(bigint_t v, int h, bigint_t w, prec_t m)
+void shinv_(bigint_t v, int h, bigint_t w, prec_t m)
 {
-    int k = prec(v, m) - 1;
+    int k = prec_(v, m) - 1;
     bool rp = 0;
 
-    bigint_t B = bpow(1, m);
-    bigint_t Bh = bpow(h, m);
-    bigint_t Bk = bpow(k, m);
-    bigint_t v2 = init(m);
-    multd(v, 2, v2, m);
+    bigint_t B = bpow_(1, m);
+    bigint_t Bh = bpow_(h, m);
+    bigint_t Bk = bpow_(k, m);
+    bigint_t v2 = init_(m);
+    // prnt("Bh:", Bh, m);
+    multd_(v, 2, v2, m);
 
-    if (lt(v, B, m))
+    if (lt_(v, B, m))
     {
-        quo(Bh, v[0], w, m);
+        quo_(Bh, v[0], w, m);
         rp = 1;
     }
-    if (lt(Bh, v, m))
+    if (lt_(Bh, v, m))
     {
-        zero(w, m);
+        zero_(w, m);
         rp = 1;
     }
-    if (lt(Bh, v2, m))
+    if (lt_(Bh, v2, m))
     {
-        zero(w, m);
+        zero_(w, m);
         rp = 1;
     }
-    if (eq(v, Bk, m))
+    if (eq_(v, Bk, m))
     {
-        zero(w, m);
+        zero_(w, m);
         w[0] = 1;
-        shift(h - k, w, w, m);
+        shift_(h - k, w, w, m);
         rp = 1;
     }
     free(B);
@@ -400,7 +408,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
         return;
     }
 
-    int l = min(k, 2);
+    int l = min_(k, 2);
     __uint128_t V = 0;
     for (int i = 0; i <= l; i++)
     {
@@ -417,11 +425,11 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 
     if (h - k <= l)
     {
-        shift(h - k - l, w, w, m);
+        shift_(h - k - l, w, w, m);
     }
     else
     {
-        refine3(v, h, k, w, l, m);
+        refine3_(v, h, k, w, l, m);
     }
 }
 
@@ -434,39 +442,26 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
  * @param r remainder is returned here
  * @param m Total number of digits in n and d
  */
-void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
+void div_shinv_(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
-    int h = prec(u, m);
-
-    prec_t p = m * 4;
-
-    // 3. allocate and initialize some big integers
-    bigint_t a = init(p);
-    cpy(a, u, m); // `a = u`
-    bigint_t b = init(p);
-    cpy(b, v, m);         // `b = v`
-    bigint_t c = init(p); // `c = 0`
-
+    int h = prec_(u, m);
+    printf("%i", h);
     // Calculate quotient
-    shinv(b, h, c, p);
-    mult_gmp(a, c, b, p);
-    shift(-h, b, b, p);
-    cpy(q, b, m);
+    shinv_(v, h, q, m);
+    mult_gmp_(u, q, q, m);
+    prnt("q:", q, m);
+    shift_(-h, q, q, m);
 
     // Calculate remainder
-    mult_gmp(v, q, a, m);
-    sub_gmp(u, a, r, m);
+    mult_gmp_(v, q, r, m);
+    sub_gmp_(u, r, r, m);
 
-    if (!lt(r, v, m))
+    if (!lt_(r, v, m))
     {
-        bigint_t a = bpow(0, m);
-        add_gmp(q, a, q, m);
-        sub_gmp(r, v, r, m);
+        bigint_t a = bpow_(0, m);
+        add_gmp_(q, a, q, m);
+        sub_gmp_(r, v, r, m);
     }
-
-    free(a);
-    free(b);
-    free(c);
 }
 
 #endif // SEQ_DIV

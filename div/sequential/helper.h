@@ -16,7 +16,7 @@ typedef int bool;
 /**
  * @brief Returns the minimum of two integers
  */
-int min(int a, int b)
+int min_(int a, int b)
 {
     return (a < b) ? a : b;
 }
@@ -24,7 +24,7 @@ int min(int a, int b)
 /**
  * @brief Returns the maximum of two integers
  */
-int max(int a, int b)
+int max_(int a, int b)
 {
     return (a > b) ? a : b;
 }
@@ -32,7 +32,7 @@ int max(int a, int b)
 /**
  * @brief Checks if a bigint_t is equal to zero
  */
-bool ez(bigint_t u, prec_t m)
+bool ez_(bigint_t u, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
@@ -47,7 +47,7 @@ bool ez(bigint_t u, prec_t m)
 /**
  * @brief Returns a < b for two bigint_ts
  */
-bool lt(bigint_t a, bigint_t b, prec_t m)
+bool lt_(bigint_t a, bigint_t b, prec_t m)
 {
     for (int i = m - 1; i >= 0; i--)
     {
@@ -66,7 +66,7 @@ bool lt(bigint_t a, bigint_t b, prec_t m)
 /**
  * @brief Checks if two bigint_ts are equal
  */
-bool eq(bigint_t u, bigint_t v, prec_t m)
+bool eq_(bigint_t u, bigint_t v, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
@@ -84,7 +84,7 @@ bool eq(bigint_t u, bigint_t v, prec_t m)
  * @param m The number of digits
  * @return bigint_t The initialized bigint_t
  */
-bigint_t init(prec_t m)
+bigint_t init_(prec_t m)
 {
     bigint_t retval = (bigint_t)malloc(m * sizeof(digit_t));
     for (int i = 0; i < m; i++)
@@ -97,7 +97,7 @@ bigint_t init(prec_t m)
 /**
  * @brief Sets all digits of a bigint_t to zero except the first digit
  */
-void set(bigint_t u, digit_t d, prec_t m)
+void set_(bigint_t u, digit_t d, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
@@ -106,20 +106,10 @@ void set(bigint_t u, digit_t d, prec_t m)
     u[0] = d;
 }
 
-prec_t findk(bigint_t u, prec_t m)
-{
-    prec_t k = 0;
-    for (int i = 0; i < m; i++)
-    {
-        k = (u[i] != 0) ? i : k;
-    }
-    return k;
-}
-
 /**
  * @brief Zeroes all digits of a bigint_t
  */
-void zero(bigint_t u, prec_t m)
+void zero_(bigint_t u, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
@@ -130,7 +120,7 @@ void zero(bigint_t u, prec_t m)
 /**
  * @brief The precision of the bigint_t
  */
-prec_t prec(bigint_t u, prec_t m)
+prec_t prec_(bigint_t u, prec_t m)
 {
     prec_t acc = 0;
     for (int i = 0; i < m; i++)
@@ -164,13 +154,13 @@ void randBigInt(bigint_t u, prec_t m)
     }
 }
 
-// copy digits to big-int `u` from big-int `v`
-void cpy(bigint_t u, bigint_t v, prec_t m)
-{
-    for (int i = 0; i < m; i++)
-    {
-        u[i] = v[i];
-    }
-}
+// // copy digits to big-int `u` from big-int `v`
+// void cpy(bigint_t u, bigint_t v, prec_t m)
+// {
+//     for (int i = 0; i < m; i++)
+//     {
+//         u[i] = v[i];
+//     }
+// }
 
 #endif // HELPER
