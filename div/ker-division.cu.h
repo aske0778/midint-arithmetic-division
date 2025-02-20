@@ -9,7 +9,7 @@
 /**
  * Helper kernel for copying from global to shared memory
  */
-template<class T, uint32_t CHUNK>
+template<class T, uint32_t Q>
 __device__ inline void
 copyFromGlb2ShrMem( const uint32_t glb_offs
                   , const uint32_t N
@@ -18,7 +18,7 @@ copyFromGlb2ShrMem( const uint32_t glb_offs
                   , volatile T* shmem_inp
 ) {
     #pragma unroll
-    for(uint32_t i=0; i<CHUNK; i++) {
+    for(uint32_t i=0; i<Q; i++) {
         uint32_t loc_ind = blockDim.x * i + threadIdx.x;
         uint32_t glb_ind = glb_offs + loc_ind;
         T elm = ne;
@@ -31,7 +31,7 @@ copyFromGlb2ShrMem( const uint32_t glb_offs
 /**
  * Helper kernel for copying from shared to global memory
  */
-template<class T, uint32_t CHUNK>
+template<class T, uint32_t Q>
 __device__ inline void
 copyFromShr2GlbMem( const uint32_t glb_offs
                   , const uint32_t N
@@ -39,7 +39,7 @@ copyFromShr2GlbMem( const uint32_t glb_offs
                   , volatile T* shmem_inp
 ) {
     #pragma unroll
-    for (uint32_t i = 0; i < CHUNK; i++) {
+    for (uint32_t i = 0; i < Q; i++) {
         uint32_t loc_ind = blockDim.x * i + threadIdx.x;
         uint32_t glb_ind = glb_offs + loc_ind;
         if (glb_ind < N) {
@@ -85,28 +85,35 @@ set( volatile T* u,
  * @param m 
  * @return __device__ 
  */
-template<uint32_t Q>
+template<class T, uint32_t Q>
 __device__ inline void
-BlockwiseShift( const int n,
-                const uint32_t* u,
-                uint32_t* res,
-                const uint32_t m ) {
+shift( const int n,
+       volatile T* u,
+       volatile T* res,
+       const uint32_t m ) {
 
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        int idx = i * blockDim.x + threadIdx.x;
-        
-        if (idx >= m) {
-           continue; 
+    if (n >= 0) {   // Left shift
+        #pragma unroll
+        for (int i = 0; i < Q; i++) {
+            int idx = i * blockDim.x + threadIdx.x;
+            if (idx < m) {
+                int offset = idx - n;
+                res[idx] = (offset < m) ? u[offset] : 0;
+            }
+            __syncthreads();
         }
-
-        int offset = idx - n;
-        if (n >= 0) {   // Right shift
-            res[idx] = (offset >= 0) ? u[offset] : 0;
-        } else {        // Left shift
-            res[idx] = (offset < m) ? u[offset] : 0;
+    } else {        // Right shift
+        #pragma unroll
+        for (int i = Q; i >= 0; i--) {
+            int idx = i * blockDim.x + threadIdx.x;
+            if (idx < m) {
+                int offset = idx - n;
+                res[idx] = (offset >= 0) ? u[offset] : 0;
+            }
+            __syncthreads();
         }
     }
+    __syncthreads();
 }
 
 
@@ -122,22 +129,22 @@ BlockwiseShift( const int n,
  * @param m 
  * @return __device__ 
  */
-template<int Q>
+template<class T, class T2, uint32_t Q>
 __device__ inline void
-BlockwiseMultD( uint32_t* u,
-                uint32_t  d,
-                uint32_t* v,
-                volatile uint64_t* buf,
-                const uint32_t m ) {
+multd( volatile T* u,
+       const uint32_t d,
+       volatile T* v,
+       volatile T2* buf,
+       const uint32_t m ) {
                     
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        buf[idx] = ((uint64_t)u[idx]) * (uint64_t)d;
+        buf[idx] = ((T2)u[idx]) * (T2)d;
     }
     __syncthreads();
 
-    // #pragma unroll
+    #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
         buf[idx + 1] += (buf[idx] >> 32);
@@ -147,7 +154,7 @@ BlockwiseMultD( uint32_t* u,
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        v[idx] = (uint32_t)buf[idx];
+        v[idx] = (T)buf[idx];
     }
     __syncthreads();
 }

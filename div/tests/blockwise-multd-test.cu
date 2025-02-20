@@ -3,21 +3,24 @@
 #include <math.h>
 #include <stdint.h>
 #include "../ker-division.cu.h"
-// #include "../sequential/helper.h"
-// #include "../sequential/div.h"
 #include "../../cuda/helper.h"
 
-__global__ void CallMultD(
-    uint32_t* u,
-    uint32_t b,
-    uint32_t* v,
-    const uint32_t m) {
-        // __shared__ uint64_t* buf = (uint64_t*)cudaMalloc(sizeof(uint64_t) * m);
-        extern __shared__ char sh_mem[];
-        volatile uint64_t* shmem_u64 = (uint64_t*)sh_mem;
 
-        BlockwiseMultD<10>(u, b, v, shmem_u64, m);
-    }
+template<class T, class T2, uint32_t Q>
+__global__ void CallMultD(
+        T* u,
+        const uint32_t d,
+        T* v,
+        const uint32_t m) {
+    extern __shared__ char sh_mem[];
+    volatile T* shmem_u = (T*)sh_mem;
+    volatile T* shmem_v = (T*)(sh_mem + m*sizeof(T));
+    volatile T2* shmem_buf = (T2*)(sh_mem + 2*m*sizeof(T));
+
+    copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u);
+    multd<T, T2, Q>(shmem_u, d, shmem_v, shmem_buf, m);
+    copyFromShr2GlbMem<T, Q>(0, m, v, shmem_v);
+}
 
 void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     int min = i-3 < 0 ? 0 : i-3;
@@ -30,7 +33,7 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     printf("]\n");
 }
 
-void multd(uint32_t* a, uint32_t b, uint32_t* r, uint32_t m)
+void sequential_multd(uint32_t* a, uint32_t b, uint32_t* r, uint32_t m)
 {
     uint64_t buf[m];
 
@@ -56,42 +59,49 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    const uint32_t m = 10;
-    int size = m * sizeof(uint32_t);
 
+    uint32_t m = 1000;
+    int size = m * sizeof(uint32_t);
     uint32_t* u = (uint32_t*)malloc(size);
     uint32_t* v = (uint32_t*)malloc(size);
     uint32_t* v_D;
     cudaMalloc(&v_D, size);
 
-    randomInit<uint32_t>(u, m);
-    cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
+    for (int j = 0; j < 100; j++) {
+        srand(time(NULL));
+        int randInt = (rand() % 110) - 10;
 
-    multd(u, 8, u, m);
+        randomInit<uint32_t>(u, m);
+        cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
 
-    int threadsPerBlock = 256;
-    CallMultD<<<1, threadsPerBlock>>>(v_D, 8, v_D, m);
-    cudaDeviceSynchronize();
+        sequential_multd(u, randInt, u, m);
 
-    gpuAssert( cudaPeekAtLastError() );
-    cudaMemcpy(v, v_D, size, cudaMemcpyDeviceToHost);
+        int threadsPerBlock = 256;
+        CallMultD<uint32_t, uint64_t, 8><<<1, threadsPerBlock, 8*size>>>(v_D, randInt, v_D, m);
+        cudaDeviceSynchronize();
 
-    for (int i = 0; i < m; i++) {
-        if (v[i] != u[i]) {
-            printf("INVALID AT INDEX %u: [%u/%u]\n", i, v[i], u[i]);
-            printSlice(v, 'v', i, m);
-            printSlice(u, 'u', i, m);
+        gpuAssert( cudaPeekAtLastError() );
+        cudaMemcpy(v, v_D, size, cudaMemcpyDeviceToHost);
 
-            // free(u);
-            free(v);
-            cudaFree(v_D);
-            return 1;
+        for (int i = 0; i < m; i++) {
+            if (v[i] != u[i]) {
+                printf("%d\n", randInt);
+                printf("ERROR AT ITERATION: %d\n", j);
+                printSlice(v, 'v', i, m);
+                printSlice(u, 'u', i, m);
+
+                printf("INVALID AT INDEX %d: [%d/%d]\n", i, v[i], u[i]);
+
+                free(v);
+                cudaFree(v_D);
+                return 1;
+            }
         }
     }
-    // free(u);
+
     free(v);
     cudaFree(v_D);
-    printf("multd: VALID\n");
+    printf("set: VALID\n");
     return 0;
 }
 
