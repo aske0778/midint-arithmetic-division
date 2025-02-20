@@ -69,7 +69,8 @@ int main(int argc, char* argv[]) {
 
     for (int j = 0; j < 100; j++) {
         srand(time(NULL));
-        int randInt = (rand() % 110) - 10;
+        // int randInt = (rand() % 110) - 10;
+        int randInt = -2;
 
         randomInit<uint32_t>(u, m);
         cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
         sequential_multd(u, randInt, u, m);
 
         int threadsPerBlock = 256;
-        CallMultD<uint32_t, uint64_t, 8><<<1, threadsPerBlock, 8*size>>>(v_D, randInt, v_D, m);
+        CallMultD<uint32_t, uint64_t, 12><<<1, threadsPerBlock, 8*size>>>(v_D, randInt, v_D, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
                 printSlice(v, 'v', i, m);
                 printSlice(u, 'u', i, m);
 
-                printf("INVALID AT INDEX %d: [%d/%d]\n", i, v[i], u[i]);
+                printf("INVALID AT INDEX %d: [%u/%u]\n", i, v[i], u[i]);
 
                 free(v);
                 cudaFree(v_D);
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
 
     free(v);
     cudaFree(v_D);
-    printf("set: VALID\n");
+    printf("multd: VALID\n");
     return 0;
 }
 

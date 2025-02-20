@@ -76,7 +76,7 @@ set( volatile T* u,
 
 /**
  * @brief 
- * @todo Contains bug
+ * @todo Contains bug when n < 0
  * 
  * @tparam Q 
  * @param n 
@@ -119,7 +119,8 @@ shift( const int n,
 
 /**
  * @brief 
- * @todo Contains bug
+ * @todo Contains bug when d < 0 where
+ * sometimes the result is -1 less than expected
  * 
  * @tparam Q 
  * @param u 

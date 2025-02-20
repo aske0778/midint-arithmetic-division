@@ -7,13 +7,20 @@
 // #include "../sequential/div.h"
 #include "../../cuda/helper.h"
 
+template<class T, uint32_t Q>
 __global__ void CallShift(
     const int n,
-    const uint32_t* u,
-    uint32_t* r,
+    T* u,
+    T* r,
     const uint32_t m) {
-        BlockwiseShift<8>(n, u, r, m);
-    }
+        extern __shared__ char sh_mem[];
+        volatile T* shmem_u = (T*)sh_mem;
+        volatile T* shmem_v = (T*)(sh_mem + m*sizeof(T));
+
+        copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u);
+        shift<T, Q>(n, shmem_u, shmem_v, m);
+        copyFromShr2GlbMem<T, Q>(0, m, r, shmem_v);
+}   
 
 void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     int min = i-3 < 0 ? 0 : i-3;
@@ -26,7 +33,7 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     printf("]\n");
 }
 
-void shift(int n, uint32_t* u, uint32_t* r, uint32_t m)
+void sequential_shift(int n, uint32_t* u, uint32_t* r, uint32_t m)
 {
     if (n >= 0)
     { // Right shift
@@ -56,49 +63,47 @@ int main(int argc, char* argv[]) {
     }
 
 
-    uint32_t m = 100;
-    int size = m * sizeof(uint32_t);
 
-    // uint32_t u[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint32_t m = 1000;
+    int size = m * sizeof(uint32_t);
     uint32_t* u = (uint32_t*)malloc(size);
     uint32_t* v = (uint32_t*)malloc(size);
     uint32_t* v_D;
     cudaMalloc(&v_D, size);
 
-    for (int j = 0; j < 10; j++) {
-        srand(time(NULL));
-        int shiftBy = (rand() % 110) - 10;
+    for (int j = 0; j < 100; j++) {
+        // int randInt = (rand() % m) - (m/2);
+        int randInt = -500;
 
         randomInit<uint32_t>(u, m);
         cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
 
-        shift(shiftBy, u, u, m);
+        sequential_shift(randInt, u, u, m);
 
         int threadsPerBlock = 256;
-        CallShift<<<1, threadsPerBlock>>>(shiftBy, v_D, v_D, m);
+
+        CallShift<uint32_t, 2><<<1, threadsPerBlock, 4*size>>>(randInt, v_D, v_D, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
         cudaMemcpy(v, v_D, size, cudaMemcpyDeviceToHost);
 
-        printf("%d\n", shiftBy);
         for (int i = 0; i < m; i++) {
             if (v[i] != u[i]) {
                 printf("ERROR AT ITERATION: %d\n", j);
-                printSlice(u, 'u', i, m);
                 printSlice(v, 'v', i, m);
+                printSlice(u, 'u', i, m);
 
                 printf("INVALID AT INDEX %d: [%d/%d]\n", i, v[i], u[i]);
 
-                // free(u);
                 free(v);
                 cudaFree(v_D);
                 return 1;
             }
         }
+        printf("%d\n", randInt);
     }
 
-    // free(u);
     free(v);
     cudaFree(v_D);
     printf("shift: VALID\n");
