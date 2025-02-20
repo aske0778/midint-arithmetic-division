@@ -5,16 +5,21 @@
 #include "../ker-division.cu.h"
 #include "../../cuda/helper.h"
 
+
+template<class T, uint32_t Q>
 __global__ void CallSet(
-    uint32_t* u,
-    const uint32_t d,
-    const uint32_t m) {
+    T* u,
+    const T d,
+    const T m) {
         extern __shared__ char sh_mem[];
-        uint32_t* shmem_u32 = (uint32_t*)sh_mem;
-        __syncthreads();
-        set<2>(shmem_u32, d, m);
-        __syncthreads();
-    }
+        volatile T* shmem_u32 = (T*)sh_mem;
+
+        copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u32);
+        set<T, Q>(shmem_u32, d, m);
+        shmem_u32[0] = d;
+        copyFromShr2GlbMem<T, Q>(0, m, u, shmem_u32);
+}
+
 
 void printSlice(uint32_t* u, char name, int i, uint32_t m) {
     int min = i-3 < 0 ? 0 : i-3;
@@ -56,7 +61,7 @@ int main(int argc, char* argv[]) {
         sequential_set(u, randInt, m);
 
         int threadsPerBlock = 256;
-        CallSet<<<1, threadsPerBlock, size>>>(v_D, randInt, m);
+        CallSet<uint32_t, 8><<<1, threadsPerBlock, 2*size>>>(v_D, randInt, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
