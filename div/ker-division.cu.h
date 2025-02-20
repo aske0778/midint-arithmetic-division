@@ -68,9 +68,8 @@ set( volatile T* u,
             u[idx] = 0;
         }
     }
-    if (threadIdx.x == 0) {
-        u[0] = d;
-    }
+    u[0] = d;
+    __syncthreads();
 }
 
 

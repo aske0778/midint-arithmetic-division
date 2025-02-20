@@ -16,7 +16,6 @@ __global__ void CallSet(
 
         copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u32);
         set<T, Q>(shmem_u32, d, m);
-        shmem_u32[0] = d;
         copyFromShr2GlbMem<T, Q>(0, m, u, shmem_u32);
 }
 
@@ -61,7 +60,7 @@ int main(int argc, char* argv[]) {
         sequential_set(u, randInt, m);
 
         int threadsPerBlock = 256;
-        CallSet<uint32_t, 8><<<1, threadsPerBlock, 2*size>>>(v_D, randInt, m);
+        CallSet<uint32_t, 8><<<1, threadsPerBlock, 3*size>>>(v_D, randInt, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
