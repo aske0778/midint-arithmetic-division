@@ -230,7 +230,14 @@ void multd(bigint_t a, digit_t b, bigint_t r, prec_t m)
 void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
     zero(r, m);
-    mult_gmp(a, b, r, d);
+    mult_gmp(a, b, r, m);
+    for (int i = 0; i < m; i++)
+    {
+        if (i >= d)
+        {
+            r[i] = 0;
+        }
+    }
 }
 
 /**
@@ -247,6 +254,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 {
     prec_t L = prec(v, m) + prec(w, m) - l + 1;
     prec_t sign = 1;
+
     if (ez(v, m) || ez(w, m) || L >= h)
     {
         bigint_t Bh = bpow(h, m);
@@ -254,7 +262,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 
         if (lt(B, Bh, m))
             sub_gmp(Bh, B, B, m);
-        else
+        else // else case nogensinde aktuelt?
         {
             sub_gmp(B, Bh, B, m);
             sign = 0;
@@ -264,27 +272,25 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     else
     {
         multmod(v, w, L, B, m);
-        if (ez(B, m))
+        if (!ez(B, m))
         {
-            zero(B, m);
-        }
-        else if (B[L - 1] == 0)
-        {
-            sign = 0;
-        }
-        else
-        {
-
-            bigint_t Bl = bpow(L, m);
-            sub_gmp(Bl, B, B, m);
-            if (lt(B, Bl, m))
-                sub_gmp(Bl, B, B, m);
-            else
+            if (B[L - 1] == 0)
             {
-                sub_gmp(B, Bl, B, m);
                 sign = 0;
             }
-            free(Bl);
+            else
+            {
+
+                bigint_t Bl = bpow(L, m);
+                if (lt(B, Bl, m))
+                    sub_gmp(Bl, B, B, m);
+                else
+                {
+                    sub_gmp(B, Bl, B, m);
+                    sign = 0;
+                }
+                free(Bl);
+            }
         }
     }
     return sign;
@@ -332,7 +338,7 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
 void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
 {
     int s;
-    int g = m / 4; // på grund af 4x padding
+    int g = 2; // på grund af 4x padding
     bigint_t v0 = init(m);
     shift(g, w, w, m);
     while (h - k > l)
@@ -438,7 +444,7 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
     int h = prec(u, m);
 
-    prec_t p = m * 4;
+    prec_t p = m * 2;
 
     // 3. allocate and initialize some big integers
     bigint_t a = init(p);
@@ -449,9 +455,9 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // Calculate quotient
     shinv(b, h, c, p);
-    mult_gmp(a, c, b, p);
-    shift(-h, b, b, p);
-    cpy(q, b, m);
+    mult_gmp(a, c, c, p);
+    shift(-h, c, c, p);
+    cpy(q, c, m);
 
     // Calculate remainder
     mult_gmp(v, q, a, m);
