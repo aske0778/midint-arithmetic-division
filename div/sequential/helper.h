@@ -122,7 +122,7 @@ void zero(bigint_t u, prec_t m)
  */
 prec_t prec(bigint_t u, prec_t m)
 {
-    prec_t acc = 0;
+    prec_t acc = 0; // should be -1?
     for (int i = 0; i < m; i++)
     {
         if (u[i] != 0)

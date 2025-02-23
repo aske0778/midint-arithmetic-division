@@ -5,24 +5,50 @@
 // #include "../../cuda/ker-helpers.cu.h"
 // #include "../../cuda/helper.h"
 
-template <uint32_t Q>
-__device__ inline void
-shift(const int n,
-      const uint32_t *u,
-      uint32_t *res,
-      const uint32_t m)
-{
-    int tid = threadIdx.y * blockDim.x + threadIdx.x;
+template <class T, uint32_t Q>
+__device__ inline void cpyGlb2Sh(uint_t* AGlb, uint_t* BGlb, uint_t* ASh, uint_t* BSh, const uint32_t m) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx >= m) return;
 
-#pragma unroll
+        ASh[idx] = AGlb[idx];
+        BSh[idx] = BGlb[idx];
+    }
+}
+
+template <class T, uint32_t Q>
+__device__ inline void cpySh2Glb(uint_t* ASh, uint_t* AGlb, const uint32_t m) {
+    #pragma unroll
+    for (uint32_t i = 0; i < Q; i++) {
+        uint32_t idx = blockDim.x * i + threadIdx.x;
+        if (idx >= m) return;
+
+        AGlb[idx] = ASh[idx];
+    }
+}
+
+template <class T, uint32_t Q>
+__device__ inline void prec(const volatile T* u, volatile int* h, const uint32_t m) {
+    int highest_idx = -1;
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m && u[idx] != 0) {
+            highest_idx = max(highest_idx, idx);
+        }
+    }
+    atomicMax(h, highest_idx + 1);
+}
+
+template <class T, uint32_t Q>
+__device__ inline void shift(const int n, const volatile T* u, volatile T* res, const uint32_t m) {
+    #pragma unroll
     for (int i = 0; i < Q; i++)
     {
-        int idx = tid * (i + 1);
-
-        if (idx >= m)
-        {
-            return;
-        }
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx >= m) return;   
 
         int offset = idx - n;
         if (n >= 0)
@@ -36,10 +62,22 @@ shift(const int n,
     }
 }
 
-__global__ void div_shinv(const uint32_t *u, const uint32_t *v, uint32_t *res, const uint32_t m)
+template <class T, uint32_t Q>
+__global__ void div_shinv(const uint32_t* u, const uint32_t* v, uint32_t* res, const uint32_t m)
 {
-    shift<2>(2, u, res, m);
+    extern __shared__ char sh_mem[];
+    volatile T* USh = (T*)sh_mem;
+    volatile T* VSh = (T*)(USh + m * 2);
+    volatile T* TmpSh = (T*)(VSh + m * 2);
+    cpyGlb2Sh<T, Q>(u, v, USh, VSh, m);
+
+    __shared__ int32_t h;
+    prec<T,Q>(USh, h, m);
     __syncthreads();
+
+
+
+    cpySh2Glb<T, Q>(Tmp, res, m);
 }
 
 #endif // KERNEL_DIVISION
