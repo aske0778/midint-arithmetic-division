@@ -389,8 +389,10 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         shift(-s, v, v0, m);
 
         step(k + l + n - s + g, v0, w, n, l, g, m);
+        //  prnt("w2", w, m);
         shift(-1, w, w, m);
         l += n - 1;
+        // prnt("w", w, m);
     }
 
     shift(-g, w, w, m);
@@ -526,9 +528,10 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // 5. compute the quotient
     shinv(b, h, k, c, p); // `c = shinv_h b`
-
-    mult(a, c, b, p); // `b = a * c`
-
+    // prnt("c", c, p);
+    //    prnt("a", a, p);
+    mult(a, c, b, p);   // `b = a * c`
+                        // prnt("res1", b, p);
     shift(-h, b, b, p); // `b = shift_(-h) b`
 
     cpy(q, b, m); // `q = b`

@@ -154,13 +154,13 @@ void randBigInt(bigint_t u, prec_t m)
     }
 }
 
-// // copy digits to big-int `u` from big-int `v`
-// void cpy(bigint_t u, bigint_t v, prec_t m)
-// {
-//     for (int i = 0; i < m; i++)
-//     {
-//         u[i] = v[i];
-//     }
-// }
+// copy digits to big-int `u` from big-int `v`
+void cpy_(bigint_t u, bigint_t v, prec_t m)
+{
+    for (int i = 0; i < m; i++)
+    {
+        u[i] = v[i];
+    }
+}
 
 #endif // HELPER

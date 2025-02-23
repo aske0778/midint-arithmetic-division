@@ -230,7 +230,14 @@ void multd_(bigint_t a, digit_t b, bigint_t r, prec_t m)
 void multmod_(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
     zero_(r, m);
-    mult_gmp_(a, b, r, d);
+    mult_gmp_(a, b, r, m);
+    for (int i = 0; i < m; i++)
+    {
+        if (i >= d)
+        {
+            r[i] = 0;
+        }
+    }
 }
 
 /**
@@ -246,49 +253,111 @@ void multmod_(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 bool powdiff_(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 {
     prec_t L = prec_(v, m) + prec_(w, m) - l + 1;
-    prec_t sign = 1;
-    if (ez_(v, m) || ez_(w, m) || L >= h)
+    bool sign = 1;
+    bigint_t Bh = bpow_(h, m);
+    // printf("L: %i", L);
+    //   printf("h: %i", h);
+    if (ez_(v, m) || ez_(w, m)) // multiplication by 0 so `P = B^h`
+        cpy_(B, Bh, m);
+    else if (L >= h)
     {
-        bigint_t Bh = bpow_(h, m);
         mult_gmp_(v, w, B, m);
 
         if (lt_(B, Bh, m))
+        {
             sub_gmp_(Bh, B, B, m);
+        }
         else
         {
             sub_gmp_(B, Bh, B, m); // else case nogensinde aktuelt?
             sign = 0;
         }
-        free(Bh);
     }
     else
     {
         multmod_(v, w, L, B, m);
-        if (ez_(B, m))
+        //   prnt("B", B, m);
+        if (!ez_(B, m))
         {
-            zero_(B, m);
-        }
-        else if (B[L - 1] == 0)
-        {
-            sign = 0;
-        }
-        else
-        {
-
-            bigint_t Bl = bpow_(L, m);
-            sub_gmp_(Bl, B, B, m);
-            if (lt_(B, Bl, m))
-                sub_gmp_(Bl, B, B, m);
-            else
+            if (B[L - 1] == 0)
             {
-                sub_gmp_(B, Bl, B, m);
                 sign = 0;
             }
-            free(Bl);
+            else
+            {
+
+                bigint_t bL = bpow_(L, m);
+                if (lt_(B, bL, m))
+                {
+                    sub_gmp_(bL, B, B, m);
+                }
+                else
+                {
+                    sub_gmp_(B, bL, B, m);
+                    sign = 0;
+                }
+                free(bL);
+            }
         }
     }
+    free(Bh);
     return sign;
 }
+
+// powerdiff function as described in the paper, writes result to big-int `P`
+// (note, instead of incorporating signs in the big-ints, we return a bool)
+// bool powdiff_(bigint_t v, bigint_t w, int h, int l, bigint_t P, prec_t m)
+// {
+//     int L = prec_(v, m) + prec_(w, m) - l + 1;
+//     bigint_t bh = bpow_(h, m);
+//     bool retval = 1;            // +
+//                                 //  printf("L: %i", L);
+//                                 //  printf("h: %i", h);
+//     if (ez_(v, m) || ez_(w, m)) // multiplication by 0 so `P = B^h`
+//         cpy_(P, bh, m);
+//     else if (L >= h)
+//     {
+//         mult_gmp_(v, w, P, m);
+//         if (lt_(P, bh, m))
+//             sub_gmp_(bh, P, P, m);
+//         else
+//         {
+//             sub_gmp_(P, bh, P, m);
+//             retval = 0; // -
+//         }
+//     }
+//     else
+//     {
+//         printf("else");
+//         multmod_(v, w, L, P, m);
+//         if (!ez_(P, m))
+//         {
+//             if (P[L - 1] == 0)
+//             {
+//                 printf("HERE");
+//                 retval = 0; // -
+//             }
+//             else
+//             {
+//                 printf("HERE1");
+//                 bigint_t bL = bpow_(L, m);
+//                 if (lt_(P, bL, m))
+//                 {
+//                     printf("HERE3");
+//                     sub_gmp_(bL, P, P, m);
+//                 }
+//                 else
+//                 {
+//                     sub_gmp_(P, bL, P, m);
+//                     retval = 0; // -
+//                 }
+//                 free(bL);
+//             }
+//         }
+//     }
+//     free(bh);
+//     return retval;
+// }
 
 /**
  * @brief
@@ -306,9 +375,12 @@ void step_(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
     bigint_t tmp = init_(m);
 
     prec_t sign = powdiff_(v, w, h - n, l - g, tmp, m);
-
+    // prnt("tmp:", tmp, m);
+    // prnt("w:", w, m);
     mult_gmp_(w, tmp, tmp, m);
-    // prnt("w", w, m);
+    //  prnt("w", w, m);
+    // printf("tt: %i", 2 * n - h);
+    // prnt("tmp:", tmp, m);
     shift_(2 * n - h, tmp, tmp, m);
     shift_(n, w, w, m);
     // prnt("w", w, m);
@@ -337,20 +409,24 @@ void refine3_(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
     int g = 2; // på grund af 4x padding
     bigint_t v0 = init_(m);
     shift_(g, w, w, m);
+    // prnt("w1", w, m);
     while (h - k > l)
     {
         int n = min_(h - k + 1 - l, l);
 
         s = max_(0, k - 2 * l + 1 - g);
-
+        //    printf("%i", s);
         shift_(-s, v, v0, m);
-
+        //  prnt("res1", w, m);
         step_(k + l + n - s + g, v0, w, n, l, g, m);
+        // prnt("w1", w, m);
         shift_(-1, w, w, m);
         l = l + n - 1;
+        // prnt("wx", w, m);
     }
 
     shift_(-g, w, w, m);
+    // prnt("res", w, m);
     // prnt("res1", w, m);
     free(v0);
 }
@@ -445,16 +521,62 @@ void shinv_(bigint_t v, int h, bigint_t w, prec_t m)
 void div_shinv_(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
     int h = prec_(u, m);
-    printf("%i", h);
-    // Calculate quotient
-    shinv_(v, h, q, m);
-    mult_gmp_(u, q, q, m);
-    prnt("q:", q, m);
-    shift_(-h, q, q, m);
 
-    // Calculate remainder
-    mult_gmp_(v, q, r, m);
-    sub_gmp_(u, r, r, m);
+    prec_t p = m * 2;
+
+    // bigint_t b = init_(p);
+
+    // shinv_(v, h, q, p); // `c = shinv_h b`
+    // prnt("q", q, m);
+    // prnt("u", u, m);
+    // mult_gmp_(u, q, b, p); // `b = a * c`
+
+    // shift_(-h, b, b, p); // `b = shift_(-h) b`
+    // cpy_(q, b, m);       // `q = b`
+
+    // mult_gmp_(v, q, r, m);
+    // sub_gmp_(u, r, r, m);
+
+    // if (!lt_(r, v, m))
+    // {
+    //     bigint_t a = bpow_(0, m);
+    //     add_gmp_(q, a, q, m);
+    //     sub_gmp_(r, v, r, m);
+    // }
+    // free(b);
+
+    // Calculate quotient
+    // shinv_(v, h, q, m);
+
+    // mult_gmp_(u, q, q, m);
+
+    // shift_(-h, q, q, m);
+
+    // // Calculate remainder
+    // mult_gmp_(v, q, r, m);
+    // sub_gmp_(u, r, r, m);
+
+    // if (!lt_(r, v, m))
+    // {
+    //     bigint_t a = bpow_(0, m);
+    //     add_gmp_(q, a, q, m);
+    //     sub_gmp_(r, v, r, m);
+    // }
+
+    bigint_t a = init_(p);
+    cpy_(a, u, m); // `a = u`
+    bigint_t b = init_(p);
+    cpy_(b, v, m);         // `b = v`
+    bigint_t c = init_(p); // `c = 0`
+    shinv_(b, h, c, p);    // `c = shinv_h b`
+                           //  prnt("a", a, p);
+    prnt("c", c, p);
+    mult_gmp_(a, c, b, p); // `b = a * c`
+    // prnt("res1", b, p);
+    shift_(-h, b, b, p); // `b = shift_(-h) b`
+    cpy_(q, b, m);       // `q = b`
+    mult_gmp_(v, q, a, m);
+    sub_gmp_(u, a, r, m);
 
     if (!lt_(r, v, m))
     {
@@ -462,6 +584,9 @@ void div_shinv_(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
         add_gmp_(q, a, q, m);
         sub_gmp_(r, v, r, m);
     }
+    free(a);
+    free(b);
+    free(c);
 }
 
 #endif // SEQ_DIV

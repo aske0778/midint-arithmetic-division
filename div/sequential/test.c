@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
     bigint_t r_gmp = init(m);
 
     srand(time(NULL));
-    randBigInt(u, m - 1);
-    randBigInt(v, m - 3);
+    randBigInt(u, m);
+    randBigInt(v, m - 6);
 
     div_shinv(u, v, q_thor, r_thor, m);
     div_shinv_(u, v, q_own, r_own, m);
@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
     free(v);
     free(q_own);
     free(r_own);
+    free(q_thor);
+    free(r_thor);
     free(q_gmp);
     free(r_gmp);
     return 0;
