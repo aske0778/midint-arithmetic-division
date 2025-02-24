@@ -50,16 +50,17 @@ __device__ inline void shift(const int n, const volatile T* u, volatile T* res, 
     for (int i = 0; i < Q; i++)
     {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx >= m) return;   
-
-        int offset = idx - n;
-        if (n >= 0)
-        { // Right shift
-            res[idx] = (offset >= 0) ? u[offset] : 0;
-        }
-        else
-        { // Left shift
-            res[idx] = (offset < m) ? u[offset] : 0;
+      //  if (idx >= m) return;   
+        if (idx < m) {
+            int offset = idx - n;
+            if (n >= 0)
+            { // Right shift
+                res[idx] = (offset >= 0) ? u[offset] : 0;
+            }
+            else
+            { // Left shift
+                res[idx] = (offset < m) ? u[offset] : 0;
+            }
         }
     }
 }
@@ -73,9 +74,11 @@ __global__ void div_shinv(const uint32_t* u, const uint32_t* v, uint32_t* res, c
     volatile T* TmpSh = (T*)(VSh + m * 2);
     cpyGlb2Sh<T, Q>(u, v, USh, VSh, m);
 
-    __shared__ int32_t h;
+    __shared__ uint32_t h;
     prec<T,Q>(USh, h, m);
     __syncthreads();
+
+
 
     __shared__ int32_t k;
     prec<T,Q>(VSh, k, m);

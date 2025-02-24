@@ -30,8 +30,7 @@ int main()
     cudaMemcpy(d_u, u, m * sizeof(uint32_t), cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, m * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
-    dim3 blockDim(32, 32);
-    div_shinv<<<1, blockDim>>>(d_u, d_v, d_res, m);
+    div_shinv<<<1, 1024>>>(d_u, d_v, d_res, m);
 
     cudaMemcpy(res, d_res, m * sizeof(uint32_t), cudaMemcpyDeviceToHost);
 
