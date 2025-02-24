@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "__locale": "cpp",
+    "bitset": "cpp",
+    "limits": "cpp",
+    "time.h": "c",
+    "div.h": "c",
+    "ios": "c",
+    "algorithm": "cpp"
+  }
+}

@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include "../ker-division.cu.h"
-#include "../../cuda/helper.h"
+#include "../../sequential/helper.h"
 
 
 template<class T, uint32_t Q>
