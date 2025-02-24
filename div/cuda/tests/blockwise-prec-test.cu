@@ -12,12 +12,15 @@ __global__ void CallPrec(
         T* buf,
         const uint32_t m) {
     extern __shared__ char sh_mem[];
-    volatile T* shmem_u = (T*)sh_mem;
-    volatile T* shmem_buf = (T*)(sh_mem + m*sizeof(T));
+    // volatile T* shmem_u = (T*)sh_mem;
+    // volatile T* shmem_buf = (T*)(sh_mem + m*sizeof(T));
+    // volatile T* shmem_buf = (T*)sh_mem;
+    T* shmem_buf = (T*)sh_mem;
+    volatile T* shmem_u = (T*)(sh_mem + sizeof(T));
 
     copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u);
     prec<T, Q>(shmem_u, shmem_buf, m);
-    copyFromShr2GlbMem<T, Q>(0, 1, buf, shmem_buf);
+    copyFromShr2GlbMem<T, Q>(0, sizeof(T), buf, shmem_buf);
 }
 
 void printSlice(uint32_t* u, char name, int i, uint32_t m) {
@@ -54,14 +57,14 @@ int main(int argc, char* argv[]) {
     }
 
 
-    uint32_t m = 1000;
+    uint32_t m = 100;
     int size = m * sizeof(uint32_t);
     uint32_t* u = (uint32_t*)malloc(size);
-    uint32_t* v = (uint32_t*)malloc(size);
+    uint32_t* v = (uint32_t*)malloc(1 * sizeof(uint32_t));
     uint32_t* v_D;
     uint32_t* prec;
     cudaMalloc(&v_D, size);
-    cudaMalloc(&prec, 1);
+    cudaMalloc(&prec, 1 * sizeof(uint32_t));
 
     for (int j = 0; j < 100; j++) {
         randomInit<uint32_t>(u, m);
@@ -69,17 +72,25 @@ int main(int argc, char* argv[]) {
 
         u[0] = sequential_prec(u, m);
 
-        int threadsPerBlock = 256;
-        CallPrec<uint32_t, 4><<<1, threadsPerBlock, size + 2>>>(v_D, prec, m);
+        int threadsPerBlock = 32;
+        CallPrec<uint32_t, 4><<<1, threadsPerBlock, size + sizeof(uint32_t)>>>(v_D, prec, m);
         cudaDeviceSynchronize();
 
         gpuAssert( cudaPeekAtLastError() );
-        cudaMemcpy(v, prec, size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(v, prec, 1 * sizeof(uint32_t), cudaMemcpyDeviceToHost);
+        // v[0] = m;
 
         for (int i = 0; i < 1; i++) {
             if (v[i] != u[i]) {
                 printf("ERROR AT ITERATION: %d\n", j);
-                printf("INVALID AT INDEX %d: [%u/%u]\n", i, v[i], u[i]);
+                printf("INVALID: [%u/%u]\n", v[i], u[i]);
+
+                // printf("%u\n", u + size);
+                // printf("%u\n", v);
+
+                // printSlice(u, 'u', i, m);
+                // printSlice(v, 'v', i, m);
+                // printSlice(u, 'v', v[0], m);
 
                 free(v);
                 cudaFree(v_D);

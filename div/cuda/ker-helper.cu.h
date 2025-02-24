@@ -133,6 +133,8 @@ zero( volatile T* u,
     __syncthreads();
 }
 
+#if 0
+
 /**
  * Calculates the precisions of u
  * 
@@ -145,24 +147,33 @@ prec( volatile T* u,
       volatile T* buf,
       const uint32_t m ) {
 
+    if (threadIdx.x == 0) {
+        buf[0] = 0;
+    }
+    __syncthreads();
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx != 0] && idx > buf[0]) {
+        if (idx < m && u[idx] != 0 && idx > buf[0]) {
             buf[0] = idx;
+            // printf("%u\n", buf[0]);
+            printf("%u\n", idx);
         }
     }
     __syncthreads();
     if (threadIdx.x == 0) {
-        buf[0] = u[buf[0]] + 1;
+        // printf("%u\n", buf[0]);
+        buf[0] += 1;
     }
+    __syncthreads();
 }
 
 
-#if 0
+#else
 
 template <class T, uint32_t Q>
-__device__ inline void prec(const volatile T* u, volatile int* p, const uint32_t m) {
+__device__ inline void prec( volatile T* u, T* p, const uint32_t m) {
     int highest_idx = -1;
 
     #pragma unroll
