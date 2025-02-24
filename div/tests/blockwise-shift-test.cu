@@ -72,8 +72,7 @@ int main(int argc, char* argv[]) {
     cudaMalloc(&v_D, size);
 
     for (int j = 0; j < 100; j++) {
-        // int randInt = (rand() % m) - (m/2);
-        int randInt = -500;
+        int randInt = (rand() % m) - (m/2);
 
         randomInit<uint32_t>(u, m);
         cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);

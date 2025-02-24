@@ -22,6 +22,9 @@ test-multd:
 	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-multd-test.cu -o blockwise-multd-test.exe -lgmp
 	./blockwise-multd-test.exe
 
+test-prec:
+	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-prec-test.cu -o blockwise-prec-test.exe -lgmp
+	./blockwise-prec-test.exe
 
 clean:
 	rm -rf *.o *.exe

@@ -69,8 +69,7 @@ int main(int argc, char* argv[]) {
 
     for (int j = 0; j < 100; j++) {
         srand(time(NULL));
-        // int randInt = (rand() % 110) - 10;
-        int randInt = -2;
+        int randInt = (rand() % m) - (m/2);
 
         randomInit<uint32_t>(u, m);
         cudaMemcpy(v_D, u, size, cudaMemcpyHostToDevice);
