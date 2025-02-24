@@ -3,6 +3,7 @@
 
 #include "../../cuda/helper.h"
 
+#if 0
 
 /**
  * Helper function for copying from global to shared memory
@@ -48,7 +49,8 @@ copyFromShr2GlbMem( const uint32_t glb_offs
     __syncthreads();
 }
 
-#if 0
+#else
+
 /**
  * Helper kernel for copying from global to shared memory
  */
@@ -93,6 +95,50 @@ copyFromShr2GlbMem(const uint32_t glb_offs, const uint32_t N, T *d_out, volatile
 }
 
 #endif
+
+
+/**
+ * Sets retval to 1 if u is zero or 0 otherwise
+ */
+template<class T, uint32_t Q>
+__device__ inline void
+ez( volatile T* u,
+    uint32_t* retval,
+    const uint32_t m ) {
+    
+    *retval = 1;
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m && u[idx] != 0) {
+            *retval = 0;
+        }
+    }
+    __syncthreads();
+}
+
+/**
+ * Sets retval to 1 if u and v are equal or 0 otherwise
+ */
+template<class T, uint32_t Q>
+__device__ inline void
+eq( volatile T* u,
+    volatile T* v,
+    uint32_t* retval,
+    const uint32_t m ) {
+    
+    *retval = 1;
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m && u[idx] != v[idx]) {
+            *retval = 0;
+        }
+    }
+    __syncthreads();
+}
 
 /**
  * @brief Sets the first element to d and zeros the rest
