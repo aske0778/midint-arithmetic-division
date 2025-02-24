@@ -23,31 +23,23 @@ __device__ inline void
 shift(const int n,
       volatile T *u,
       volatile T *res,
-      const uint32_t m)
-{
+      const uint32_t m) {
 
-    if (n >= 0)
-    { // Left shift
-#pragma unroll
-        for (int i = 0; i < Q; i++)
-        {
+    if (n >= 0) { // Left shift
+        #pragma unroll
+        for (int i = 0; i < Q; i++) {
             int idx = i * blockDim.x + threadIdx.x;
-            if (idx < m)
-            {
+            if (idx < m) {
                 int offset = idx - n;
                 res[idx] = (offset < m) ? u[offset] : 0;
             }
             __syncthreads();
         }
-    }
-    else
-    { // Right shift
-#pragma unroll
-        for (int i = Q; i >= 0; i--)
-        {
+    } else { // Right shift
+        #pragma unroll
+        for (int i = Q; i >= 0; i--) {
             int idx = i * blockDim.x + threadIdx.x;
-            if (idx < m)
-            {
+            if (idx < m) {
                 int offset = idx - n;
                 res[idx] = (offset >= 0) ? u[offset] : 0;
             }
