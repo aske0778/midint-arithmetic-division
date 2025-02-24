@@ -159,6 +159,24 @@ prec( volatile T* u,
 }
 
 
+#if 0
+
+template <class T, uint32_t Q>
+__device__ inline void prec(const volatile T* u, volatile int* p, const uint32_t m) {
+    int highest_idx = -1;
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m && u[idx] != 0) {
+            highest_idx = max(highest_idx, idx);
+        }
+    }
+    atomicMax(p, highest_idx + 1);
+}
+
+#endif
+
 
 
 

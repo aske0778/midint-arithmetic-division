@@ -29,7 +29,7 @@ __device__ inline void cpySh2Glb(uint_t* ASh, uint_t* AGlb, const uint32_t m) {
 }
 
 template <class T, uint32_t Q>
-__device__ inline void prec(const volatile T* u, volatile int* h, const uint32_t m) {
+__device__ inline void prec(const volatile T* u, volatile int* p, const uint32_t m) {
     int highest_idx = -1;
 
     #pragma unroll
@@ -39,8 +39,10 @@ __device__ inline void prec(const volatile T* u, volatile int* h, const uint32_t
             highest_idx = max(highest_idx, idx);
         }
     }
-    atomicMax(h, highest_idx + 1);
+    atomicMax(p, highest_idx + 1);
 }
+
+
 
 template <class T, uint32_t Q>
 __device__ inline void shift(const int n, const volatile T* u, volatile T* res, const uint32_t m) {
@@ -73,6 +75,10 @@ __global__ void div_shinv(const uint32_t* u, const uint32_t* v, uint32_t* res, c
 
     __shared__ int32_t h;
     prec<T,Q>(USh, h, m);
+    __syncthreads();
+
+    __shared__ int32_t k;
+    prec<T,Q>(VSh, k, m);
     __syncthreads();
 
 
