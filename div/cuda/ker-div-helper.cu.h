@@ -8,42 +8,95 @@
 /**
  * Helper function for copying from global to shared memory
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
 copyFromGlb2ShrMem( const uint32_t glb_offs
-                  , const uint32_t N
                   , const T& ne
-                  , T* d_inp
-                  , volatile T* shmem_inp
+                  , T* Ass
+                  , volatile T* Ash
 ) {
     #pragma unroll
     for(uint32_t i=0; i<Q; i++) {
         uint32_t loc_ind = blockDim.x * i + threadIdx.x;
         uint32_t glb_ind = glb_offs + loc_ind;
         T elm = ne;
-        if(glb_ind < N) { elm = d_inp[glb_ind]; }
-        shmem_inp[loc_ind] = elm;
+        if(glb_ind < M) { elm = Ass[glb_ind]; }
+        Ash[loc_ind] = elm;
     }
     __syncthreads();
 }
 
 /**
+ * Helper function for copying from global to shared to register memory
+ * Is padded
+ */
+template<class T, uint32_t M, uint32_t Q>
+__device__ inline void
+copyFromGlb2Shr2RegMem( const uint32_t glb_offs
+                      , const T& ne
+                      , T* Ass
+                      , volatile T* Ash
+                      , T* Arg[Q]
+) {
+    #pragma unroll
+    for(uint32_t i=0; i<Q; i++) {
+        uint32_t idx = blockDim.x * i + threadIdx.x;
+        uint32_t glb_ind = glb_offs + idx;
+        T elm = ne;
+        if (idx < M) {
+            elm = Ass[glb_ind];
+        }
+        Ash[loc_ind] = elm;
+    }
+    __syncthreads();
+
+    #pragma unroll
+    for (uint32_t i = 0; i < Q; i++) {
+        Arg[i] = Ash[Q * threadIdx.x + i];
+    }
+}
+
+/**
+ * 
+ */
+template<class S, uint32_t M, uint32_t Q>
+__device__ inline
+void copyFromReg2Shr2RegMem ( S* Ass
+                            , volatile S* Ash
+                            , S Arg[Q]
+) { 
+    // 1. write from regs to shared memory
+    for(int i=0; i<Q; i++) {
+        Ash[Q*threadIdx.x + i] = Arg[i];
+    }
+    __syncthreads();
+    // 2. write from shmem to global
+    for(int i=0; i<Q; i++) {
+        uint32_t loc_pos = i*(M/Q) + threadIdx.x;
+        //if(loc_pos < IPB*M) 
+        {
+            Ass[loc_pos] = Ash[loc_pos];
+        }
+    }
+}
+
+
+/**
  * Helper function for copying from shared to global memory
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
 copyFromShr2GlbMem( const uint32_t glb_offs
-                  , const uint32_t N
-                  , T* d_out
-                  , volatile T* shmem_inp
+                  , T* Ass
+                  , volatile T* Ash
 ) {
     #pragma unroll
     for (uint32_t i = 0; i < Q; i++) {
         uint32_t loc_ind = blockDim.x * i + threadIdx.x;
         uint32_t glb_ind = glb_offs + loc_ind;
-        if (glb_ind < N) {
-            T elm = const_cast<const T&>(shmem_inp[loc_ind]);
-            d_out[glb_ind] = elm;
+        if (glb_ind < M) {
+            T elm = const_cast<const T&>(Ash[loc_ind]);
+            Ass[glb_ind] = elm;
         }
     }
     __syncthreads();

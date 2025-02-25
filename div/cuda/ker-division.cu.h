@@ -2,7 +2,7 @@
 #define KERNEL_DIVISION
 
 // #include "../../cuda/helper.h"
-#include "ker-helper.cu.h"
+#include "ker-div-helper.cu.h"
 // #include "../cuda/ker-fft-help.cu.h"
 // #include "../cuda/ker-helpers.cu.h"
 
@@ -95,5 +95,47 @@ multd(volatile T *u,
     }
     __syncthreads();
 }
+
+
+
+template <class Base, uint32_t M, uint32_t Q>
+__global__ inline void
+divShinvClassical( typename Base::uint_t* ass
+                 , typename Base::uint_t* bss
+                 , typename Base::uint_t* rss
+) {
+
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+
+    const uint32_t M_lft = LIFT_LEN(M, Q);
+    const uint32_t shmem_len = IPB*M_lft;
+
+    __shared__ uint_t Ash[shmem_len];
+    __shared__ uint_t Bsh[shmem_len];
+    volatile carry_t* carry_shm = (volatile carry_t*)Ash;
+
+    uint_t Arg[Q];
+    uint_t Brg[Q];
+
+    { // read from global memory
+        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, Ass, Ash, Arg);
+        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, Bss, Bsh, Brg);
+        __syncthreads();
+    }
+
+
+
+
+
+    { // write to global memory
+        copyFromReg2GlbMem<uint_t, M, Q>(Ass, Ash, Arg);
+    }
+
+}
+
+
+
 
 #endif // KERNEL_DIVISION
