@@ -61,7 +61,7 @@ copyFromGlb2Shr2RegMem( const uint32_t glb_offs
  */
 template<class S, uint32_t M, uint32_t Q>
 __device__ inline
-void copyFromReg2Shr2RegMem ( S* Ass
+void copyFromReg2Shr2GlbMem ( S* Ass
                             , volatile S* Ash
                             , S Arg[Q]
 ) { 
@@ -109,8 +109,12 @@ copyFromShr2GlbMem( const uint32_t glb_offs
  */
 template <class T, uint32_t Q>
 __device__ inline void
-copyFromGlb2ShrMem(const uint32_t glb_offs, const uint32_t N, const T &ne, T *d_inp, volatile T *shmem_inp)
-{
+copyFromGlb2ShrMem( const uint32_t glb_offs
+                  , const uint32_t N
+                  , const T &ne
+                  , T *d_inp
+                  , volatile T *shmem_inp
+) {
 #pragma unroll
     for (uint32_t i = 0; i < Q; i++)
     {
@@ -131,8 +135,11 @@ copyFromGlb2ShrMem(const uint32_t glb_offs, const uint32_t N, const T &ne, T *d_
  */
 template <class T, uint32_t Q>
 __device__ inline void
-copyFromShr2GlbMem(const uint32_t glb_offs, const uint32_t N, T *d_out, volatile T *shmem_inp)
-{
+copyFromShr2GlbMem( const uint32_t glb_offs
+                  , const uint32_t N
+                  , T *d_out
+                  , volatile T *shmem_inp
+) {
 #pragma unroll
     for (uint32_t i = 0; i < Q; i++)
     {
@@ -149,20 +156,25 @@ copyFromShr2GlbMem(const uint32_t glb_offs, const uint32_t N, T *d_out, volatile
 
 #endif
 
+
+
+
+
+
 /**
  * Returns 1 if u is zero or 0 otherwise
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline bool
-ez4Reg( volatile T* u,
-        const uint32_t m ) {
+ez4Reg( volatile T* u
+) {
     
     bool retval = true;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx] != 0) {
+        if (idx < M && u[idx] != 0) {
             retval = false;
         }
     }
@@ -173,18 +185,18 @@ ez4Reg( volatile T* u,
 /**
  * Sets retval in shared memory to 1 if u is zero or 0 otherwise
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
 ez4Sh( volatile T* u,
-       uint32_t* retval,
-       const uint32_t m ) {
+       uint32_t* retval
+) {
     
     *retval = 1;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx] != 0) {
+        if (idx < M && u[idx] != 0) {
             *retval = 0;
         }
     }
@@ -194,19 +206,19 @@ ez4Sh( volatile T* u,
 /**
  * Sets retval to 1 if u and v are equal or 0 otherwise
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-eq4Sh( volatile T* u,
-    volatile T* v,
-    uint32_t* retval,
-    const uint32_t m ) {
+eq4Sh( volatile T* u
+     , volatile T* v
+     , uint32_t* retval
+) {
     
     *retval = 1;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx] != v[idx]) {
+        if (idx < M && u[idx] != v[idx]) {
             *retval = 0;
         }
     }
@@ -247,16 +259,16 @@ eq4Reg( T u[Q]
  * @param u Register memory representation of bigint
  * @param d Value to set first element of biging
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-set4Reg( T* u[Q],
-         const T d,
-         const T m ) {
+set4Reg( T* u[Q]
+       , const T d
+) {
     
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
-        if (idx < m) {
+        if (idx < M) {
             u[idx] = 0;
         }
     }
@@ -273,16 +285,16 @@ set4Reg( T* u[Q],
  * @param u Bigint in shared memory
  * @param d Value to set first element of biging
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-set4Shm( volatile T* u,
-         const T d,
-         const T m ) {
+set4Shm( volatile T* u
+       , const T d
+) {
     
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m) {
+        if (idx < M) {
             u[idx] = 0;
         }
     }
@@ -296,15 +308,15 @@ set4Shm( volatile T* u,
  * 
  * @param u Bigint in register memory
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-zero4Reg( T u[Q],
-          const T m ) {
+zero4Reg( T u[Q]
+) {
     
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
-        if (idx < m) {
+        if (idx < M) {
             u[idx] = 0;
         }
     }
@@ -317,15 +329,15 @@ zero4Reg( T u[Q],
  * 
  * @param u Bigint in shared memory
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-zero4Shm( volatile T* u,
-          const T m ) {
+zero4Shm( volatile T* u
+) {
     
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m) {
+        if (idx < M) {
             u[idx] = 0;
         }
     }
@@ -340,11 +352,11 @@ zero4Shm( volatile T* u,
  * Uses two indexes of shared memory to store
  * intermediate results of reduce over max.
  */
-template<class T, uint32_t Q>
+template<class T, uint32_t M, uint32_t Q>
 __device__ inline void
-prec( volatile T* u,
-      volatile T* buf,
-      const uint32_t m ) {
+prec( volatile T* u
+    , volatile T* buf
+) {
 
     if (threadIdx.x == 0) {
         buf[0] = 0;
@@ -354,7 +366,7 @@ prec( volatile T* u,
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx] != 0 && idx > buf[0]) {
+        if (idx < M && u[idx] != 0 && idx > buf[0]) {
             buf[0] = idx;
             // printf("%u\n", buf[0]);
             printf("%u\n", idx);
@@ -377,11 +389,11 @@ prec( volatile T* u,
  * @param u Bigint in register memory
  * @param p Buffer in shared memory (is preserved)
  */
-template <class T, uint32_t Q>
+template <class T, uint32_t M, uint32_t Q>
 __device__ inline T
-prec4Reg( T u[Q],
-          T* p,
-          const uint32_t m ) {
+prec4Reg( T u[Q]
+        , T* p
+) {
 
     int highest_idx = -1;
     int old = p[0];
@@ -390,7 +402,7 @@ prec4Reg( T u[Q],
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
-        if (idx < m && u[idx] != 0) {
+        if (idx < M && u[idx] != 0) {
             highest_idx = max(highest_idx, idx);
         }
     }
@@ -403,18 +415,18 @@ prec4Reg( T u[Q],
 /**
  * Returns the precision of u to shared memory
  */
-template <class T, uint32_t Q>
+template <class T, uint32_t M, uint32_t Q>
 __device__ inline void
-prec4Shm( volatile T* u,
-          T* p,
-          const uint32_t m ) {
+prec4Shm( volatile T* u
+        , T* p
+) {
 
     int highest_idx = -1;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        if (idx < m && u[idx] != 0) {
+        if (idx < M && u[idx] != 0) {
             highest_idx = max(highest_idx, idx);
         }
     }

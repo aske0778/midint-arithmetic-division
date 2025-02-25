@@ -2,6 +2,7 @@
 #define KERNEL_DIVISION
 
 // #include "../../cuda/helper.h"
+// #include "../../cuda/ker-helpers.cu.h"
 #include "ker-div-helper.cu.h"
 #include "ker-bpow.cu.h"
 // #include "../cuda/ker-fft-help.cu.h"
@@ -99,8 +100,39 @@ multd(volatile T *u,
 
 
 
+template <class T, uint32_t M, uint32_t Q>
+__device__ inline void
+shinv( T v[Q]
+     , T w[Q]
+     , uint32_t h
+     , uint32_t k
+     , volatile T* shmem
+) {
+
+
+
+    { // Early termination checks
+        if (lt4Reg2Bpow<T, M, Q>(v, 0, shmem)) {
+            // TODO: return quo and write result to w
+            return;
+        } else if (lt4Bpow2Reg<T, M, Q>(h, v, shmem)) {
+            zero4Reg<T, M, Q>(w);
+            return;
+        } else if (lt4Bpow2RegMul2<T, M, Q>(h, v, shmem)) {
+            set4Reg<T, M, Q>(w, 1);
+            return;
+        } else if (eq4Reg2Bpow<T, M, Q>(v, k, shmem)) {
+            bpow4Reg<T, M, Q>(w, h-k);
+            return;
+        }
+    }
+
+
+}
+
+
 template <class Base, uint32_t M, uint32_t Q>
-__global__ inline void
+__global__ void
 divShinvClassical( typename Base::uint_t* ass
                  , typename Base::uint_t* bss
                  , typename Base::uint_t* rss
@@ -110,8 +142,7 @@ divShinvClassical( typename Base::uint_t* ass
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
 
-    const uint32_t M_lft = LIFT_LEN(M, Q);
-    const uint32_t shmem_len = IPB*M_lft;
+    const uint32_t shmem_len = LIFT_LEN(M, Q);
 
     __shared__ uint_t Ash[shmem_len];
     __shared__ uint_t Bsh[shmem_len];
@@ -121,32 +152,16 @@ divShinvClassical( typename Base::uint_t* ass
     uint_t Brg[Q];
 
     { // read from global memory
-        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, Ass, Ash, Arg);
-        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, Bss, Bsh, Brg);
+        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, ass, Ash, Arg);
+        copyFromGlb2Shr2RegMem<uint_t, M, Q>(0, 0, bss, Bsh, Brg);
         __syncthreads();
     }
 
-    // Calculate prec and store in reg
-
-    // init bpows
-    uint32_t B = 0;
-    uint32_t Bh = h;
-    uint32_t Bk = k;
-
-    { // Early termination checks
-        bool rp = 0;
-        if (lt4Reg2Bpow<uint_t, M, Q>(v, 0, Ash)) { return; }
-        else if (lt4Bpow2Reg<uint_t, M, Q>(h, v, Ash)) { return; }
-        else if (lt4Bpow2Reg<uint_t, M, Q>(h, 2v, Ash)) { return; }
-        else if (eq4Reg2Bpow<uint_t, M, Q>(v, k, Ash)) { return; }
-
-
-    }
 
 
 
     { // write to global memory
-        copyFromReg2GlbMem<uint_t, M, Q>(Ass, Ash, Arg);
+        copyFromReg2Shr2GlbMem<uint_t, M, Q>(rss, Ash, Arg);
     }
 
 }
