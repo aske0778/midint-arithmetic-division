@@ -154,7 +154,7 @@ copyFromShr2GlbMem(const uint32_t glb_offs, const uint32_t N, T *d_out, volatile
  */
 template<class T, uint32_t Q>
 __device__ inline bool
-ez2Reg( volatile T* u,
+ez4Reg( volatile T* u,
         const uint32_t m ) {
     
     bool retval = true;
@@ -175,7 +175,7 @@ ez2Reg( volatile T* u,
  */
 template<class T, uint32_t Q>
 __device__ inline void
-ez2Sh( volatile T* u,
+ez4Sh( volatile T* u,
        uint32_t* retval,
        const uint32_t m ) {
     
@@ -196,7 +196,7 @@ ez2Sh( volatile T* u,
  */
 template<class T, uint32_t Q>
 __device__ inline void
-eq( volatile T* u,
+eq4Sh( volatile T* u,
     volatile T* v,
     uint32_t* retval,
     const uint32_t m ) {
@@ -211,6 +211,33 @@ eq( volatile T* u,
         }
     }
     __syncthreads();
+}
+
+/**
+ * Compares two bigints in register memory using shmem buffer
+ * Shared memory is preserved
+ */
+template<class T, uint32_t M, uint32_t Q>
+__device__ inline bool
+eq4Reg( T u[Q]
+      , T v[Q]
+      , bool* shmem
+) {
+    bool retval;
+    bool tmp = shmem[0];
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < M && u[idx] != v[idx]) {
+            shmem[0] = false;
+        }
+    }
+    __syncthreads();
+
+    retval = shmem[0];
+    shmem[0] = tmp;
+    return retval;
 }
 
 /**

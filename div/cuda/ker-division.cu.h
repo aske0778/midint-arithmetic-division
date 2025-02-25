@@ -3,6 +3,7 @@
 
 // #include "../../cuda/helper.h"
 #include "ker-div-helper.cu.h"
+#include "ker-bpow.cu.h"
 // #include "../cuda/ker-fft-help.cu.h"
 // #include "../cuda/ker-helpers.cu.h"
 
@@ -125,7 +126,22 @@ divShinvClassical( typename Base::uint_t* ass
         __syncthreads();
     }
 
+    // Calculate prec and store in reg
 
+    // init bpows
+    uint32_t B = 0;
+    uint32_t Bh = h;
+    uint32_t Bk = k;
+
+    { // Early termination checks
+        bool rp = 0;
+        if (lt4Reg2Bpow<uint_t, M, Q>(v, 0, Ash)) { return; }
+        else if (lt4Bpow2Reg<uint_t, M, Q>(h, v, Ash)) { return; }
+        else if (lt4Bpow2Reg<uint_t, M, Q>(h, 2v, Ash)) { return; }
+        else if (eq4Reg2Bpow<uint_t, M, Q>(v, k, Ash)) { return; }
+
+
+    }
 
 
 
