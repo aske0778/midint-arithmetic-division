@@ -169,6 +169,14 @@ shinv( T v[Q]
         }
     }
 
+    if (h - k <= l) {
+       // shift(h - k - l, w, w, m); use cuda implementation
+    }
+    else {
+        // call refine
+    }
+
+
 
 
 }
