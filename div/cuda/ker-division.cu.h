@@ -98,6 +98,29 @@ multd(volatile T *u,
     __syncthreads();
 }
 
+template <class Base, uint32_t M, uint32_t Q>
+__device__ inline typename Base::uint_t
+multmod4Reg( typename Base::uint_t Arg[Q]
+       , typename Base::uint_t Brg[Q]
+       , uint32_t d
+       , volatile typename Base::uint_t* Ash
+       , volatile typename Base::uint_t* Bsh
+) {
+    using uint_t = typename Base::uint_t;
+
+    uint_t Rrg[Q]; 
+    zero4Reg(Rrg);
+    bmulRegsQ<Base, 1, M, Q/2>(Ash, Bsh, Arg, Brg, Rrg);
+    for (int i = 0; i < Q; i++) {
+        uint32_t idx = Q * threadIdx.x + i;
+        if (i >= d) {
+            Rrg[idx] = 0;
+        }
+    }
+    return Rrg;
+}
+
+
 
 
 template <class T, uint32_t M, uint32_t Q>
