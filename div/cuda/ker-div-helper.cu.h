@@ -166,7 +166,8 @@ copyFromShr2GlbMem( const uint32_t glb_offs
  */
 template<class T, uint32_t M, uint32_t Q>
 __device__ inline bool
-ez4Reg( volatile T* u
+ez4Reg( 
+        T u[Q]
 ) {
     
     bool retval = true;
