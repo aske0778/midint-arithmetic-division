@@ -17,10 +17,10 @@ void prnt(const char *str, uint32_t *u, uint32_t m)
 
 int main()
 {
-    uint32_t u[] = {1234, 5678, 91011, 121314};
-    uint32_t v[] = {1234, 5678, 91011, 121314};
+    uint32_t u[] = {1234, 5678, 91011, 121314, 32132, 0};
+    uint32_t v[] = {1234, 5678, 91011, 121314, 321312, 2332};
     uint32_t res[] = {0, 0, 0, 0};
-    uint32_t m = 4;
+    uint32_t m = 6;
 
     uint32_t *d_u, *d_v, *d_res;
     cudaMalloc((void **)&d_u, m * sizeof(uint32_t));
@@ -30,7 +30,7 @@ int main()
     cudaMemcpy(d_u, u, m * sizeof(uint32_t), cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, m * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
-    div_shinv<<<1, 1024>>>(d_u, d_v, d_res, m);
+    div_shinv<uint32_t, 2><<<1, 1024>>>(d_u, d_v, d_res, m);
 
     cudaMemcpy(res, d_res, m * sizeof(uint32_t), cudaMemcpyDeviceToHost);
 

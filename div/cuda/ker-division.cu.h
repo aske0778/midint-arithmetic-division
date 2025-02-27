@@ -150,6 +150,27 @@ shinv( T v[Q]
         }
     }
 
+    int l = min(k, 2);    
+    {
+        __uint128_t V = 0;
+        for (int i = 0; i <= l; i++)
+        {
+            V += ((__uint128_t)v[k - l + i]) << (32 * i);
+        }
+
+        __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
+        __uint128_t tmp = (b2l - V) / V + 1;
+
+        #pragma unroll
+        for (uint32_t i = 0; i < Q; i++) {
+            int x = Q * threadIdx.x + i;
+            if (x < 4) {
+                w[i] = (digit_t)(tmp >> x);
+            }
+        }
+    }
+
+
 
 }
 
