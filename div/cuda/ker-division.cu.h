@@ -101,10 +101,10 @@ multd(volatile T *u,
 template <class Base, uint32_t M, uint32_t Q>
 __device__ inline typename Base::uint_t
 multmod4Reg( typename Base::uint_t Arg[Q]
-       , typename Base::uint_t Brg[Q]
-       , uint32_t d
-       , volatile typename Base::uint_t* Ash
-       , volatile typename Base::uint_t* Bsh
+           , typename Base::uint_t Brg[Q]
+           , uint32_t d
+           , volatile typename Base::uint_t* Ash
+           , volatile typename Base::uint_t* Bsh
 ) {
     using uint_t = typename Base::uint_t;
 
