@@ -120,6 +120,67 @@ multmod4Reg( typename Base::uint_t Arg[Q]
 }
 
 
+template <class Base, uint32_t M, uint32_t Q>
+__device__ inline typename Base::uint_t
+powdiff4Reg( typename Base::uint_t Arg[Q]
+           , typename Base::uint_t Brg[Q]
+           , typename Base::uint_t Rrg[Q]
+           , uint32_t h
+           , uint32_t l
+           , volatile typename Base::uint_t* Ash
+           , volatile typename Base::uint_t* Bsh
+) {
+    using uint_t = typename Base::uint_t;
+
+    uint32_t L = prec4Reg<uint_t, M, Q>(Arg, Ash) + prec4Reg<uint_t, M, Q>(Brg, Bsh) - l + 1;
+    uint32_t sign = 1;
+
+    // uint_t t1[Q];
+    if (ez4Reg<uint_t, M, Q>(Arg) || ez4Reg<uint_t, M, Q>(Brg) || L >= h) {
+        bmulRegsQ<Base, 1, M, Q/2>(Ash, Bsh, Arg, Brg, Rrg);
+
+        if (lt4Reg2Bpow<uint_t, M, Q>(Rrg, h, Ash)) {
+            // TODO: do bigint subtraction
+        } else {
+            // TODO: do bigint subtraction
+            sign = 0;
+        }
+    } else {
+        multmod4Reg<Base, M, Q>(Arg, Brg, Rrg, L, Ash, Bsh);
+        if (!ez4Reg<uint_t, M, Q>(Rrg)) {
+            if (Rrg[L-1] == 0) {
+                sign = 0;
+            } else {
+                if (lt4Reg2Bpow<uint_t, M, Q>(Rrg, m, Ash)) {
+                    // TODO: do bigint subtraction
+                } else {
+                    // TODO: do bigint subtraction
+                    sign = 0;
+                }
+            }
+        }
+    }
+    return sign;
+}
+
+template <class Base, uint32_t M, uint32_t Q>
+__device__ inline typename Base::uint_t
+step4Reg( typename Base::uint_t Arg[Q]
+           , typename Base::uint_t Brg[Q]
+           , typename Base::uint_t Rrg[Q]
+           , uint32_t h
+           , uint32_t l
+           , uint32_t g
+           , volatile typename Base::uint_t* Ash
+           , volatile typename Base::uint_t* Bsh
+) {
+    using uint_t = typename Base::uint_t;
+
+
+
+
+}
+
 
 
 template <class T, uint32_t M, uint32_t Q>
