@@ -4,24 +4,26 @@
 #include "ker-helpers.cu.h"
 
 
-template <class T, uint32_t Q>
+template <uint32_t Q>
 __device__ inline void
-shinv(uint32_t* VReg[Q], uint32_t h, vuint32_t* RReg[Q], const uint32_t m) {
+shinv(uint32_t* VSh, uint32_t* USh, uint32_t VReg[Q], uint32_t h, uint32_t RReg[Q], const uint32_t m) {
 
-    int k = prec4Reg()
-    if (lt4Reg2Bpow<T, M, Q>(v, 0, shmem)) {
-        // TODO: return quo and write result to w
-        return;
-    } else if (lt4Bpow2Reg<T, M, Q>(h, v, shmem)) {
-        zero4Reg<T, M, Q>(w);
-        return;
-    } else if (lt4Bpow2RegMul2<T, M, Q>(h, v, shmem)) {
-        set4Reg<T, M, Q>(w, 1);
-        return;
-    } else if (eq4Reg2Bpow<T, M, Q>(v, k, shmem)) {
-        bpow4Reg<T, M, Q>(w, h-k);
-        return;
+    uint16_t k = prec<Q>(VReg, USh, m) - 1;
+
+    if (k == 0) {
+      quo<Q>(h, v, RReg, m);
+      return;
     }
+    if (lt<Q>(v, h, USh, m)) {
+
+    }
+    if (2v > Bh) {
+
+    }
+    if (v = Bk) {
+
+    }
+
 
     int l = min(k, 2);    
     {
@@ -34,48 +36,48 @@ shinv(uint32_t* VReg[Q], uint32_t h, vuint32_t* RReg[Q], const uint32_t m) {
         __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
         __uint128_t tmp = (b2l - V) / V + 1;
 
-        RReg[0] = (digit_t)(tmp);
-        RReg[1] = (digit_t)(tmp >> 32);
-        RReg[2] = (digit_t)(tmp >> 64);
-        RReg[3] = (digit_t)(tmp >> 96);
+        #pragma unroll
+        for (uint32_t i = 0; i < Q; i++) {
+            int x = Q * threadIdx.x + i;
+            if (x < 4) {
+                RReg[i] = (digit_t)(tmp >> x);
+            }
+        }
     }
 
+    if (h - k <= l) {
+       // shift(h - k - l, w, w, m); use cuda implementation
+    }
+    else {
+        // call refine
+    }
 
 
 
 }
 
-template <class T, uint32_t Q>
+template <uint32_t Q>
 __global__ void div_shinv(uint32_t* u, uint32_t* v, uint32_t* res, const uint32_t m)
 {
     extern __shared__ char sh_mem[];
-    volatile T* VSh = (T*)sh_mem;
-   // volatile T* TmpSh = (T*)(VSh + m);
+    uint32_t* VSh = (uint32_t*)sh_mem;  //volatile?
+    uint32_t* USh = (uint32_t*)(VSh + m); //volatile?
     uint32_t VReg[Q];
-    cpyGlb2Sh2Reg<T, Q>(v, VSh, VReg, m);
+    uint32_t UReg[Q];
+
+    cpyGlb2Sh2Reg<Q>(v, VSh, VReg, m);
+    cpyGlb2Sh2Reg<Q>(u, USh, UReg, m);
+
+    uint16_t h = prec<Q>(UReg, USh, m);
 
 
-    uint16_t h = 
-    
-    prec<T,Q>(USh, &h, m);
-    __syncthreads();
+    uint_t RReg[Q];
+    shinv<Q>(VSh, USh, VReg, h, RReg, m);
 
-    uint_t Rrg[Q];
-    shinv<T,Q>(VReg, h, RReg, m);
-
-
-
-    // __shared__ uint32_t k;
-    // prec<T,Q>(VSh, &k, m);
-    // __syncthreads();
-
+  
     // if (threadIdx.x == 0) {
     //     printf("Value of h: %u\n", h);
     // }
-
-
-
-    cpySh2Glb<T, Q>(, res, 1);
 }
 
 #endif // KERNEL_DIVISION
