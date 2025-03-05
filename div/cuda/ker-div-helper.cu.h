@@ -435,6 +435,58 @@ prec4Shm( volatile T* u
 }
 
 
+/**
+ * @brief bigint_t division
+ * @note Uses long division algorithm
+ * https://en.wikipedia.org/wiki/Division_algorithm#Long_division
+ *
+ * @param n numerator
+ * @param d denominator
+ * @param q quotient
+ * @param r remainder
+ * @param m Total size of bigint_ts
+ */
+ template<class T, class T2, uint32_t Q>
+ __device__ inline void
+ Blockwise_quo (volatile T* n, 
+      T  d,
+      volatile T *q,
+      T  m,
+      volatile T* buf ) {
+    
+    if (d == 0){
+        printf("Division by zero\n");
+        return;
+    }
+    
+    uint64_t r = 0;
+
+
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        
+        if (idx < m) {
+            if (idx > 0) {
+                r = n[idx - 1];
+                r = (r << 32) + n[idx];
+            } else {
+                r = n[0];
+            } 
+            if (r >= d) {
+                // need minus to because we utilize that r at each step in sequential 
+                // is a 64 bit composed of the previus 32 bit as most significant, and current n as least 
+                buf[idx-2] = r / d; 
+                r = r % d;
+            } 
+        }
+        __syncthreads();
+
+    }
+
+
+
+}
+
 
 #endif
 
