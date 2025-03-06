@@ -2,6 +2,7 @@
 #define KERNEL_HELPER
 
 #include "../../cuda/helper.h"
+#include <stdint.h>
 
 #if 0
 
@@ -482,9 +483,42 @@ prec4Shm( volatile T* u
         __syncthreads();
 
     }
+}
+
+template<class T, class T2, uint32_t Q>
+__device__ inline void 
+blockwise_lt (
+    volatile T *u,
+    volatile T *v, 
+    const uint32_t m,
+    int64_t* retval,
+    volatile T2 *buf) {
+    
+
+    int step_size = 1;
+    int number_of_threads = blockDim.x;
 
 
 
+    #pragma unroll
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m) {
+            buf[idx] = u[idx]- v[idx];
+        }
+
+    }
+
+    #pragma unroll
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m) {
+            if (buf[idx + step_size] != 0 ) {
+                buf[idx] = buf[idx + step_size];
+        }
+        step_size <<= 1; 
+        }
+    }
 }
 
 

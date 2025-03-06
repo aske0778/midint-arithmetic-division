@@ -30,6 +30,10 @@ test-quo:
 	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-quo-test.cu -o blockwise-quo-test.exe -lgmp
 	./blockwise-quo-test.exe
 
+test-lt:
+	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-lt-test.cu -o blockwise-lt-test.exe -lgmp
+	./blockwise-lt-test.exe
+
 clean:
 	rm -rf *.o *.exe
 
