@@ -1,0 +1,32 @@
+to-do, doing and done for the different kernels before implementing full kernel.
+
+// implement everything before refine 3 first.
+to-do
+multmod-function 
+powdiff-function
+step-function 
+ez-function 
+eq-function
+refine3-function // comprised of other sub-functions shift and step 
+shinv // the big one, last before full division kernel
+div_shinv // final 
+init-function  // prop not needed in final cuda kernel, handle allocation of bigints directly
+zero-function  // prop not needed in final cuda kernel, handle zero'ing of bigints directly
+cpy  // prop not needed, handle copying directly in kernel?
+
+
+doing 
+bpow-function    // functions eists needed testing
+multd-function   // bug/not fully correct
+set-function     // bug/not fully correct
+prec-function    // bug/not fully correct
+lt-function      // needs to be done at warp level, maybe shift to a scan implementation? 
+quo-function     // unsure if this can even be done in parrallel, using normal division,   
+
+
+done:
+shift-function   // shift function done, and seems to be fully correct
+
+
+note:
+all functions needed proper stress and batchd testing to ensure correctness.

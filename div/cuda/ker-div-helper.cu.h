@@ -485,6 +485,64 @@ prec4Shm( volatile T* u
     }
 }
 
+// warp level implementation of lt 
+// calucate u < v 
+template<class T, class T2>
+__device__ inline int64_t 
+warp_level_lt (
+    T *u,
+    T *v) {
+
+    int64_t res = (int64_t)u[threadIdx.x] - (int64_t)v[threadIdx.x];
+    //printf("u = %u \n v = %u \n u - v = %lld at %u \n ",u[threadIdx.x], v[threadIdx.x], res, threadIdx.x);
+    //const unsigned int lane = idx & (WARP-1);
+
+    #define FULL_MASK 0xffffffff
+
+    for (int offset = 16; offset > 0; offset /=2){
+        int64_t res_at_offset = __shfl_down_sync(FULL_MASK, res, offset);
+        //printf("old res = %lld \n", res);
+        res = res_at_offset == 0 ? res : res_at_offset;
+        //printf("res at off set = %lld: new res = %lld \n", res_at_offset, res);
+        __syncwarp();
+    }
+
+    return res;
+
+    //#pragma unroll
+    //for(uint32_t i = 0; i< lgWARP; i++){
+//
+    //}
+}
+
+// block level implementation of lt 
+template<class T, class T2, uint32_t Q>
+__device__ inline int64_t 
+block_level_lt (
+    T *u,
+    T *v, 
+    const uint32_t m){
+
+    ///const unsigned int lane   = idx & (WARP-1);
+    //const unsigned int warpid = idx >> lgWARP;
+
+    int64_t placeholder = 0;
+
+
+    if (blockDim.x <= 32 || m <= 32) { // block < WARP optimization
+        
+        int64_t res = warp_level_lt<T,T2>(u, v);
+        return res;
+    }
+
+    return placeholder;
+    
+    
+}
+
+
+
+// block level implementation of lt 
 template<class T, class T2, uint32_t Q>
 __device__ inline void 
 blockwise_lt (
