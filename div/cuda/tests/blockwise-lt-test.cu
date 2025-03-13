@@ -13,11 +13,11 @@ __global__ void Call_lt (
     extern __shared__ char sh_mem[];
     T* shmem_u = (T*)sh_mem;
     T* shmem_v = (T*)(sh_mem + m*sizeof(T));
-    //T2* shmem_buf = (T2*)(sh_mem + 2*m*sizeof(T));
+    T2* shmem_buf = (T2*)(sh_mem + 2*m*sizeof(T));
 
     copyFromGlb2ShrMem<T, Q>(0, m, 0, u, shmem_u);
     copyFromGlb2ShrMem<T, Q>(0, m, 0, v, shmem_v);
-    T2 res = block_level_lt<T, T2, Q>(shmem_u, shmem_v, m);
+    T2 res = block_level_lt<T, T2, Q>(shmem_u, shmem_v, m, shmem_buf);
     //printf("Final res  = %lld \n", res);
 
     retval[0] = res;
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         printf("Usage-rand: %s 1 <m>\n", argv[0]);
         exit(1);
     }
-    uint32_t m = 32;
+    uint32_t m = 64;
     int size = m * sizeof(uint32_t);
     uint32_t* u = (uint32_t*)malloc(size);
     uint32_t* v = (uint32_t*)malloc(size);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
 
 
     srand(time(NULL));
-    for (int j = 0; j < 10000; j++) {
+    for (int j = 0; j < 1000; j++) {
 
         randomInit<uint32_t>(u, m);
         randomInit<uint32_t>(v, m);
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
         cudaMemcpy(v_D, v, size, cudaMemcpyHostToDevice);
 
 
-        int threadsPerBlock = 32;
+        int threadsPerBlock = 64;
         Call_lt<uint32_t, int64_t, 1><<<1, threadsPerBlock, 8*size>>>(u_D, v_D, m, cuda_retval);
         cudaDeviceSynchronize();
 
@@ -97,14 +97,15 @@ int main(int argc, char* argv[]) {
 
         retval = retval < 0 ? 1: 0;
         if (seq_retval != retval) {
+            printf("lt; INVALID\n");
             printf("was u < v ? : %d \n", seq_retval);
             printf("CUDA: was u < v ? : %d \n", retval);
-            for (int i = 0; i < m; i++) {
-                    printf("u and v was the following \n");
-                    printSlice(v, 'v', i, m);
-                    printSlice(u, 'u', i, m);
-
-                }
+            //for (int i = 0; i < m; i++) {
+            //        printf("u and v was the following \n");
+            //        printSlice(u, 'u', i, m);
+            //        printSlice(v, 'v', i, m);
+//
+            //    }
             }
         }
 
@@ -113,7 +114,7 @@ int main(int argc, char* argv[]) {
     cudaFree(u_D);
     cudaFree(v_D);
     cudaFree(cuda_retval);
-    printf("lt: VALID\n");
+    printf("lt: VALID?\n");
     return 0;
 }
 
