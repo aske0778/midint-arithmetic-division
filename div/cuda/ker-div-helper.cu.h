@@ -2,6 +2,7 @@
 #define KERNEL_HELPER
 
 #include "../../cuda/helper.h"
+#include <stdint.h>
 
 #if 0
 
@@ -434,6 +435,149 @@ prec4Shm( volatile T* u
     atomicMax(p, highest_idx + 1);
 }
 
+
+/**
+ * @brief bigint_t division
+ * @note Uses long division algorithm
+ * https://en.wikipedia.org/wiki/Division_algorithm#Long_division
+ *
+ * @param n numerator
+ * @param d denominator
+ * @param q quotient
+ * @param r remainder
+ * @param m Total size of bigint_ts
+ */
+ template<class T, class T2, uint32_t Q>
+ __device__ inline void
+ Blockwise_quo (volatile T* n, 
+      T  d,
+      volatile T *q,
+      T  m,
+      volatile T* buf ) {
+    
+    if (d == 0){
+        printf("Division by zero\n");
+        return;
+    }
+    
+    uint64_t r = 0;
+
+
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        
+        if (idx < m) {
+            if (idx > 0) {
+                r = n[idx - 1];
+                r = (r << 32) + n[idx];
+            } else {
+                r = n[0];
+            } 
+            if (r >= d) {
+                // need minus to because we utilize that r at each step in sequential 
+                // is a 64 bit composed of the previus 32 bit as most significant, and current n as least 
+                buf[idx-2] = r / d; 
+                r = r % d;
+            } 
+        }
+        __syncthreads();
+
+    }
+}
+
+// warp level implementation of lt 
+// calucate u < v 
+template<class T, class T2>
+__device__ inline int64_t 
+warp_level_lt (
+    T *u,
+    T *v) {
+
+    int64_t res = (int64_t)u[threadIdx.x] - (int64_t)v[threadIdx.x];
+    //printf("u = %u \n v = %u \n u - v = %lld at %u \n ",u[threadIdx.x], v[threadIdx.x], res, threadIdx.x);
+    //const unsigned int lane = idx & (WARP-1);
+
+    #define FULL_MASK 0xffffffff
+
+    for (int offset = 16; offset > 0; offset /=2){
+        int64_t res_at_offset = __shfl_down_sync(FULL_MASK, res, offset);
+        //printf("old res = %lld \n", res);
+        res = res_at_offset == 0 ? res : res_at_offset;
+        //printf("res at off set = %lld: new res = %lld \n", res_at_offset, res);
+        __syncwarp();
+    }
+
+    return res;
+
+    //#pragma unroll
+    //for(uint32_t i = 0; i< lgWARP; i++){
+//
+    //}
+}
+
+// block level implementation of lt 
+template<class T, class T2, uint32_t Q>
+__device__ inline int64_t 
+block_level_lt (
+    T *u,
+    T *v, 
+    const uint32_t m){
+
+    ///const unsigned int lane   = idx & (WARP-1);
+    //const unsigned int warpid = idx >> lgWARP;
+
+    int64_t placeholder = 0;
+
+
+    if (blockDim.x <= 32 || m <= 32) { // block < WARP optimization
+        
+        int64_t res = warp_level_lt<T,T2>(u, v);
+        return res;
+    }
+
+    return placeholder;
+    
+    
+}
+
+
+
+// block level implementation of lt 
+template<class T, class T2, uint32_t Q>
+__device__ inline void 
+blockwise_lt (
+    volatile T *u,
+    volatile T *v, 
+    const uint32_t m,
+    int64_t* retval,
+    volatile T2 *buf) {
+    
+
+    int step_size = 1;
+    int number_of_threads = blockDim.x;
+
+
+
+    #pragma unroll
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m) {
+            buf[idx] = u[idx]- v[idx];
+        }
+
+    }
+
+    #pragma unroll
+    for (int i = 0 ; i < Q; i++ ){
+        int idx = i * blockDim.x + threadIdx.x;
+        if (idx < m) {
+            if (buf[idx + step_size] != 0 ) {
+                buf[idx] = buf[idx + step_size];
+        }
+        step_size <<= 1; 
+        }
+    }
+}
 
 
 #endif

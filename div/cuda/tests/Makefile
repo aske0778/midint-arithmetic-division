@@ -5,7 +5,7 @@ CXX = nvcc -O3 -arch=sm_80
 # SRC_CGBN = blockwise-shift-test.cu
 # EXE_CGBN = blockwise-shift.exe
 
-default: test-shift test-multd test-set
+default: test-shift test-multd test-set test-quo
 
 #.cu.o: $(SRC) $(HELPERS)
 #	$(CXX) -c $@ $<
@@ -25,6 +25,14 @@ test-multd:
 test-prec:
 	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-prec-test.cu -o blockwise-prec-test.exe -lgmp
 	./blockwise-prec-test.exe
+
+test-quo:
+	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-quo-test.cu -o blockwise-quo-test.exe -lgmp
+	./blockwise-quo-test.exe
+
+test-lt:
+	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 blockwise-lt-test.cu -o blockwise-lt-test.exe -lgmp
+	./blockwise-lt-test.exe
 
 clean:
 	rm -rf *.o *.exe
