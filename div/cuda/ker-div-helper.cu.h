@@ -1,5 +1,8 @@
 #ifndef KERNEL_HELPER
 #define KERNEL_HELPER
+#define WARP   (32)
+#define lgWARP  (5)
+
 
 #include "../../cuda/helper.h"
 #include <stdint.h>
@@ -487,32 +490,45 @@ prec4Shm( volatile T* u
 
 // warp level implementation of lt 
 // calucate u < v 
+//template<class T, class T2>
+//__device__ inline int64_t 
+//warp_level_lt (
+//    T *u,
+//    T *v) {
+//
+//
+//    #define FULL_MASK 0xffffffff
+//
+//    for (int offset = 16; offset > 0; offset /=2){
+//        int64_t res_at_offset = __shfl_down_sync(FULL_MASK, res, offset);
+//        res = res_at_offset == 0 ? res : res_at_offset;
+//        __syncwarp();
+//    }
+//    return res;
+//
+//}
+
 template<class T, class T2>
 __device__ inline int64_t 
 warp_level_lt (
-    T *u,
-    T *v) {
+    T2 diff,
+    uint32_t NUM_ELEMENTS,
+    const unsigned int lane) {
 
-    int64_t res = (int64_t)u[threadIdx.x] - (int64_t)v[threadIdx.x];
-    //printf("u = %u \n v = %u \n u - v = %lld at %u \n ",u[threadIdx.x], v[threadIdx.x], res, threadIdx.x);
-    //const unsigned int lane = idx & (WARP-1);
 
     #define FULL_MASK 0xffffffff
+    T2 res = diff;
+    unsigned mask = __ballot_sync(FULL_MASK, lane < NUM_ELEMENTS);
 
-    for (int offset = 16; offset > 0; offset /=2){
-        int64_t res_at_offset = __shfl_down_sync(FULL_MASK, res, offset);
-        //printf("old res = %lld \n", res);
+    for (int offset = NUM_ELEMENTS/2; offset > 0; offset /=2){
+        int64_t res_at_offset = __shfl_down_sync(mask, res, offset);
         res = res_at_offset == 0 ? res : res_at_offset;
-        //printf("res at off set = %lld: new res = %lld \n", res_at_offset, res);
         __syncwarp();
     }
-
+    res = __shfl_sync(FULL_MASK, res, 0);
+    
     return res;
 
-    //#pragma unroll
-    //for(uint32_t i = 0; i< lgWARP; i++){
-//
-    //}
 }
 
 // block level implementation of lt 
@@ -521,21 +537,38 @@ __device__ inline int64_t
 block_level_lt (
     T *u,
     T *v, 
-    const uint32_t m){
+    const uint32_t m,
+    T2 *buf){
 
-    ///const unsigned int lane   = idx & (WARP-1);
-    //const unsigned int warpid = idx >> lgWARP;
+    const unsigned int lane   = threadIdx.x & (WARP-1);
+    const unsigned int warpid = threadIdx.x >> lgWARP;
 
-    int64_t placeholder = 0;
+    // find out remainder if m is not divisable by warpsize-32
+    uint32_t second_warp_amount = m / 32;
 
+    T2 diff = (T2)u[threadIdx.x] - (T2)v[threadIdx.x];
+     
+    T2 res = warp_level_lt<T,T2>(diff, 32,lane);
 
     if (blockDim.x <= 32 || m <= 32) { // block < WARP optimization
-        
-        int64_t res = warp_level_lt<T,T2>(u, v);
         return res;
     }
 
-    return placeholder;
+     // 2. place the end-of-warp results in the first warp. 
+    if (lane == 0) { buf[warpid] = res; } 
+    __syncthreads();
+
+
+    // 3. scan again the first warp
+    if (warpid == 0) {
+        res = warp_level_lt<T,T2>(buf[threadIdx.x], (m / 32), lane);
+        }
+    __syncthreads();
+
+
+
+
+    return res;
     
     
 }

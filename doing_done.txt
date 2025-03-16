@@ -14,7 +14,7 @@ init-function  // prop not needed in final cuda kernel, handle allocation of big
 zero-function  // prop not needed in final cuda kernel, handle zero'ing of bigints directly
 cpy  // prop not needed, handle copying directly in kernel?
 
-
+    
 doing 
 bpow-function    // functions eists needed testing
 multd-function   // bug/not fully correct
