@@ -94,6 +94,16 @@ bigint_t init(prec_t m)
     return retval;
 }
 
+bigint_t init_arr(prec_t m, prec_t values[])
+{
+    bigint_t retval = (bigint_t)malloc(m * sizeof(digit_t));
+    for (int i = 0; i < m; i++)
+    {
+        retval[i] = values[i];
+    }
+    return retval;
+}
+
 /**
  * @brief Sets all digits of a bigint_t to zero except the first digit
  */

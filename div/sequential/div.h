@@ -259,7 +259,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     {
         bigint_t Bh = bpow(h, m);
         mult_gmp(v, w, B, m);
-
+        
         if (lt(B, Bh, m))
             sub_gmp(Bh, B, B, m);
         else // else case nogensinde aktuelt?
@@ -282,8 +282,9 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
             {
 
                 bigint_t Bl = bpow(L, m);
-                if (lt(B, Bl, m))
+                if (lt(B, Bl, m)) {
                     sub_gmp(Bl, B, B, m);
+                }
                 else
                 {
                     sub_gmp(B, Bl, B, m);
@@ -312,7 +313,9 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
     bigint_t tmp = init(m);
 
     prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
+
     mult_gmp(w, tmp, tmp, m);
+
     shift(2 * n - h, tmp, tmp, m);
     shift(n, w, w, m);
 
@@ -379,17 +382,17 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
         quo(Bh, v[0], w, m);
         rp = 1;
     }
-    if (lt(Bh, v, m))
+    else if (lt(Bh, v, m))
     {
         zero(w, m);
         rp = 1;
     }
-    if (lt(Bh, v2, m))
+    else if (lt(Bh, v2, m))
     {
-        zero(w, m);
+        set(w, 1, m);
         rp = 1;
     }
-    if (eq(v, Bk, m))
+    else if (eq(v, Bk, m))
     {
         zero(w, m);
         w[0] = 1;
@@ -412,7 +415,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     {
         V += ((__uint128_t)v[k - l + i]) << (32 * i);
     }
-
+    
     __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
     __uint128_t tmp = (b2l - V) / V + 1;
 
@@ -420,7 +423,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     w[1] = (digit_t)(tmp >> 32);
     w[2] = (digit_t)(tmp >> 64);
     w[3] = (digit_t)(tmp >> 96);
-
+    
     if (h - k <= l)
     {
         shift(h - k - l, w, w, m);
@@ -455,7 +458,12 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // Calculate quotient
     shinv(b, h, c, p);
+    
+    //prnt("res", c, m);
     mult_gmp(a, c, c, p);
+    //printf("test: %u \n", c[16]);
+    //prnt("c:", c, p);
+
     shift(-h, c, c, p);
     cpy(q, c, m);
 

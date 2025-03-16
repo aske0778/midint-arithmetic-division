@@ -133,6 +133,61 @@ scanIncBlock(volatile typename OP::RedElTp* ptr, const unsigned int idx) {
     return res;
 }
 
+template<class D, class S, class CT, uint32_t m, uint32_t q, D HIGHEST>
+__device__ void bsubRegs( volatile CT* Csh
+                         , D Arg[q]
+                         , S Brg[q]
+                         , D rs[q]
+                         ) {
+    //D  rs[q];
+    CT cs[q];
+    
+    // 1. map: add the digits pairwise, build the 
+    //         partial results and the carries, and
+    //         print carries to shmem
+    {
+        CT accum = CarrySegBop<CT>::identity();
+        for(int i=0; i<q; i++) {
+            uint32_t ind = threadIdx.x * q + i;
+            D a = Arg[i];
+            S b = Brg[i];
+            CT c;
+            
+            rs[i] = a - (D)b;
+            c = (CT) ( (rs[i] > a) );
+            c = c | ((rs[i] == HIGHEST) << 1);
+            //c = c | ( ((ind % m) == 0) << 2 );
+            if( (ind % m) == 0 )
+                c = c | 4;
+            
+            accum = CarrySegBop<CT>::apply(accum, c);
+            cs[i] = c;
+        }
+        Csh[threadIdx.x] = accum;
+    }
+    
+    __syncthreads();
+   
+    // 2. scan the carries
+    scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
+        
+    // 3. compute the final result by adding the carry from the previous element
+    {
+        CT carry = CarrySegBop<CT>::identity();
+        if(threadIdx.x > 0) {
+            carry = Csh[threadIdx.x - 1];
+        }
+        //CT carry = prefix;
+        for(int i=0; i<q; i++) {
+            // uint32_t c = ( (carry & 1) == 1 );
+            if( (cs[i] & 4) == 0 )
+                rs[i] -= (carry & 1);
+            carry = CarrySegBop<CT>::apply(carry, cs[i]);         
+        }
+    }
+    __syncthreads();
+}
+
 
 /*********************************************/
 /*** Main function for big-number addition ***/
