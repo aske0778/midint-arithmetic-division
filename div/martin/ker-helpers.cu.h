@@ -45,7 +45,7 @@ __device__ inline uint32_t prec(uint32_t u[Q], uint32_t* sh_mem) {
 }
 
 template<uint32_t Q>
-__device__ inline bool eq(uint32_t u[Q], uint32_t bpow, uint32_t* sh_mem) {
+__device__ inline bool eq(uint32_t u[Q], uint32_t bpow, volatile uint32_t* sh_mem) {
     sh_mem[0] = true;
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -59,7 +59,7 @@ __device__ inline bool eq(uint32_t u[Q], uint32_t bpow, uint32_t* sh_mem) {
 }
 
 template<uint32_t Q>
-__device__ inline bool ez(uint32_t u[Q], uint32_t* sh_mem) {
+__device__ inline bool ez(uint32_t u[Q], volatile uint32_t* sh_mem) {
     sh_mem[0] = true;
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -73,7 +73,7 @@ __device__ inline bool ez(uint32_t u[Q], uint32_t* sh_mem) {
 }
 
 template<uint32_t Q>
-__device__ inline bool ez(uint32_t u[Q], uint32_t idx, uint32_t* sh_mem) {
+__device__ inline bool ez(uint32_t u[Q], uint32_t idx, volatile uint32_t* sh_mem) {
     sh_mem[0] = (threadIdx.x == idx / Q && u[idx % Q] == 0);
     __syncthreads();
     return sh_mem[0];
@@ -95,7 +95,7 @@ __device__ inline void zeroAndSet(uint32_t u[Q], uint32_t d, uint32_t idx) {
 }
 
 template<uint32_t M, uint32_t Q>
-__device__ inline void shift(int n, uint32_t u[Q], uint32_t* sh_mem, uint32_t RReg[Q]) {
+__device__ inline void shift(int n, uint32_t u[Q], volatile uint32_t* sh_mem, uint32_t RReg[Q]) {
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
@@ -168,7 +168,7 @@ __device__ inline uint8_t ltWarp(uint8_t u, uint32_t lane) {
 }
 
 template<uint32_t Q>
-__device__ inline bool lt(uint32_t u[Q], uint32_t v[Q], uint32_t* sh_mem) {
+__device__ inline bool lt(uint32_t u[Q], uint32_t v[Q], volatile uint32_t* sh_mem) {
     uint8_t RReg[Q] = {0};
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -231,7 +231,7 @@ __device__ inline void add1(uint32_t u[Q], uint32_t* sh_mem) {
 }
 
 template<uint32_t M, uint32_t Q>
-__device__ inline void printRegs(const char *str, uint32_t u[Q], uint32_t* sh_mem)
+__device__ inline void printRegs(const char *str, uint32_t u[Q], volatile uint32_t* sh_mem)
 {
     #pragma unroll
     for (int i=0; i < Q; i++) {

@@ -2,7 +2,7 @@ UNAME_S := $(shell uname -s)
 COMPILER = gcc
 FLAGS = -lgmp
 
-M = 256
+M = 2048
 
 ifeq ($(UNAME_S), Darwin)
 	FLAGS += -L/opt/homebrew/lib -I/opt/homebrew/include
@@ -14,8 +14,6 @@ default:
 
 test: 
 	$(COMPILER) tests/runtests.c $(FLAGS) -o tests/runtests.exe && ./tests/runtests.exe
-
-
 
 
 

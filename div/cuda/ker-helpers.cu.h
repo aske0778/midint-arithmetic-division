@@ -95,7 +95,7 @@ __device__ inline void zeroAndSet(uint32_t u[Q], uint32_t d, uint32_t idx) {
 }
 
 template<uint32_t M, uint32_t Q>
-__device__ inline void shift(int n, uint32_t u[Q], uint32_t* sh_mem, uint32_t RReg[Q]) {
+__device__ inline void shift(int n, uint32_t u[Q], volatile uint32_t* sh_mem, uint32_t RReg[Q]) {
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;

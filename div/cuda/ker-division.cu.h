@@ -4,7 +4,7 @@
 
 template<uint32_t M, uint32_t Q>
 __device__ inline void
-multMod(uint32_t* USh, uint32_t* VSh, uint32_t UReg[Q], uint32_t VReg[Q], uint32_t d, uint32_t RReg[Q]) {
+multMod(uint32_t* USh, uint32_t* VSh, uint32_t UReg[Q], uint32_t VReg[Q], int d, uint32_t RReg[Q]) {
     bmulRegsQ<U32bits, 1, M, Q/2>(USh, VSh, UReg, VReg, RReg); 
     #pragma unroll
     for (int i=0; i < Q; i++) {
@@ -17,10 +17,10 @@ multMod(uint32_t* USh, uint32_t* VSh, uint32_t UReg[Q], uint32_t VReg[Q], uint32
 
 template<uint32_t M, uint32_t Q>
 __device__ inline bool
-powDiff(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t RReg[Q], uint32_t h, uint32_t l) {
-    uint16_t vPrec = prec<Q>(VReg, USh);
-    uint16_t rPrec = prec<Q>(RReg, VSh);
-    uint32_t L = vPrec + rPrec - l + 1;
+powDiff(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t RReg[Q], int h, int l) {
+    int vPrec = prec<Q>(VReg, USh);
+    int rPrec = prec<Q>(RReg, VSh);
+    int L = vPrec + rPrec - l + 1;
     bool sign = 1;
     if (vPrec == 0 || rPrec == 0) {
         zeroAndSet<Q>(VReg, 1, h);
@@ -45,8 +45,8 @@ powDiff(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t RReg[Q], uint32
 
 template<uint32_t M, uint32_t Q>
 __device__ inline void
-step(uint32_t* USh, uint32_t* VSh, uint32_t h, uint32_t VReg[Q], uint32_t RReg[Q], uint32_t n, uint32_t l, uint32_t g) {
-    bool sign = powDiff<M, Q>(USh, VSh, VReg, RReg, h - n, l - g);
+step(uint32_t* USh, uint32_t* VSh, int h, uint32_t VReg[Q], uint32_t RReg[Q], int n, int l) {
+    bool sign = powDiff<M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     bmulRegsQ<U32bits, 1, M, Q/2>(USh, VSh, RReg, VReg, VReg); 
     shift<M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<M, Q>(n, RReg, USh, RReg);
@@ -59,13 +59,13 @@ step(uint32_t* USh, uint32_t* VSh, uint32_t h, uint32_t VReg[Q], uint32_t RReg[Q
 
 template<uint32_t M, uint32_t Q>
 __device__ inline void
-refine(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], uint16_t h, uint16_t k, uint8_t l, uint32_t RReg[Q]) {
+refine(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], int h, int k, int l, uint32_t RReg[Q]) {
     shift<M, Q>(2, RReg, USh, RReg);
     while (h - k > l) {
-        uint32_t n = min(h - k + 1 - l, l);
-        uint32_t s = max(0, k - 2 * l + 1 - 2);
+        int n = min(h - k + 1 - l, l);
+        int s = max(0, k - 2 * l + 1 - 2);
         shift<M, Q>(-s, VReg, USh, TReg);
-        step<M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
+        step<M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
         shift<M, Q>(-1, RReg, USh, RReg);
         l = l + n - 1;
     }
@@ -74,9 +74,9 @@ refine(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], uint16_
 
 template<uint32_t M, uint32_t Q>
 __device__ inline void
-shinv(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], uint16_t h, uint32_t RReg[Q]) {
+shinv(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], int h, uint32_t RReg[Q]) {
 
-    uint16_t k = prec<Q>(VReg, USh) - 1;
+    int k = prec<Q>(VReg, USh) - 1;
 
     if (k == 0) {
         quo<Q>(h, VSh[0], RReg);
@@ -94,7 +94,7 @@ shinv(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], uint16_t
         return;
     }
     
-    uint8_t l = min(k, 2);    
+    int l = min(k, 2);    
     {
         if (threadIdx.x < (Q+3) / Q) {
             __uint128_t V = 0;
@@ -137,7 +137,7 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     cpyGlb2Sh2Reg<Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<Q>(u, USh, UReg);
     __syncthreads();
-    uint16_t h = prec<Q>(UReg, USh);
+    int h = prec<Q>(UReg, USh);
 
     shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();

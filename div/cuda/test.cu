@@ -18,7 +18,7 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
 int main() {
   //  srand(time(NULL));
     bool stop = false;
-    const uint32_t M = 96;
+    const uint32_t M = 1024;
     const uint32_t Q = 4;
 
     for (int i = 0; i < 100 && !stop; i++) {
@@ -39,7 +39,7 @@ int main() {
         cudaMemcpy(d_u, u, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
         cudaMemcpy(d_v, v, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
-        divShinv<M, Q><<<1, M/Q>>>(d_u, d_v, d_quo, d_rem);
+        divShinv<M, Q><<<1, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem);
         cudaDeviceSynchronize();
 
         cudaMemcpy(quo, d_quo, M * sizeof(uint32_t), cudaMemcpyDeviceToHost);
