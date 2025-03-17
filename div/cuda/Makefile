@@ -1,16 +1,16 @@
 CXX = nvcc -O3 -arch=sm_80
 
+SRC_MAIN = main
+SRC_TEST = test
 
-default: 
+default: main
 
+main:
+	$(CXX) $(SRC_MAIN).cu -lgmp -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe
 
-run:
-	$(CXX) -ICGBN -DNUM_BITS=32768 -DTHD_PER_INST=32 main.cu -o main.exe -lgmp
-	./main.exe
+test:
+	$(CXX) $(SRC_TEST).cu -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
 
-
-
-
-
+.PHONY: clean
 clean:
 	rm -rf *.o *.exe

@@ -4,6 +4,16 @@
 #include "ker-division.cu.h"
 #include "helper.h"
 
+void printSlice(uint32_t* u, char name, int i, uint32_t m) {
+    int min = i-3 < 0 ? 0 : i-3;
+    int max = i+3 > m ? m : i+3;
+
+    printf("%c[%u-%u]: [", name, min, max);
+    for (int i = min; i < max; i++) {
+        printf("%u, ", u[i]);
+    }
+    printf("]\n");
+}
 
 int main() {
   //  srand(time(NULL));
@@ -12,7 +22,7 @@ int main() {
     const uint32_t Q = 4;
 
     for (int i = 0; i < 100 && !stop; i++) {
-        printf("Iteration: %u \n", i);
+        printf("\rIteration: %u", i);
         uint32_t uPrec = (rand() % M/2) + 1;
         uint32_t vPrec = (rand() % uPrec) + 3;
         uint32_t* u = randBigInt(uPrec, M);
@@ -42,15 +52,21 @@ int main() {
         for (int i = 0; i < M; i++) {
             if (quo[i] != quo_gmp[i] || rem[i] != rem_gmp[i]) {
                 stop = true;
-                printf("Inputs:\n");
-                prnt("  u", u, M);
-                prnt("  v", v, M);
+                printf("\nInputs:\n");
+                // prnt("  u", u, M);
+                // prnt("  v", v, M);
+                printSlice(u, 'u', i, M);
+                printSlice(v, 'v', i, M);
                 printf("Output:\n");
-                prnt("  q", quo, M);
-                prnt("  r", rem, M);
+                printSlice(quo, 'q', i, M);
+                printSlice(rem, 'r', i, M);
+                // prnt("  q", quo, M);
+                // prnt("  r", rem, M);
                 printf("GMP:\n");
-                prnt("  q", quo_gmp, M);
-                prnt("  r", rem_gmp, M);
+                printSlice(quo_gmp, 'q', i, M);
+                printSlice(rem_gmp, 'r', i, M);
+                // prnt("  q", quo_gmp, M);
+                // prnt("  r", rem_gmp, M);
                 break;
             }
         }
