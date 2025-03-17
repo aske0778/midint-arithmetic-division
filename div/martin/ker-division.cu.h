@@ -51,10 +51,12 @@ step(uint32_t* USh, uint32_t* VSh, uint32_t h, uint32_t VReg[Q], uint32_t RReg[Q
     shift<M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<M, Q>(n, RReg, USh, RReg);
 
-    if (sign)
+    if (sign) {
         baddRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>(VSh, RReg, VReg, RReg);
-    else
+    }
+    else {
         bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>(VSh, RReg, VReg, RReg);
+    }
 }
 
 template<uint32_t M, uint32_t Q>

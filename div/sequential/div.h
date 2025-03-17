@@ -260,8 +260,9 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         bigint_t Bh = bpow(h, m);
         mult_gmp(v, w, B, m);
         
-        if (lt(B, Bh, m))
+        if (lt(B, Bh, m)) {
             sub_gmp(Bh, B, B, m);
+        }
         else // else case nogensinde aktuelt?
         {
             sub_gmp(B, Bh, B, m);
@@ -272,6 +273,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     else
     {
         multmod(v, w, L, B, m);
+    //    prnt("B",B,m);
         if (!ez(B, m))
         {
             if (B[L - 1] == 0)
@@ -280,10 +282,11 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
             }
             else
             {
-
                 bigint_t Bl = bpow(L, m);
                 if (lt(B, Bl, m)) {
                     sub_gmp(Bl, B, B, m);
+                    prnt("B",B,m);
+                    printf("L: %u \n", L);
                 }
                 else
                 {
@@ -319,10 +322,13 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
     shift(2 * n - h, tmp, tmp, m);
     shift(n, w, w, m);
 
-    if (sign)
+    if (sign) {
         add_gmp(w, tmp, w, m);
-    else
+    }
+    else {
         sub_gmp(w, tmp, w, m);
+        //prnt("w",w,m);
+    }
 
     free(tmp);
 }

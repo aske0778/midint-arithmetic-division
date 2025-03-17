@@ -2,7 +2,7 @@ UNAME_S := $(shell uname -s)
 COMPILER = gcc
 FLAGS = -lgmp
 
-M = 8
+M = 96
 
 ifeq ($(UNAME_S), Darwin)
 	FLAGS += -L/opt/homebrew/lib -I/opt/homebrew/include

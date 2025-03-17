@@ -152,7 +152,7 @@ __device__ inline void sub(uint32_t bpow, uint32_t u[Q], uint32_t* sh_mem) {
             u[i] = 0;
         }
         else if (idx < bpow) {
-            u[i] = ~u[i];
+            u[i] = ~u[i] + (idx == min_index);
         }
     }
 }
