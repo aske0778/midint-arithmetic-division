@@ -69,6 +69,7 @@ refine(uint32_t* USh, uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], uint16_
         shift<M, Q>(-s, VReg, USh, TReg);
         step<M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         shift<M, Q>(-1, RReg, USh, RReg);
+        //printRegs<M,Q>("res", RReg, USh);
         l = l + n - 1;
     }
     shift<M, Q>(-2, RReg, USh, RReg);
@@ -139,6 +140,9 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     cpyGlb2Sh2Reg<Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<Q>(u, USh, UReg);
     __syncthreads();
+    
+    printRegs<M,Q>("res", VReg, USh);
+
     uint16_t h = prec<Q>(UReg, USh);
 
     shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
