@@ -324,7 +324,6 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
     }
     else {
         sub_gmp(w, tmp, w, m);
-        //prnt("w",w,m);
     }
 
     free(tmp);
@@ -351,17 +350,13 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
     {
         int n = min(h - k + 1 - l, l);
         s = max(0, k - 2 * l + 1 - g);
-        // printf("k: %u \n", k);
-        // printf("l: %u \n", l);
-        // printf("s: %u \n", s);
         shift(-s, v, v0, m);
         step(k + l + n - s + g, v0, w, n, l, g, m);
-   //     prnt("res", w, m);
         shift(-1, w, w, m);
         l = l + n - 1;
     }
+    prnt("w",w,m);
     shift(-g, w, w, m);
-    prnt("res", w, m);
     free(v0);
 }
 
@@ -466,12 +461,7 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // Calculate quotient
     shinv(b, h, c, p);
-   // prnt("res", c, m);
-    
-    //prnt("res", c, m);
     mult_gmp(a, c, c, p);
-    //printf("test: %u \n", c[16]);
-    //prnt("c:", c, p);
 
     shift(-h, c, c, p);
     cpy(q, c, m);
