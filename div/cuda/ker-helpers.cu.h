@@ -1,12 +1,17 @@
 #define WARP (32)
 #define lgWARP (5)
 
-template<uint32_t Q>
+template<uint32_t M, uint32_t Q>
 __device__ inline void cpyGlb2Sh2Reg(uint32_t* AGlb, volatile uint32_t* ASh, volatile uint32_t AReg[Q]) {
+
+    const int glb_offs = blockIdx.x * M;
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        ASh[idx] = AGlb[idx];
+        //int global_idx = i * glb_offs + threadIdx.x;
+        //printf("idx = %d, global_idx = %d, for thread %d @ block %d offset = %d \n", idx, (idx + glb_offs), threadIdx.x, blockIdx.x, glb_offs);
+        ASh[idx] = AGlb[idx+glb_offs];
     }
     __syncthreads();
     #pragma unroll
@@ -16,8 +21,11 @@ __device__ inline void cpyGlb2Sh2Reg(uint32_t* AGlb, volatile uint32_t* ASh, vol
     __syncthreads();
 }
 
-template<uint32_t Q>
+template<uint32_t M, uint32_t Q>
 __device__ inline void cpyReg2Sh2Glb(uint32_t AReg[Q], volatile uint32_t* ASh, volatile uint32_t* AGlb) {
+
+    const int glb_offs = blockIdx.x * M;
+
     #pragma unroll
     for (int i=0; i < Q; i++) {
         ASh[Q * threadIdx.x + i] = AReg[i];
@@ -26,7 +34,7 @@ __device__ inline void cpyReg2Sh2Glb(uint32_t AReg[Q], volatile uint32_t* ASh, v
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
-        AGlb[idx] = ASh[idx];
+        AGlb[idx + glb_offs] = ASh[idx];
     }
     __syncthreads();
 }

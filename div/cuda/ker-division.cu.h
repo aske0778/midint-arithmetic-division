@@ -150,7 +150,7 @@ shinv(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32_t
 }
 
 template<uint32_t M, uint32_t Q>
-__global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem) {
+__global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem, const uint32_t num_instances) {
     extern __shared__ char sh_mem[];
     volatile uint32_t* VSh = (uint32_t*)sh_mem;
     volatile uint32_t* USh = (uint32_t*)(VSh + M);
@@ -159,9 +159,21 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     uint32_t RReg1[Q] = {0};
     uint32_t RReg2[Q] = {0};
 
-    cpyGlb2Sh2Reg<Q>(v, VSh, VReg);
-    cpyGlb2Sh2Reg<Q>(u, USh, UReg);
+
+
+    cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
+    cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
     __syncthreads();
+
+    if (threadIdx.x == 0) {
+        printf(" \n [");
+        for (int i = 0; i < M; i++){
+            printf("( %u at BLOCK(%d) ), ", VSh[i], blockIdx.x);
+        }
+        printf("] \n");
+    }
+    __syncthreads();
+
 
     int h = prec<Q>(UReg, USh);
     __syncthreads();
@@ -187,7 +199,7 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
         bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2);
     }
     __syncthreads();
-    cpyReg2Sh2Glb<Q>(RReg1, VSh, quo);
-    cpyReg2Sh2Glb<Q>(RReg2, USh, rem);
+    cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
+    cpyReg2Sh2Glb<M, Q>(RReg2, USh, rem);
     __syncthreads();
 }
