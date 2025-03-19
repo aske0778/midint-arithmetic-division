@@ -165,6 +165,7 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
     __syncthreads();
 
+
     int h = prec<Q>(UReg, USh);
     __syncthreads();
 
