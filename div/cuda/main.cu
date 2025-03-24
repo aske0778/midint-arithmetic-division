@@ -6,7 +6,7 @@
 
 int main()
 {
-    const uint32_t M = 8;
+    const uint32_t M = 3588;
     const uint32_t Q = 4;
 
     uint32_t u[] = {724803052, 756165936, 1, 0, 0, 0, 0, 0};
