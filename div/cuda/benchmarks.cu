@@ -105,7 +105,7 @@ void gpuDiv ( int num_instances
     
     // 4. dry run
     {
-        divShinv<m, q><<<1, m/q>>>((uint32_t*)d_as,(uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs);
+        divShinv<m, q><<<1, m/q>>>((uint32_t*)d_as,(uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs, num_instances);
         // divShinv<m,q><<< grid, block >>>(d_as, d_bs, d_rs, d_rs);
         // baddKer<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
@@ -122,7 +122,7 @@ void gpuDiv ( int num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_ADD; i++) {
-            divShinv<m,q><<< grid, block >>>((uint32_t*) d_as, (uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs);
+            divShinv<m,q><<< grid, block >>>((uint32_t*) d_as, (uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs, num_instances);
             // baddKer<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
         }
         
