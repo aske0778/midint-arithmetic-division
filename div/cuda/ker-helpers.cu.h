@@ -5,11 +5,11 @@ template<uint32_t M, uint32_t Q>
 __device__ inline void cpyGlb2Sh2Reg(uint32_t* AGlb, volatile uint32_t* ASh, volatile uint32_t AReg[Q]) {
 
     const int glb_offs = blockIdx.x * M;
-    // const int glb_offs = 0;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
+        //printf("idx = %d \n",idx);
         ASh[idx] = AGlb[idx+glb_offs];
     }
     __syncthreads();
@@ -24,7 +24,6 @@ template<uint32_t M, uint32_t Q>
 __device__ inline void cpyReg2Sh2Glb(uint32_t AReg[Q], volatile uint32_t* ASh, volatile uint32_t* AGlb) {
 
     const int glb_offs = blockIdx.x * M;
-    // const int glb_offs = 0;
 
     #pragma unroll
     for (int i=0; i < Q; i++) {
