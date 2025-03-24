@@ -9,6 +9,8 @@ __device__ inline void cpyGlb2Sh2Reg(uint32_t* AGlb, volatile uint32_t* ASh, vol
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
+        //int global_idx = i * glb_offs + threadIdx.x;
+        //printf("idx = %d, global_idx = %d, for thread %d @ block %d offset = %d \n", idx, (idx + glb_offs), threadIdx.x, blockIdx.x, glb_offs);
         ASh[idx] = AGlb[idx+glb_offs];
     }
     __syncthreads();

@@ -18,28 +18,39 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
 int main() {
   //  srand(time(NULL));
     bool stop = false;
-    const uint32_t M = 1024;
+    const uint32_t num_instances = 4;
+    const uint32_t M = 32;
     const uint32_t Q = 4;
+    const uint32_t total_work = M * num_instances;
 
     for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint32_t uPrec = (rand() % M/2) + 1;
-        uint32_t vPrec = (rand() % uPrec) + 3;
-        uint32_t* u = randBigInt(uPrec, M);
-        uint32_t* v = randBigInt(vPrec, M);
-        uint32_t* quo = (uint32_t*)calloc(M, sizeof(uint32_t));
-        uint32_t* rem = (uint32_t*)calloc(M, sizeof(uint32_t));
+        uint32_t uPrec = (total_work);
+        uint32_t vPrec = (uPrec);
+        uint32_t* u = randBigInt(uPrec, total_work);
+        uint32_t* v = randBigInt(vPrec, total_work);
+        uint32_t* quo = (uint32_t*)calloc(total_work, sizeof(uint32_t));
+        uint32_t* rem = (uint32_t*)calloc(total_work, sizeof(uint32_t));
 
         uint32_t *d_u, *d_v, *d_quo, *d_rem;
-        cudaMalloc((void **)&d_u, M * sizeof(uint32_t));
-        cudaMalloc((void **)&d_v, M * sizeof(uint32_t));
-        cudaMalloc((void **)&d_quo, M * sizeof(uint32_t));
-        cudaMalloc((void **)&d_rem, M * sizeof(uint32_t));
+        cudaMalloc((void **)&d_u, total_work * sizeof(uint32_t));
+        cudaMalloc((void **)&d_v, total_work * sizeof(uint32_t));
+        cudaMalloc((void **)&d_quo, total_work * sizeof(uint32_t));
+        cudaMalloc((void **)&d_rem, total_work * sizeof(uint32_t));
 
-        cudaMemcpy(d_u, u, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_v, v, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_u, u, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_v, v, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
-        divShinv<M, Q><<<1, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem);
+        for (int i = 0; i < num_instances; i++) {
+            printf("block %d has: \n [", i);
+            for (int j = 0; j < M; j++) {
+                printf("%u, ", v[j + (i * M)]);
+            }
+            printf("] \n");
+        }
+
+
+        divShinv<M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
         cudaDeviceSynchronize();
 
         cudaMemcpy(quo, d_quo, M * sizeof(uint32_t), cudaMemcpyDeviceToHost);
