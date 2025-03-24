@@ -15,30 +15,7 @@ using namespace std;
 #define GPU_RUNS_MUL    25
 #define ERR         0.000005
 
-#define WITH_VALIDATION 1
-
-
-template<uint32_t m>
-void gmpDivOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
-    uint32_t buff[4*m];
-    mpz_t a; mpz_t b; mpz_t r;        
-    mpz_init(a); mpz_init(b); mpz_init(r);
-
-    mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
-    mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
-
-    mpz_cdiv_q(r, a, b);
-        
-    size_t countp = 0;
-    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
-        
-    for(int j=0; j<m; j++) {
-        inst_rs[j] = buff[j];
-    }      
-    for(int j=countp; j < m; j++) {
-        inst_rs[j] = 0;
-    }
-}
+#define WITH_VALIDATION 0
 
 
 template<int m, int nz>
@@ -100,14 +77,18 @@ void gpuDiv ( int num_instances
 #endif
     assert(m_lft % q == 0 && m_lft >= q);
     
+
+    // { // maximize the amount of shared memory for the kernel
+    //     cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 2 * mem_size_nums);  // 131072 out of range
+    // }    
+
+
     dim3 block( ipb * (m_lft/q), 1, 1);
     dim3 grid ( (num_instances + ipb - 1)/ipb, 1, 1);
     
     // 4. dry run
     {
-        divShinv<m, q><<<1, m/q>>>((uint32_t*)d_as,(uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs, num_instances);
-        // divShinv<m,q><<< grid, block >>>(d_as, d_bs, d_rs, d_rs);
-        // baddKer<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+        quoShinv<m, q><<<1, m/q, 2 * mem_size_nums>>>((uint32_t*)d_as,(uint32_t*) d_bs, (uint32_t*) d_rs, num_instances);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -122,7 +103,7 @@ void gpuDiv ( int num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_ADD; i++) {
-            divShinv<m,q><<< grid, block >>>((uint32_t*) d_as, (uint32_t*) d_bs, (uint32_t*) d_rs, (uint32_t*) d_rs, num_instances);
+            quoShinv<m,q><<< grid, block, 2 * mem_size_nums>>>((uint32_t*) d_as, (uint32_t*) d_bs, (uint32_t*) d_rs, num_instances);
             // baddKer<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
         }
         
@@ -153,17 +134,6 @@ void gpuDiv ( int num_instances
 }
 
 
-template<int m>
-void gmpDiv(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
-    uint32_t* it_as = as;
-    uint32_t* it_bs = bs;
-    uint32_t* it_rs = rs;
-        
-    for(int i=0; i<num_instances; i++) {
-        gmpDivOnce<m>(it_as, it_bs, it_rs);
-        it_as += m; it_bs += m; it_rs += m;
-    }
-}
 
 template<class Base, int m>
 void testDivision( int num_instances
@@ -184,7 +154,7 @@ void testDivision( int num_instances
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
     if(with_validation)
-        gmpDiv<m>(num_instances, (uint32_t*)h_as, (uint32_t*)h_bs, h_rs_gmp_32);
+        gmpQuo<m>(num_instances, (uint32_t*)h_as, (uint32_t*)h_bs, h_rs_gmp_32);
 
     gpuDiv<Base, m/x>(num_instances, h_as, h_bs, h_rs_our);
 
@@ -216,7 +186,7 @@ void runDivisions(uint64_t total_work) {
     mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
     
 #if 1
-    // testDivision<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testDivision<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     // testDivision<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     // testDivision<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     // testDivision<Base,  512>( total_work/512,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
@@ -224,7 +194,7 @@ void runDivisions(uint64_t total_work) {
     // testDivision<Base,  128>( total_work/128,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     // testDivision<Base,   64>( total_work/64,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     // testDivision<Base,   32>( total_work/32,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    testDivision<Base,   16>( total_work/16,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    // testDivision<Base,   16>( total_work/16,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
 #endif
     free(h_as);
     free(h_bs);

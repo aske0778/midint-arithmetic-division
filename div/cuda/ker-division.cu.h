@@ -159,8 +159,6 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     uint32_t RReg1[Q] = {0};
     uint32_t RReg2[Q] = {0};
 
-
-
     cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
     __syncthreads();
@@ -192,4 +190,47 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
     cpyReg2Sh2Glb<M, Q>(RReg2, USh, rem);
     __syncthreads();
+}
+
+
+template<uint32_t M, uint32_t Q>
+__global__ void quoShinv(uint32_t* u, uint32_t* v, uint32_t* quo, const uint32_t num_instances) {
+    extern __shared__ char sh_mem[];
+    volatile uint32_t* VSh = (uint32_t*)sh_mem;
+    volatile uint32_t* USh = (uint32_t*)(VSh + M);
+    uint32_t VReg[Q];
+    uint32_t UReg[Q];
+    uint32_t RReg1[Q] = {0};
+    uint32_t RReg2[Q] = {0};
+
+    cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
+    cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
+    __syncthreads();
+
+    int h = prec<Q>(UReg, USh);
+    __syncthreads();
+
+    shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
+    __syncthreads();
+
+    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1);
+    __syncthreads();
+    
+    shift<M, Q>(-h, RReg1, USh, RReg1);
+    __syncthreads();
+
+    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2); 
+    __syncthreads();
+    bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2);
+    __syncthreads();
+
+    if (!lt<Q>(RReg2, VReg, USh)) {
+        __syncthreads();
+        add1<Q>(RReg1, USh);
+        __syncthreads();
+        bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2);
+    }
+    __syncthreads();
+
+    cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
 }

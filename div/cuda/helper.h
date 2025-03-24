@@ -69,3 +69,72 @@ uint32_t* randBigInt(uint32_t prec, uint32_t m)
     }
     return u;
 }
+
+
+// template<uint32_t m>
+// void gmpDivOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
+//     uint32_t buff[4*m];
+//     mpz_t a; mpz_t b; mpz_t r;        
+//     mpz_init(a); mpz_init(b); mpz_init(r);
+
+//     mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
+//     mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
+
+//     mpz_div(r, a, b);
+        
+//     size_t countp = 0;
+//     mpz_export (buff, &countp, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
+        
+//     for(int j=0; j<m; j++) {
+//         inst_rs[j] = buff[j];
+//     }      
+//     for(int j=countp; j < m; j++) {
+//         inst_rs[j] = 0;
+//     }
+// }
+
+template<uint32_t m>
+void gmpQuoOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
+    uint32_t buff[4*m];
+    mpz_t a; mpz_t b; mpz_t r;        
+    mpz_init(a); mpz_init(b); mpz_init(r);
+
+    mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
+
+    mpz_cdiv_q(r, a, b);
+        
+    size_t countp = 0;
+    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
+        
+    for(int j=0; j<m; j++) {
+        inst_rs[j] = buff[j];
+    }      
+    for(int j=countp; j < m; j++) {
+        inst_rs[j] = 0;
+    }
+}
+
+// template<int m>
+// void gmpDiv(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
+//     uint32_t* it_as = as;
+//     uint32_t* it_bs = bs;
+//     uint32_t* it_rs = rs;
+        
+//     for(int i=0; i<num_instances; i++) {
+//         gmpDivOnce<m>(it_as, it_bs, it_rs);
+//         it_as += m; it_bs += m; it_rs += m;
+//     }
+// }
+
+template<int m>
+void gmpQuo(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
+    uint32_t* it_as = as;
+    uint32_t* it_bs = bs;
+    uint32_t* it_rs = rs;
+        
+    for(int i=0; i<num_instances; i++) {
+        gmpQuoOnce<m>(it_as, it_bs, it_rs);
+        it_as += m; it_bs += m; it_rs += m;
+    }
+}
