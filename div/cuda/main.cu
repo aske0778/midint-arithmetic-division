@@ -13,8 +13,8 @@ int main()
     const uint32_t size = M * sizeof(uint32_t);
 
     uint32_t uPrec = M / 2;
-    uint32_t* u = randBigInt(uPrec, M);
-    uint32_t* v = randBigInt(uPrec - 8, M);
+    uint32_t* u = randBigInt(uPrec, M, num_instances);
+    uint32_t* v = randBigInt(uPrec - 8, M, num_instances);
     uint32_t quo[M] = {0};
     uint32_t rem[M] = {0};
 

@@ -4,16 +4,6 @@
 #include "ker-division.cu.h"
 #include "helper.h"
 
-void printSlice(uint32_t* u, char name, int i, uint32_t m) {
-    int min = i-3 < 0 ? 0 : i-3;
-    int max = i+3 > m ? m : i+3;
-
-    printf("%c[%u-%u]: [", name, min, max);
-    for (int i = min; i < max; i++) {
-        printf("%u, ", u[i]);
-    }
-    printf("]\n");
-}
 
 int main() {
   //  srand(time(NULL));
@@ -91,7 +81,7 @@ int main() {
                     //printSlice(rem_gmp, 'r', i, M);
                     // prnt("  q", quo_gmp, M);
                     // prnt("  r", rem_gmp, M);
-                    break;
+                    return 1;
                 }
             }
             //for (int j = 0; j < 2; j++){
@@ -110,5 +100,6 @@ int main() {
         //}
         free(u); free(v); free(quo); free(rem); free(quo_gmp); free(rem_gmp);
     }
+    printf("\nDone\n");
     return 0;
 }
