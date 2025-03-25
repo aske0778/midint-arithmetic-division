@@ -3,6 +3,7 @@ CXX = nvcc -O3 -arch=sm_80
 SRC_MAIN = main
 SRC_TEST = test
 SRC_BENCH = benchmarks
+SRC_time = timing
 
 BATCH_SIZE = 1000
 
@@ -13,6 +14,9 @@ main:
 
 test:
 	$(CXX) $(SRC_TEST).cu -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
+
+time:
+	$(CXX) $(SRC_time).cu -lgmp -o $(SRC_time).exe && ./$(SRC_time).exe
 
 bench:
 	$(CXX) $(SRC_BENCH).cu -lgmp -o $(SRC_BENCH).exe && ./$(SRC_BENCH).exe $(BATCH_SIZE)

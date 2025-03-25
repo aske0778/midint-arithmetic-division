@@ -11,10 +11,10 @@ void gpuDiv (int num_instances){
     
     uint32_t total_work = M * num_instances;
 
-    uint32_t uPrec = (total_work);
-    uint32_t vPrec = (uPrec);
-    uint32_t* u = randBigInt(uPrec, total_work);
-    uint32_t* v = randBigInt(vPrec, total_work);
+    uint32_t uPrec = (M / 2) - 1;
+    uint32_t vPrec = (uPrec) - 3;
+    uint32_t* u = randBigInt(uPrec, M, num_instances);
+    uint32_t* v = randBigInt(vPrec, M, num_instances);
     uint32_t* quo = (uint32_t*)calloc(total_work, sizeof(uint32_t));
     uint32_t* rem = (uint32_t*)calloc(total_work, sizeof(uint32_t));
 
@@ -66,7 +66,7 @@ void gpuDiv (int num_instances){
         double runtime_microsecs = time_elappsed;
 
         printf(" division of %d-bit Big-Int (Base uint_32): device ran %d problem instances \
-in %lu micro-seconds \n", M*sizeof(uint32_t), num_instances, runtime_microsecs);
+in %lu micro-seconds \n", M*32, num_instances, runtime_microsecs);
 
 
     }
@@ -91,7 +91,7 @@ void printSlice(uint32_t* u, char name, int i, uint32_t m) {
 
 int main() {
   //  srand(time(NULL));
-    const uint32_t num_instances = 4;
+    const uint32_t num_instances = 131072;
     const uint32_t M = 1024;
     const uint32_t Q = 8;
 
