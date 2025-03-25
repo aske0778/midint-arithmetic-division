@@ -13,6 +13,7 @@ __device__ inline void cpyGlb2Sh2Reg(uint32_t* AGlb, volatile uint32_t* ASh, vol
         ASh[idx] = AGlb[idx+glb_offs];
     }
     __syncthreads();
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         AReg[i] = ASh[Q * threadIdx.x + i];
@@ -30,6 +31,7 @@ __device__ inline void cpyReg2Sh2Glb(uint32_t AReg[Q], volatile uint32_t* ASh, v
         ASh[Q * threadIdx.x + i] = AReg[i];
     }
     __syncthreads();
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = i * blockDim.x + threadIdx.x;
@@ -49,10 +51,7 @@ __device__ inline uint32_t prec(uint32_t u[Q], volatile uint32_t* sh_mem) {
         }
     }
     __syncthreads();    
-
-    uint32_t res = sh_mem[0];  
-    __syncthreads();
-    return res;
+    return sh_mem[0];
 }
 
 template<uint32_t Q>
@@ -65,10 +64,7 @@ __device__ inline bool eq(uint32_t u[Q], uint32_t bpow, volatile uint32_t* sh_me
         }
     }
     __syncthreads();    
-    bool res = sh_mem[0];  
-
-    __syncthreads();
-    return res;
+    return sh_mem[0];
 }
 
 template<uint32_t Q>
@@ -82,18 +78,14 @@ __device__ inline bool ez(uint32_t u[Q], volatile uint32_t* sh_mem) {
     }
     
     __syncthreads();   
-    bool res = sh_mem[0];  
-    __syncthreads();
-    return res;
+    return sh_mem[0];
 }
 
 template<uint32_t Q>
 __device__ inline bool ez(uint32_t u[Q], uint32_t idx, volatile uint32_t* sh_mem) {
     sh_mem[0] = (threadIdx.x == idx / Q && u[idx % Q] == 0);
     __syncthreads();
-    bool res = sh_mem[0];  
-    __syncthreads();
-    return res;
+    return sh_mem[0];
 }
 
 template<uint32_t Q>
@@ -218,9 +210,7 @@ __device__ inline bool lt(uint32_t u[Q], uint32_t v[Q], volatile uint32_t* sh_me
         }
     }
      __syncthreads();
-    bool result = sh_mem[0] & 0b01;
-    __syncthreads();
-    return result;
+    return sh_mem[0] & 0b01;
 }
 
 template<uint32_t Q>
