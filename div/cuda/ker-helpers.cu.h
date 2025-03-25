@@ -46,11 +46,10 @@ __device__ inline uint32_t prec(uint32_t u[Q], volatile uint32_t* sh_mem) {
     for (int i = Q-1; i >= 0; i--) {
         if (u[i] != 0) {
             atomicMax((uint32_t*)sh_mem, Q * threadIdx.x + i + 1);
-         //   atomicMax(sh_mem, Q * threadIdx.x + i + 1);
-            break;
         }
     }
     __syncthreads();    
+
     uint32_t res = sh_mem[0];  
     __syncthreads();
     return res;
@@ -63,11 +62,11 @@ __device__ inline bool eq(uint32_t u[Q], uint32_t bpow, volatile uint32_t* sh_me
     for (int i = 0; i < Q; i++) {
         if (u[i] != (bpow == (i * blockDim.x + threadIdx.x))) {
             sh_mem[0] = false;
-            break;
         }
     }
     __syncthreads();    
     bool res = sh_mem[0];  
+
     __syncthreads();
     return res;
 }
@@ -79,7 +78,6 @@ __device__ inline bool ez(uint32_t u[Q], volatile uint32_t* sh_mem) {
     for (int i = 0; i < Q; i++) {
         if (u[i] != 0) {
             sh_mem[0] = false;
-            break;
         }
     }
     
@@ -159,7 +157,6 @@ __device__ inline void sub(uint32_t bpow, uint32_t u[Q], volatile uint32_t* sh_m
     for (int i = 0; i < Q; i++) {
         if (u[i] != UINT32_MAX) {
             atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
-            break;
         }
     }
     __syncthreads();
@@ -233,9 +230,7 @@ __device__ inline void add1(uint32_t u[Q], volatile uint32_t* sh_mem) {
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] != UINT32_MAX) {
-            
             atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
-            break;
         }
     }
     __syncthreads();
