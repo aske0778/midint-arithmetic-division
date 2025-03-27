@@ -79,16 +79,15 @@ template<uint32_t M, uint32_t Q>
 __device__ inline void
 refine(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32_t TReg[Q], int h, int k, int l, uint32_t RReg[Q]) {
     shift<M, Q>(2, RReg, USh, RReg);
-    __syncthreads();
     while (h - k > l) {
         int n = min(h - k + 1 - l, l);
         int s = max(0, k - 2 * l + 1 - 2);
         shift<M, Q>(-s, VReg, USh, TReg);
-        __syncthreads();
+        // __syncthreads();
         step<M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
-        __syncthreads();
+        // __syncthreads();
         shift<M, Q>(-1, RReg, USh, RReg);
-        __syncthreads();
+        // __syncthreads();
         l = l + n - 1;
     }
     shift<M, Q>(-2, RReg, USh, RReg);
@@ -194,6 +193,7 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     __syncthreads();
 }
 
+
 template<uint32_t M, uint32_t Q>
 __global__ void quoShinv(uint32_t* u, uint32_t* v, uint32_t* quo, const uint32_t num_instances) {
     extern __shared__ char sh_mem[];
@@ -204,34 +204,22 @@ __global__ void quoShinv(uint32_t* u, uint32_t* v, uint32_t* quo, const uint32_t
     uint32_t RReg1[Q] = {0};
     uint32_t RReg2[Q] = {0};
 
-    cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
-    cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
-    __syncthreads();
+    cpGlb2Reg<uint32_t, 1, M, Q>(1, VSh, v, VReg);
+    cpGlb2Reg<uint32_t, 1, M, Q>(1, USh, u, UReg);
 
     int h = prec<Q>(UReg, USh);
-    __syncthreads();
 
     shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
-    __syncthreads();
 
     bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1, M);
-    __syncthreads();
     
     shift<M, Q>(-h, RReg1, USh, RReg1);
-    __syncthreads();
-
+    
     bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2, M); 
-    __syncthreads();
+    
     bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2, M);
-    __syncthreads();
+    
+    if (!lt<Q>(RReg2, VReg, USh)) { add1<Q>(RReg1, VSh); }
 
-    if (!lt<Q>(RReg2, VReg, USh)) {
-        __syncthreads();
-        add1<Q>(RReg1, USh);
-        __syncthreads();
-        bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2, M);
-    }
-    __syncthreads();
-
-    cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
+    cpReg2Glb<uint32_t, 1, M, Q>(1, VSh, RReg1, quo);
 }

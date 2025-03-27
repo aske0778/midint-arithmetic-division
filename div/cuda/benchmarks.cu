@@ -116,7 +116,7 @@ void ourMkRandom(uint32_t num_instances, uint32_t* as) {
 
 using namespace std;
 
-#define GPU_RUNS_ADD    50
+#define GPU_RUNS_DIV    50
 #define GPU_RUNS_MUL    25
 #define ERR         0.000005
 
@@ -184,11 +184,9 @@ void gpuDiv ( uint32_t num_instances
 #endif
     assert(m_lft % q == 0 && m_lft >= q);
     
-
     // { // maximize the amount of shared memory for the kernel
     //     cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 2 * mem_size_nums);  // 131072 out of range
     // }    
-
 
     dim3 block( ipb * (m_lft/q), 1, 1);
     dim3 grid ( (num_instances + ipb - 1)/ipb, 1, 1);
@@ -210,7 +208,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         // printf("m/q = %d \n", (m/q));
         
-        for(int i=0; i<GPU_RUNS_ADD; i++) {
+        for(int i=0; i<GPU_RUNS_DIV; i++) {
             quoShinv<m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
         }
         
@@ -218,7 +216,7 @@ void gpuDiv ( uint32_t num_instances
 
         gettimeofday(&t_end, NULL);
         timeval_subtract(&t_diff, &t_end, &t_start);
-        elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_ADD;
+        elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_DIV;
 
         gpuAssert( cudaPeekAtLastError() );
 
@@ -250,13 +248,8 @@ void testDivision( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    //uint_t *h_as = (uint_t*) h_as_64;
-    //uint_t *h_bs = (uint_t*) h_bs_64;
-    //uint_t *h_rs_our = (uint_t*) h_rs_our_64;
-    //uint32_t *h_rs_gmp_32 = (uint32_t*) h_rs_gmp_64;
-
     uint_t uPrec = (m / 2) - 1;
-    uint_t vPrec = (uPrec) - 3;
+    uint_t vPrec = (uPrec) - 4;
 
     uint_t* u = randBigInt(uPrec, m, num_instances);
     uint_t* v = randBigInt(vPrec, m, num_instances);
@@ -269,22 +262,9 @@ void testDivision( int num_instances
 
     gpuDiv<Base, m/x>(num_instances, u, v, res_our);
 
-#if 0
-    uint32_t querry_instance = 0;
-    printf("as[%d]: ", querry_instance);
-    printInstance<m>(querry_instance, h_as);
-    printf("bs[%d]: ", querry_instance);
-    printInstance<m>(querry_instance, h_bs);
-    printf("rs_gmp[%d]: ", querry_instance);
-    printInstance<m>(querry_instance, h_rs_gmp);
-    printf("rs_our[%d]: ", querry_instance);
-    printInstance<m>(querry_instance, h_rs_our);
-#endif
-
     if(with_validation)  
         validateExact(res_gmp, res_our, num_instances*m);
 }
-
 
 
 /////////////////////////////////////////////////////////
@@ -302,7 +282,7 @@ void runDivisions(uint64_t total_work) {
 
     
 #if 1
-    testDivision<Base, 4096>(total_work/4096, res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );

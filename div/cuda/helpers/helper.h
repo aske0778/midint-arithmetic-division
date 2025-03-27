@@ -106,7 +106,7 @@ void gmpQuoOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
     mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
     mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
 
-    mpz_cdiv_q(r, a, b);
+    mpz_tdiv_q(r, a, b);
         
     size_t countp = 0;
     mpz_export (buff, &countp, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
