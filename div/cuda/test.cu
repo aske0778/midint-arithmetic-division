@@ -2,15 +2,15 @@
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include "ker-division.cu.h"
-#include "helper.h"
+#include "helpers/helper.h"
 
 
 int main() {
   //  srand(time(NULL));
     bool stop = false;
-    const uint32_t num_instances = 1024;
-    const uint32_t Q = 8;
-    const uint32_t M = 4096;
+    const uint32_t num_instances = 100;
+    const uint32_t Q = 4;
+    const uint32_t M = 2048;
     const uint32_t total_work = M * num_instances;
 
     for (int i = 0; i < 100 && !stop; i++) {

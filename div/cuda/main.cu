@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include "ker-division.cu.h"
-#include "helper.h"
+#include "helpers/helper.h"
 
 int main()
 {

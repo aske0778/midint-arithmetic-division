@@ -31,6 +31,22 @@ __device__ inline void cpyReg2Sh2Glb(uint32_t AReg[Q], volatile uint32_t* ASh, v
     __syncthreads();
 }
 
+template<class S, uint32_t Q>
+__device__ inline
+void cpyReg2Shm ( S Rrg[Q], volatile S* shmem ) { 
+    for(int i=0; i<Q; i++) {
+        shmem[Q*threadIdx.x + i] = Rrg[i];
+    }
+}
+
+template<class S, uint32_t Q>
+__device__ inline
+void cpyShm2Reg ( volatile S* shmem, S Rrg[Q] ) { 
+    for(int i=0; i<Q; i++) {
+        Rrg[i] = shmem[Q*threadIdx.x + i];
+    }
+}
+
 template<uint32_t Q>
 __device__ inline uint32_t prec(uint32_t u[Q], volatile uint32_t* sh_mem) {
     sh_mem[0] = 0;
@@ -132,6 +148,7 @@ __device__ inline void shift(int n, uint32_t u[Q], volatile uint32_t* sh_mem, ui
 template<uint32_t Q>
 __device__ inline void quo(uint32_t bpow, uint32_t d, uint32_t RReg[Q]) {
     uint64_t r = 1;
+    #pragma unroll
     for (int i = bpow - 1; i >= 0; i--)
     {
         r <<= 32; 
@@ -145,45 +162,8 @@ __device__ inline void quo(uint32_t bpow, uint32_t d, uint32_t RReg[Q]) {
 }
 
 template<uint32_t Q>
-__device__ inline void sub(uint32_t bpow, uint32_t u[Q], volatile uint32_t* sh_mem) {
-    sh_mem[0] = UINT32_MAX;
-
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        if (u[i] != UINT32_MAX) {
-            atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
-            break;
-        }
-    }
-    __syncthreads();
-
-    uint32_t min_index = sh_mem[0];
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        uint32_t idx = Q * threadIdx.x + i;
-        if (idx < min_index) {
-            u[i] = 0;
-        }
-        else if (idx < bpow) {
-            u[i] = ~u[i] + (idx == min_index);
-        }
-    }
-    __syncthreads();
-}
-
-__device__ inline uint8_t ltWarp(uint8_t u, uint32_t lane) {
-    #pragma unroll
-    for (int i = 1; i < WARP; i *= 2) {
-        uint8_t elm = __shfl_up_sync(0xFFFFFFFF, u, (lane >= i) ? i : 0);
-        u |= (u & 0b10) && (elm & 0b01);
-        u = (u & ~0b10) | (u & elm & 0b10);
-    }
-    return u;
-}
-
-template<uint32_t Q>
 __device__ inline bool lt(uint32_t u[Q], uint32_t v[Q], volatile uint32_t* sh_mem) {
-    uint8_t RReg[Q] = {0};
+    int RReg[Q] = {0};
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] < v[i]) {
@@ -197,54 +177,7 @@ __device__ inline bool lt(uint32_t u[Q], uint32_t v[Q], volatile uint32_t* sh_me
             RReg[i] = (RReg[i] & ~0b10) | (RReg[i] & RReg[i-1] & 0b10);
         }
     }
-
-    uint16_t idx = threadIdx.x;
-    const unsigned int lane   = idx & (WARP-1);
-    const unsigned int warpid = idx >> lgWARP;
-
-    uint8_t res = ltWarp(RReg[Q-1], lane);
-
-    if (lane == (WARP-1) || idx == blockDim.x - 1) { sh_mem[warpid] = res; } 
-    __syncthreads();
-
-    if (warpid == 0) {
-        res = ltWarp(sh_mem[threadIdx.x], lane);
-        if (threadIdx.x == ((blockDim.x + WARP - 1) / WARP) - 1) {
-            sh_mem[0] = res;
-        }
-    }
-     __syncthreads();
-    bool result = sh_mem[0] & 0b01;
-    __syncthreads();
-    return result;
-}
-
-template<uint32_t Q>
-__device__ inline void add1(uint32_t u[Q], volatile uint32_t* sh_mem) {
-    sh_mem[0] = UINT32_MAX;
-
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        if (u[i] != UINT32_MAX) {
-            
-            atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
-            break;
-        }
-    }
-    __syncthreads();
-
-    uint32_t min_index = sh_mem[0];
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        uint32_t idx = Q * threadIdx.x + i;
-        if (idx < min_index) {
-            u[i] = 0;
-        }
-        else if (idx == min_index) {
-            u[i] += 1;
-        }
-    }
-    __syncthreads();
+    return reduceBlock<LessThan>(RReg[Q-1], sh_mem) & 0b01;
 }
 
 template<uint32_t M, uint32_t Q>

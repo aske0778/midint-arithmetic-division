@@ -231,6 +231,14 @@ void multmod(bigint_t a, bigint_t b, int d, bigint_t r, prec_t m)
 {
     zero(r, m);
     mult_gmp(a, b, r, m);
+//     int precr = prec(r, m);
+//    //if (precr >= m/2) printf("prec: %u\n", precr);
+//     int precw = prec(b, m);
+//     int precv = prec(a, m);
+
+//     printf("res: %u, d: %u, w: %u, v: %u\n", precr, d, precw, precv);
+
+  // prnt("res", r, m);
     for (int i = 0; i < m; i++)
     {
         if (i >= d)
@@ -259,7 +267,16 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     {
         bigint_t Bh = bpow(h, m);
         mult_gmp(v, w, B, m);
-        
+    //     printf("l:%u \n", l);
+    //     printf("L:%u \n", L);
+    //     printf("h:%u \n", h);
+    //     int precr = prec(B, m);
+    //   //  if (precr >= m/2) printf("prec: %u\n", precr);
+    //     int precw = prec(w, m);
+    //     int precv = prec(v, m);
+
+    //     printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
+
         if (lt(B, Bh, m)) {
             sub_gmp(Bh, B, B, m);
         }
@@ -267,11 +284,13 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         {
             sub_gmp(B, Bh, B, m);
             sign = 0;
+            printf("less");
         }
         free(Bh);
     }
     else
     {
+      //  printf("l:%u \n", l);
         multmod(v, w, L, B, m);
         if (!ez(B, m))
         {
@@ -310,21 +329,44 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
  */
 void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
 {
+   // printf("h: %u, \n", h);
+  //  printf("n: %u, \n", n);
     bigint_t tmp = init(m);
 
     prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
 
+   // int precv = prec(tmp, m);
+    // printf("v: %u, \n", prec(v, m));
+    // printf("m: %i, \n", m );
+    // printf("w: %u, \n", prec(w, m));
+    // printf("right: %u, \n", prec(tmp, m));
     mult_gmp(w, tmp, tmp, m);
+   // int precr = prec(tmp, m);
+    // if (precr >= m/2) printf("prec: %u\n", precr);
+    // int precw = prec(w, m);
 
+    // printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
+    // printf("res: %u, \n", precr);
+    // printf("test: %i, \n", 2 * n - h);
+   // printf("m: %i, \n", n );
+ //   printf("right: %u, \n", prec(tmp, m));
     shift(2 * n - h, tmp, tmp, m);
+  //  prnt("right", tmp, m);
+  //  printf("right: %u, \n", prec(tmp, m));
+  //  printf("left: %u, \n", prec(w, m));
     shift(n, w, w, m);
+  //  printf("m: %u \n", n);
+   // prnt("w", w, m);
+  //  printf("left: %u, \n", prec(w, m));
 
     if (sign) {
+        prnt("res",w,m);
         add_gmp(w, tmp, w, m);
     }
     else {
         sub_gmp(w, tmp, w, m);
     }
+  //  prnt("res", w, m);
 
     free(tmp);
 }
@@ -348,14 +390,19 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
     shift(g, w, w, m);
     while (h - k > l)
     {
+        // printf("1:%u \n", h - k + 1 - l);
+        // printf("2:%u \n", l);
         int n = min(h - k + 1 - l, l);
         s = max(0, k - 2 * l + 1 - g);
         shift(-s, v, v0, m);
         step(k + l + n - s + g, v0, w, n, l, g, m);
+     //   printf("res11: %u\n", prec(w, m));
         shift(-1, w, w, m);
         l = l + n - 1;
+       // printf("n:%u \n", n);
+      //  printf("l:%u \n", l);
     }
-    prnt("w",w,m);
+  //  prnt("w",w,m);
     shift(-g, w, w, m);
     free(v0);
 }
@@ -372,6 +419,7 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
 void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 {
     int k = prec(v, m) - 1;
+  //  printf("k: %u \n",k);
     bool rp = 0;
 
     bigint_t B = bpow(1, m);
@@ -462,6 +510,8 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
     // Calculate quotient
     shinv(b, h, c, p);
     mult_gmp(a, c, c, p);
+    // int precr = prec(c, p);
+    // if (precr >= m) printf("prec: %u\n", precr);
 
     shift(-h, c, c, p);
     cpy(q, c, m);
@@ -469,7 +519,6 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
     // Calculate remainder
     mult_gmp(v, q, a, m);
     sub_gmp(u, a, r, m);
-
     if (!lt(r, v, m))
     {
         bigint_t a = bpow(0, m);

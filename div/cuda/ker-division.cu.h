@@ -1,11 +1,14 @@
-#include "ker-helpers.cu.h"
-#include "../../cuda/helper.h"
-#include "../../cuda/ker-classic-mul.cu.h"
+#include "helpers/types.cu.h"
+#include "helpers/scan_reduce.cu.h"
+#include "helpers/ker-helpers.cu.h"
+#include "binops/add.cu.h"
+#include "binops/sub.cu.h"
+#include "binops/mult.cu.h"
 
 template<uint32_t M, uint32_t Q>
 __device__ inline void
 multMod(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t UReg[Q], uint32_t VReg[Q], int d, uint32_t RReg[Q]) {
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, VReg, RReg); 
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, VReg, RReg, M); 
     #pragma unroll
     for (int i=0; i < Q; i++) {
         if (Q * threadIdx.x + i >= d)
@@ -31,7 +34,7 @@ powDiff(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32
         zeroAndSet<Q>(VReg, 1, h);
     }
     else if (L >= h) {
-        bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg, VReg); 
+        bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg, VReg, M); 
         sub<Q>(h, VReg, USh);
     }
     else {
@@ -57,17 +60,18 @@ __device__ inline void
 step(volatile uint32_t* USh, volatile uint32_t* VSh, int h, uint32_t VReg[Q], uint32_t RReg[Q], int n, int l) {
     bool sign = powDiff<M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, RReg, VReg, VReg); 
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, RReg, VReg, VReg, M); 
     shift<M, Q>(2 * n - h, VReg, VSh, VReg);
     __syncthreads();
     shift<M, Q>(n, RReg, USh, RReg);
     __syncthreads();
 
     if (sign) {
-        baddRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg, VReg, RReg);
+        __syncthreads();
+        baddRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, RReg, VReg, RReg, M);
     }
     else {
-        bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg, VReg, RReg);
+        bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, RReg, VReg, RReg, M);
     }
 }
 
@@ -117,7 +121,7 @@ shinv(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32_t
         set<Q>(RReg, 1, h - k);
         return;
     }
-  //  __syncthreads();
+   __syncthreads();
     int l = min(k, 2);    
     {
         if (threadIdx.x < (Q+3) / Q) {
@@ -159,9 +163,9 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     uint32_t RReg1[Q] = {0};
     uint32_t RReg2[Q] = {0};
 
-    cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
-    cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
-    __syncthreads();
+     cpyGlb2Sh2Reg<M, Q>(v, VSh, VReg);
+     cpyGlb2Sh2Reg<M, Q>(u, USh, UReg);
+     __syncthreads();
 
     int h = prec<Q>(UReg, USh);
     __syncthreads();
@@ -169,29 +173,26 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem,
     shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
 
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1);
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
     
     shift<M, Q>(-h, RReg1, USh, RReg1);
     __syncthreads();
-
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2); 
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
-    bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2);
+    bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2, M);
     __syncthreads();
-
     if (!lt<Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Q>(RReg1, USh);
         __syncthreads();
-        bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2);
+        bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2, M);
     }
     __syncthreads();
-    cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
-    cpyReg2Sh2Glb<M, Q>(RReg2, USh, rem);
+     cpyReg2Sh2Glb<M, Q>(RReg1, VSh, quo);
+     cpyReg2Sh2Glb<M, Q>(RReg2, USh, rem);
     __syncthreads();
 }
-
 
 template<uint32_t M, uint32_t Q>
 __global__ void quoShinv(uint32_t* u, uint32_t* v, uint32_t* quo, const uint32_t num_instances) {
@@ -213,22 +214,22 @@ __global__ void quoShinv(uint32_t* u, uint32_t* v, uint32_t* quo, const uint32_t
     shinv<M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
 
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1);
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
     
     shift<M, Q>(-h, RReg1, USh, RReg1);
     __syncthreads();
 
-    bmulRegsQ<U32bits, 1, M, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2); 
+    bmulRegsQ<U32bits, 1, Q/2>((uint32_t*)USh, (uint32_t*)VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
-    bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2);
+    bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, UReg, RReg2, RReg2, M);
     __syncthreads();
 
     if (!lt<Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Q>(RReg1, USh);
         __syncthreads();
-        bsubRegs<uint32_t, uint32_t, uint32_t, M, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2);
+        bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>((uint32_t*)VSh, RReg2, VReg, RReg2, M);
     }
     __syncthreads();
 

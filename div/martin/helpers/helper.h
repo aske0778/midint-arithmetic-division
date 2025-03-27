@@ -1,3 +1,4 @@
+#include <gmp.h>
 
 void prnt(const char *str, uint32_t *u, uint32_t m)
 {
