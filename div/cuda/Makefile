@@ -5,7 +5,7 @@ SRC_TEST = test
 SRC_BENCH = benchmarks
 SRC_time = timing
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 134217728
 
 default: main
 

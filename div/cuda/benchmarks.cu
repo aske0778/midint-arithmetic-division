@@ -145,9 +145,9 @@ void mkRandArrays ( int num_instances
 /****************************/
 
 template<class Base, uint32_t m>  // m is the size of the big word in Base::uint_t units
-void gpuDiv ( int num_instances
-            , typename Base::uint_t* h_as
-            , typename Base::uint_t* h_bs
+void gpuDiv ( uint32_t num_instances
+            , typename Base::uint_t* u
+            , typename Base::uint_t* v
             , typename Base::uint_t* h_rs
             ) 
 {
@@ -157,16 +157,18 @@ void gpuDiv ( int num_instances
     uint_t* d_as;
     uint_t* d_bs;
     uint_t* d_rs;
-    size_t mem_size_nums = num_instances * m * sizeof(uint_t);
+    uint32_t mem_size_nums = num_instances * m * sizeof(uint_t);
+
     
     // 1. allocate device memory
-    cudaMalloc((void**) &d_as, mem_size_nums);
-    cudaMalloc((void**) &d_bs, mem_size_nums);
-    cudaMalloc((void**) &d_rs, mem_size_nums);
+    cudaMalloc((void**)&d_as, mem_size_nums);
+    cudaMalloc((void**)&d_bs, mem_size_nums);
+    cudaMalloc((void**)&d_rs, mem_size_nums);
  
     // 2. copy host memory to device
-    cudaMemcpy(d_as, h_as, mem_size_nums, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_bs, h_bs, mem_size_nums, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_as, u, mem_size_nums, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_bs, v, mem_size_nums, cudaMemcpyHostToDevice);
+
 
     // 3. kernel dimensions
     const uint32_t q = 8; // use 8 for A4500 
@@ -193,7 +195,7 @@ void gpuDiv ( int num_instances
     
     // 4. dry run
     {
-        quoShinv<m, q><<<1, m/q, 2 * mem_size_nums>>>((uint32_t*)d_as,(uint32_t*) d_bs, (uint32_t*) d_rs, num_instances);
+        quoShinv<m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -206,10 +208,10 @@ void gpuDiv ( int num_instances
         uint64_t elapsed;
         struct timeval t_start, t_end, t_diff;
         gettimeofday(&t_start, NULL); 
+        printf("m/q = %d \n", (m/q));
         
         for(int i=0; i<GPU_RUNS_ADD; i++) {
-            quoShinv<m,q><<< grid, block, 2 * mem_size_nums>>>((uint32_t*) d_as, (uint32_t*) d_bs, (uint32_t*) d_rs, num_instances);
-            // baddKer<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+            quoShinv<m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
         }
         
         cudaDeviceSynchronize();
@@ -242,26 +244,30 @@ void gpuDiv ( int num_instances
 
 template<class Base, int m>
 void testDivision( int num_instances
-                 , uint64_t* h_as_64
-                 , uint64_t* h_bs_64
-                 , uint64_t* h_rs_gmp_64
-                 , uint64_t* h_rs_our_64
+                 , typename Base::uint_t* res_gmp
+                 , typename Base::uint_t* res_our
                  , uint32_t with_validation
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t *h_as = (uint_t*) h_as_64;
-    uint_t *h_bs = (uint_t*) h_bs_64;
-    uint_t *h_rs_our = (uint_t*) h_rs_our_64;
-    uint32_t *h_rs_gmp_32 = (uint32_t*) h_rs_gmp_64;
+    //uint_t *h_as = (uint_t*) h_as_64;
+    //uint_t *h_bs = (uint_t*) h_bs_64;
+    //uint_t *h_rs_our = (uint_t*) h_rs_our_64;
+    //uint32_t *h_rs_gmp_32 = (uint32_t*) h_rs_gmp_64;
+
+
+    uint_t uPrec = (m / 2) - 1;
+    uint_t vPrec = (uPrec) - 3;
+    uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
 
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
     if(with_validation)
-        gmpQuo<m>(num_instances, (uint32_t*)h_as, (uint32_t*)h_bs, h_rs_gmp_32);
+        gmpQuo<m>(num_instances, u, v, res_gmp);
 
-    gpuDiv<Base, m/x>(num_instances, h_as, h_bs, h_rs_our);
+    gpuDiv<Base, m/x>(num_instances, u, v, res_our);
 
 #if 0
     uint32_t querry_instance = 0;
@@ -276,7 +282,7 @@ void testDivision( int num_instances
 #endif
 
     if(with_validation)  
-        validateExact(h_rs_gmp_32, (uint32_t*)h_rs_our, num_instances*m);
+        validateExact(res_gmp, res_our, num_instances*m);
 }
 
 
@@ -287,24 +293,23 @@ void testDivision( int num_instances
  
 template<typename Base>
 void runDivisions(uint64_t total_work) {
-    uint64_t *h_as, *h_bs, *h_rs_gmp, *h_rs_our;
-    mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
+
+    using uint_t = typename Base::uint_t;
+    uint_t  *res_gmp, *res_our;
     
 #if 1
-    testDivision<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,  512>( total_work/512,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,  256>( total_work/256,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,  128>( total_work/128,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,   64>( total_work/64,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,   32>( total_work/32,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testDivision<Base,   16>( total_work/16,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testDivision<Base, 4096>(total_work/4096, res_gmp, res_our, 0 );
+    testDivision<Base, 2048>( total_work/2048, res_gmp, res_our, 0 );
+    testDivision<Base, 1024>( total_work/1024, res_gmp, res_our, 0 );
+    testDivision<Base,  512>( total_work/512,  res_gmp, res_our, 0 );
+    testDivision<Base,  256>( total_work/256,  res_gmp, res_our, 0 );
+    testDivision<Base,  128>( total_work/128,  res_gmp, res_our, 0 );
+    testDivision<Base,   64>( total_work/64,   res_gmp, res_our, 0 );
+    testDivision<Base,   32>( total_work/32,   res_gmp, res_our, 0 );
+    testDivision<Base,   16>( total_work/16,   res_gmp, res_our, 0 );
 #endif
-    free(h_as);
-    free(h_bs);
-    free(h_rs_gmp);
-    free(h_rs_our);
+    free(res_gmp);
+    free(res_our);
 }
  
  
@@ -317,5 +322,5 @@ int main (int argc, char * argv[]) {
     const int total_work = atoi(argv[1]);
 
     cudaSetDevice(1);
-    runDivisions<U64bits>(total_work);
+    runDivisions<U32bits>(total_work);
 }
