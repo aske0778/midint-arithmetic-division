@@ -120,7 +120,7 @@ using namespace std;
 #define GPU_RUNS_MUL    25
 #define ERR         0.000005
 
-#define WITH_VALIDATION 0
+#define WITH_VALIDATION 1
 
 
 template<int m, int nz>
@@ -208,7 +208,7 @@ void gpuDiv ( uint32_t num_instances
         uint64_t elapsed;
         struct timeval t_start, t_end, t_diff;
         gettimeofday(&t_start, NULL); 
-        printf("m/q = %d \n", (m/q));
+        // printf("m/q = %d \n", (m/q));
         
         for(int i=0; i<GPU_RUNS_ADD; i++) {
             quoShinv<m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
@@ -255,11 +255,11 @@ void testDivision( int num_instances
     //uint_t *h_rs_our = (uint_t*) h_rs_our_64;
     //uint32_t *h_rs_gmp_32 = (uint32_t*) h_rs_gmp_64;
 
-
     uint_t uPrec = (m / 2) - 1;
     uint_t vPrec = (uPrec) - 3;
-    uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
+
+    uint_t* u = randBigInt(uPrec, m, num_instances);
+    uint_t* v = randBigInt(vPrec, m, num_instances);
 
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
@@ -295,18 +295,22 @@ template<typename Base>
 void runDivisions(uint64_t total_work) {
 
     using uint_t = typename Base::uint_t;
-    uint_t  *res_gmp, *res_our;
+    uint_t *res_gmp, *res_our;
+
+    res_our = (uint_t*)calloc(total_work, sizeof(uint_t));
+    res_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
+
     
 #if 1
-    testDivision<Base, 4096>(total_work/4096, res_gmp, res_our, 0 );
-    testDivision<Base, 2048>( total_work/2048, res_gmp, res_our, 0 );
-    testDivision<Base, 1024>( total_work/1024, res_gmp, res_our, 0 );
-    testDivision<Base,  512>( total_work/512,  res_gmp, res_our, 0 );
-    testDivision<Base,  256>( total_work/256,  res_gmp, res_our, 0 );
-    testDivision<Base,  128>( total_work/128,  res_gmp, res_our, 0 );
-    testDivision<Base,   64>( total_work/64,   res_gmp, res_our, 0 );
-    testDivision<Base,   32>( total_work/32,   res_gmp, res_our, 0 );
-    testDivision<Base,   16>( total_work/16,   res_gmp, res_our, 0 );
+    testDivision<Base, 4096>(total_work/4096, res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
+    testDivision<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
 #endif
     free(res_gmp);
     free(res_our);
