@@ -12,6 +12,17 @@ void prnt(const char *str, uint32_t *u, uint32_t m)
     printf("]\n");
 }
 
+void printSlice(uint32_t* u, char name, int i, uint32_t m) {
+    int min = i-3 < 0 ? 0 : i-3;
+    int max = i+3 > m ? m : i+3;
+
+    printf("%c[%u-%u]: [", name, min, max);
+    for (int i = min; i < max; i++) {
+        printf("%u, ", u[i]);
+    }
+    printf("]\n");
+}
+
 void set(uint32_t* u, uint32_t d, uint32_t m)
 {
     for (int i = 0; i < m; i++)
