@@ -9,11 +9,11 @@ int main() {
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t num_instances = 1;
-    const uint32_t Q = 16;
+    const uint32_t Q = 24;
     const uint32_t M = 6144;
     const uint32_t total_work = M * num_instances;
 
-    for (int i = 0; i < 1 && !stop; i++) {
+    for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint32_t uPrec = M - 1;
         uint32_t vPrec = uPrec - Q;
@@ -31,7 +31,6 @@ int main() {
         cudaMemcpy(d_u, u, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
         cudaMemcpy(d_v, v, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
-        // cudaFuncSetAttribute(divShinv<M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
         cudaFuncSetAttribute(divShinv<M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
 
         divShinv<M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
