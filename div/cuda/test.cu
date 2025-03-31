@@ -8,12 +8,12 @@
 int main() {
   //  srand(time(NULL));
     bool stop = false;
-    const uint32_t num_instances = 100;
-    const uint32_t Q = 4;
-    const uint32_t M = 2048;
+    const uint32_t num_instances = 1;
+    const uint32_t Q = 8;
+    const uint32_t M = 3040;
     const uint32_t total_work = M * num_instances;
 
-    for (int i = 0; i < 100 && !stop; i++) {
+    for (int i = 0; i < 1000 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint32_t uPrec = (M / 2) - 1;
         uint32_t vPrec = (uPrec) - Q;

@@ -37,6 +37,7 @@ void cpyReg2Shm ( S Rrg[Q], volatile S* shmem ) {
     for(int i=0; i<Q; i++) {
         shmem[Q*threadIdx.x + i] = Rrg[i];
     }
+    __syncthreads();
 }
 
 template<class S, uint32_t Q>
@@ -45,6 +46,7 @@ void cpyShm2Reg ( volatile S* shmem, S Rrg[Q] ) {
     for(int i=0; i<Q; i++) {
         Rrg[i] = shmem[Q*threadIdx.x + i];
     }
+    __syncthreads();
 }
 
 template<uint32_t Q>
@@ -144,6 +146,30 @@ __device__ inline void shift(int n, uint32_t u[Q], volatile uint32_t* sh_mem, ui
     }
     __syncthreads();
 }
+
+template<uint32_t M, uint32_t Q>
+__device__ inline void shift1(int n, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t RReg[Q]) {
+    #pragma unroll
+    for (int i = 0; i < Q*2; i++) {
+        int idx = Q*2 * threadIdx.x + i;
+        int offset = idx + n;
+
+        if (offset >= 0 && offset < M) {
+            sh_mem[offset] = u[i];
+        }
+        else {
+            sh_mem[M-idx-1] = 0;
+        }
+    }
+    __syncthreads();
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        RReg[i] = sh_mem[Q * threadIdx.x + i];
+    }
+    __syncthreads();
+}
+
 
 template<uint32_t Q>
 __device__ inline void quo(uint32_t bpow, uint32_t d, uint32_t RReg[Q]) {
