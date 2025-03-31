@@ -6,8 +6,8 @@
 
 int main()
 {
-    const uint32_t M = 1024;
-    const uint32_t Q = 8;
+    const uint32_t M = 4096;
+    const uint32_t Q = 16;
     const uint32_t num_instances = 1;
     // const uint32_t total_work = M * num_instances;
     const uint32_t size = M * sizeof(uint32_t);
@@ -29,6 +29,7 @@ int main()
 
     divShinv<M, Q><<<1, M/Q, 2 * size>>>(d_u, d_v, d_quo, d_rem, num_instances);
     cudaDeviceSynchronize();
+    gpuAssert( cudaPeekAtLastError() );
 
     cudaMemcpy(quo, d_quo, size, cudaMemcpyDeviceToHost);
     cudaMemcpy(rem, d_rem, size, cudaMemcpyDeviceToHost);

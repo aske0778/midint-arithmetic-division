@@ -6,9 +6,7 @@
 #include "helpers/helper.h"
 #include "ker-division.cu.h"
 
-//#include "goldenSeq.h"
 
-//#define WITH_INT_128 1
 
 int gpuAssert(cudaError_t code) {
   if(code != cudaSuccess) {
@@ -33,19 +31,30 @@ void randomInit(T* data, uint64_t size) {
         data[i] = rand();
 }
 
+// template<typename uint_t>
+// uint64_t numAd32OpsOfMultInst(uint32_t m0) {
+//     uint32_t m = m0*sizeof(uint_t) / 4;
+//     uint32_t lgm = 0, mm = m;
+//     for( ; mm > 1; mm >>= 1) lgm++;
+//     //printf("Log %d is %d\n", m, lgm);
+//     return 300 * m * lgm;
+// }
+
+/**
+ * Number of giga-u32-bit unit operations.
+ */
 template<typename uint_t>
-uint64_t numAd32OpsOfMultInst(uint32_t m0) {
+uint64_t numAd32OpsOfDivInst(uint32_t m0) {
     uint32_t m = m0*sizeof(uint_t) / 4;
     uint32_t lgm = 0, mm = m;
     for( ; mm > 1; mm >>= 1) lgm++;
-    //printf("Log %d is %d\n", m, lgm);
-    return 300 * m * lgm;
+    uint64_t fft_cost = 300 * m * lgm;
+    return 3*fft_cost;
 }
 
 /**
  * Initialize the `data` array, which has `size` elements:
  * frac% of them are NaNs and (1-frac)% are random values.
- * 
  */
 void randomMask(char* data, uint64_t size, float frac) {
     for (uint64_t i = 0; i < size; i++) {
@@ -54,7 +63,9 @@ void randomMask(char* data, uint64_t size, float frac) {
     }
 }
 
-// error for matmul: 0.02
+/**
+ * Validates asb(A - B) < ERR
+ */
 template<class T>
 bool validate(T* A, T* B, const uint64_t sizeAB, const T ERR){
     for(uint64_t i = 0; i < sizeAB; i++) {
@@ -68,6 +79,9 @@ bool validate(T* A, T* B, const uint64_t sizeAB, const T ERR){
     return true;
 }
 
+/**
+ * Validates exactly A == B
+ */
 template<class T>
 bool validateExact(T* A, T* B, uint64_t sizeAB){
     for(uint64_t i = 0; i < sizeAB; i++) {
@@ -116,11 +130,11 @@ void ourMkRandom(uint32_t num_instances, uint32_t* as) {
 
 using namespace std;
 
-#define GPU_RUNS_DIV    50
+#define GPU_RUNS_DIV    25
 #define GPU_RUNS_MUL    25
 #define ERR         0.000005
 
-#define WITH_VALIDATION 1
+#define WITH_VALIDATION 0
 
 
 template<int m, int nz>
@@ -206,7 +220,6 @@ void gpuDiv ( uint32_t num_instances
         uint64_t elapsed;
         struct timeval t_start, t_end, t_diff;
         gettimeofday(&t_start, NULL); 
-        // printf("m/q = %d \n", (m/q));
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
             quoShinv<m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
@@ -221,12 +234,12 @@ void gpuDiv ( uint32_t num_instances
         gpuAssert( cudaPeekAtLastError() );
 
         double runtime_microsecs = elapsed; 
-        double bytes_accesses = 3.0 * num_instances * m * sizeof(uint_t);  
-        double gigabytes = bytes_accesses / (runtime_microsecs * 1000);
+        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
         printf( "Division on %d-bit Big-Numbers (base u%d) runs %d instances in: \
-%lu microsecs, GB/sec: %.2f, Mil-Instances/sec: %.2f\n"
-              , m*x*32, Base::bits, num_instances, elapsed, gigabytes, num_instances / runtime_microsecs
+%lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
+              , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
               );
     }
     
@@ -282,6 +295,7 @@ void runDivisions(uint64_t total_work) {
 
     
 #if 1
+    // testDivision<Base, 8192>( total_work/8192, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
@@ -295,7 +309,7 @@ void runDivisions(uint64_t total_work) {
     free(res_gmp);
     free(res_our);
 }
- 
+
  
 int main (int argc, char * argv[]) {
     if (argc != 2) {
