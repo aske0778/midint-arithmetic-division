@@ -6,42 +6,46 @@
 
 
 int main() {
+    using Base = U32bits;
+    using uint_t = Base::uint_t;
+
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t num_instances = 1;
-    const uint32_t Q = 24;
-    const uint32_t M = 6144;
+    const uint32_t Q = 32;
+    const uint32_t M = 8192;
     const uint32_t total_work = M * num_instances;
+    const uint32_t total_work_size = total_work * sizeof(uint_t);
 
-    for (int i = 0; i < 1 && !stop; i++) {
+    for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint32_t uPrec = M - 1;
         uint32_t vPrec = uPrec - Q;
-        uint32_t* u = randBigInt(uPrec, M, num_instances);
-        uint32_t* v = randBigInt(vPrec, M, num_instances);
-        uint32_t* quo = (uint32_t*)calloc(total_work, sizeof(uint32_t));
-        uint32_t* rem = (uint32_t*)calloc(total_work, sizeof(uint32_t));
+        uint_t* u = randBigInt<uint_t>(uPrec, M, num_instances);
+        uint_t* v = randBigInt<uint_t>(vPrec, M, num_instances);
+        uint_t* quo = (uint_t*)calloc(total_work, sizeof(uint_t));
+        uint_t* rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-        uint32_t *d_u, *d_v, *d_quo, *d_rem;
-        cudaMalloc((void **)&d_u, total_work * sizeof(uint32_t));
-        cudaMalloc((void **)&d_v, total_work * sizeof(uint32_t));
-        cudaMalloc((void **)&d_quo, total_work * sizeof(uint32_t));
-        cudaMalloc((void **)&d_rem, total_work * sizeof(uint32_t));
+        uint_t *d_u, *d_v, *d_quo, *d_rem;
+        cudaMalloc((void **)&d_u, total_work_size);
+        cudaMalloc((void **)&d_v, total_work_size);
+        cudaMalloc((void **)&d_quo, total_work_size);
+        cudaMalloc((void **)&d_rem, total_work_size);
 
-        cudaMemcpy(d_u, u, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_v, v, total_work * sizeof(uint32_t), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_u, u, total_work_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_v, v, total_work_size, cudaMemcpyHostToDevice);
 
-        cudaFuncSetAttribute(divShinv<M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
+        cudaFuncSetAttribute(divShinv<Base, M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
 
-        divShinv<M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
+        divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
 
-        cudaMemcpy(quo, d_quo, total_work * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-        cudaMemcpy(rem, d_rem, total_work * sizeof(uint32_t), cudaMemcpyDeviceToHost);
+        cudaMemcpy(quo, d_quo, total_work_size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(rem, d_rem, total_work_size, cudaMemcpyDeviceToHost);
 
-        uint32_t* quo_gmp = (uint32_t*)calloc(total_work, sizeof(uint32_t));
-        uint32_t* rem_gmp = (uint32_t*)calloc(total_work, sizeof(uint32_t));
+        uint_t* quo_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
+        uint_t* rem_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
         //uint32_t** u_gmp = (uint32_t**)calloc(num_instances, sizeof(uint32_t));
         //uint32_t** v_gmp = (uint32_t**)calloc(num_instances, sizeof(uint32_t));
 

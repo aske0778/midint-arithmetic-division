@@ -54,14 +54,19 @@ __device__ void bsubRegs( volatile CT* Csh
     __syncthreads();
 }
 
-template<uint32_t Q>
-__device__ inline void sub(uint32_t bpow, uint32_t u[Q], volatile uint32_t* sh_mem) {
-    sh_mem[0] = UINT32_MAX;
+template<typename Base, uint32_t Q>
+__device__ inline void
+sub( uint32_t bpow
+   , typename Base::uint_t u[Q]
+   , volatile typename Base::uint_t* sh_mem
+) {
+    using uint_t = typename Base::uint_t;
+    sh_mem[0] = Base::HIGHEST;
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
-        if (u[i] != UINT32_MAX) {
-            atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
+        if (u[i] != Base::HIGHEST) {
+            atomicMin((uint_t*)sh_mem, Q * threadIdx.x + i);
             break;
         }
     }

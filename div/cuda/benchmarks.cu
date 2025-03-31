@@ -6,6 +6,13 @@
 #include "helpers/helper.h"
 #include "ker-division.cu.h"
 
+using namespace std;
+
+#define GPU_RUNS_DIV    25
+#define GPU_RUNS_MUL    25
+#define ERR         0.000005
+
+#define WITH_VALIDATION 0
 
 int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
 {
@@ -15,21 +22,6 @@ int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval 
     result->tv_usec = diff % resolution;
     return (diff<0);
 }
-
-template<class T>
-void randomInit(T* data, uint64_t size) {
-    for (uint64_t i = 0; i < size; i++)
-        data[i] = rand();
-}
-
-// template<typename uint_t>
-// uint64_t numAd32OpsOfMultInst(uint32_t m0) {
-//     uint32_t m = m0*sizeof(uint_t) / 4;
-//     uint32_t lgm = 0, mm = m;
-//     for( ; mm > 1; mm >>= 1) lgm++;
-//     //printf("Log %d is %d\n", m, lgm);
-//     return 300 * m * lgm;
-// }
 
 /**
  * Number of giga-u32-bit unit operations.
@@ -44,24 +36,13 @@ uint64_t numAd32OpsOfDivInst(uint32_t m0) {
 }
 
 /**
- * Initialize the `data` array, which has `size` elements:
- * frac% of them are NaNs and (1-frac)% are random values.
- */
-void randomMask(char* data, uint64_t size, float frac) {
-    for (uint64_t i = 0; i < size; i++) {
-        float r = rand() / (float)RAND_MAX;
-        data[i] = (r >= frac) ? 1 : 0;
-    }
-}
-
-/**
  * Validates asb(A - B) < ERR
  */
 template<class T>
-bool validate(T* A, T* B, const uint64_t sizeAB, const T ERR){
+bool validate(T* A, T* B, const uint64_t sizeAB, const T err){
     for(uint64_t i = 0; i < sizeAB; i++) {
         T curr_err = fabs( (A[i] - B[i]) / max(A[i], B[i]) ); 
-        if (curr_err >= ERR) {
+        if (curr_err >= err) {
             printf("INVALID RESULT at flat index %llu: %f vs %f\n", i, A[i], B[i]);
             return false;
         }
@@ -85,65 +66,6 @@ bool validateExact(T* A, T* B, uint64_t sizeAB){
     return true;
 }
 
-template<class T, uint32_t m>
-void printInstance(uint32_t q, T* as) {
-    printf(" [ %lu", as[q*m]);
-    for(int i=1; i<m; i++) {
-        printf(", %lu", as[q*m+i]);
-    }
-    printf("] \n");
-}
-
-
-/**
- * Creates `num_instances` big integers:
- * A big integer consists of `m` u32 words,
- * from which the first `nz` are nonzeroes,
- * and the rest are zeros.
- */
-template<int m, int nz>
-void ourMkRandom(uint32_t num_instances, uint32_t* as) {
-    uint32_t* it_as = as;
-
-    for(int i=0; i<num_instances; i++, it_as += m) {
-        for(int k = 0; k < m; k++) {
-            uint32_t v = 0;
-            if(k < nz) {
-                uint32_t low  = rand()*2;
-                uint32_t high = rand()*2;
-                v = (high << 16) + low;
-            }
-            it_as[k] = v;
-        }        
-    }
-}
-
-
-using namespace std;
-
-#define GPU_RUNS_DIV    25
-#define GPU_RUNS_MUL    25
-#define ERR         0.000005
-
-#define WITH_VALIDATION 0
-
-
-template<int m, int nz>
-void mkRandArrays ( int num_instances
-                  , uint64_t** h_as
-                  , uint64_t** h_bs
-                  , uint64_t** h_rs_gmp
-                  , uint64_t** h_rs_our
-                  ) {
-
-    *h_as     = (uint64_t*) malloc( num_instances * m * sizeof(uint32_t) );
-    *h_bs     = (uint64_t*) malloc( num_instances * m * sizeof(uint32_t) );
-    *h_rs_gmp = (uint64_t*) malloc( num_instances * m * sizeof(uint32_t) );
-    *h_rs_our = (uint64_t*) malloc( num_instances * m * sizeof(uint32_t) );
-        
-    ourMkRandom<m, nz>(num_instances, (uint32_t*)*h_as);
-    ourMkRandom<m, nz>(num_instances, (uint32_t*)*h_bs);
-}
 
 /****************************/
 /***** Single Division ******/
@@ -198,7 +120,7 @@ void gpuDiv ( uint32_t num_instances
     
     // 4. dry run
     {
-        quoShinv<m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
+        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -213,7 +135,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
+            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
         }
         
         cudaDeviceSynchronize();
@@ -255,8 +177,8 @@ void testDivision( int num_instances
     uint_t uPrec = m;
     uint_t vPrec = uPrec - (m/4);
 
-    uint_t* u = randBigInt(uPrec, m, num_instances);
-    uint_t* v = randBigInt(vPrec, m, num_instances);
+    uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
 
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));

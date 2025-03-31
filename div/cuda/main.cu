@@ -6,19 +6,22 @@
 
 int main()
 {
+    using Base = U32bits;
+    using uint_t = Base::uint_t;
+
     const uint32_t M = 4096;
     const uint32_t Q = 16;
     const uint32_t num_instances = 1;
     // const uint32_t total_work = M * num_instances;
-    const uint32_t size = M * sizeof(uint32_t);
+    const uint32_t size = M * sizeof(uint_t);
 
     uint32_t uPrec = M;
-    uint32_t* u = randBigInt(uPrec, M, num_instances);
-    uint32_t* v = randBigInt(uPrec - 8, M, num_instances);
-    uint32_t quo[M] = {0};
-    uint32_t rem[M] = {0};
+    uint_t* u = randBigInt<uint_t>(uPrec, M, num_instances);
+    uint_t* v = randBigInt<uint_t>(uPrec - 8, M, num_instances);
+    uint_t quo[M] = {0};
+    uint_t rem[M] = {0};
 
-    uint32_t *d_u, *d_v, *d_quo, *d_rem;
+    uint_t *d_u, *d_v, *d_quo, *d_rem;
     cudaMalloc((void **)&d_u, size);
     cudaMalloc((void **)&d_v, size);
     cudaMalloc((void **)&d_quo, size);
@@ -27,15 +30,15 @@ int main()
     cudaMemcpy(d_u, u, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, size, cudaMemcpyHostToDevice);
 
-    divShinv<M, Q><<<1, M/Q, 2 * size>>>(d_u, d_v, d_quo, d_rem, num_instances);
+    divShinv<Base, M, Q><<<1, M/Q, 2 * size>>>(d_u, d_v, d_quo, d_rem, num_instances);
     cudaDeviceSynchronize();
     gpuAssert( cudaPeekAtLastError() );
 
     cudaMemcpy(quo, d_quo, size, cudaMemcpyDeviceToHost);
     cudaMemcpy(rem, d_rem, size, cudaMemcpyDeviceToHost);
 
-    uint32_t quo_gmp[M] = {0};
-    uint32_t rem_gmp[M] = {0};
+    uint_t quo_gmp[M] = {0};
+    uint_t rem_gmp[M] = {0};
     div_gmp(u, v, quo_gmp, rem_gmp, M);
 
     for (int i = 0; i < M; i++) {

@@ -60,14 +60,16 @@ void div_gmp(uint32_t* u, uint32_t* v, uint32_t* q, uint32_t* r, uint32_t m)
     mpz_clear(d);
 }
 
-
-uint32_t* randBigInt(uint32_t prec, uint32_t m, uint32_t num_instances)
-{
-    uint32_t* u = (uint32_t*)calloc(m*num_instances, sizeof(uint32_t));
+template<class uint_t>
+uint_t* randBigInt( uint32_t prec
+                  , uint32_t m
+                  , uint32_t num_instances
+) {
+    uint_t* u = (uint_t*)calloc(m*num_instances, sizeof(uint_t));
     for (int j = 0; j < num_instances; j++){
         for (int i = 0; i < prec; i++)
         {
-            u[i + (j * m)] = (uint32_t)rand();
+            u[i + (j * m)] = (uint_t)rand();
         }
     }
     return u;
