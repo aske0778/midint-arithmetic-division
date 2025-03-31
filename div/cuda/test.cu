@@ -13,7 +13,7 @@ int main() {
     const uint32_t M = 6144;
     const uint32_t total_work = M * num_instances;
 
-    for (int i = 0; i < 100 && !stop; i++) {
+    for (int i = 0; i < 1 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint32_t uPrec = M - 1;
         uint32_t vPrec = uPrec - Q;
