@@ -8,8 +8,11 @@ __device__ inline int scanIncWarp(int u, uint32_t lane) {
     return u;
 }
 
-template<class OP>
-__device__ inline int reduceBlock(uint32_t u, volatile uint32_t* sh_mem) {
+template<class uint_t, class OP>
+__device__ inline int
+reduceBlock( uint32_t u
+           , volatile uint_t* sh_mem
+) {
     int idx = threadIdx.x;
     const unsigned int lane   = idx & (WARP-1);
     const unsigned int warpid = idx >> lgWARP;

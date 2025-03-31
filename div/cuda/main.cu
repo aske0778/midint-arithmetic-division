@@ -7,6 +7,7 @@
 int main()
 {
     using Base = U32bits;
+    // using Base = U16bits;
     using uint_t = Base::uint_t;
 
     const uint32_t M = 4096;
@@ -39,19 +40,19 @@ int main()
 
     uint_t quo_gmp[M] = {0};
     uint_t rem_gmp[M] = {0};
-    div_gmp(u, v, quo_gmp, rem_gmp, M);
+    div_gmp<uint_t>(u, v, quo_gmp, rem_gmp, M);
 
     for (int i = 0; i < M; i++) {
         if (quo[i] != quo_gmp[i] || rem[i] != rem_gmp[i]) {
             printf("\nInputs:\n");
-            printSlice(u, 'u', i, M);
-            printSlice(v, 'v', i, M);
+            printSlice<uint_t>(u, 'u', i, M);
+            printSlice<uint_t>(v, 'v', i, M);
             printf("Output:\n");
-            printSlice(quo, 'q', i, M);
-            printSlice(rem, 'r', i, M);
+            printSlice<uint_t>(quo, 'q', i, M);
+            printSlice<uint_t>(rem, 'r', i, M);
             printf("GMP:\n");
-            printSlice(quo_gmp, 'q', i, M);
-            printSlice(rem_gmp, 'r', i, M);
+            printSlice<uint_t>(quo_gmp, 'q', i, M);
+            printSlice<uint_t>(rem_gmp, 'r', i, M);
             return 1;
         }
     }

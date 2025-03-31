@@ -19,9 +19,20 @@ struct U32bits {
     using uint_t = uint32_t;
     using sint_t = int32_t;
     using ubig_t = uint64_t;
+    using uquad_t = uint128_t;
     using carry_t= uint32_t;
     static const int32_t  bits = 32;
     static const uint_t HIGHEST = 0xFFFFFFFF;
+};
+
+struct U16bits {
+    using uint_t = uint16_t;
+    using sint_t = int16_t;
+    using ubig_t = uint32_t;
+    using uquad_t = uint64_t;
+    using carry_t= uint16_t;
+    static const int16_t  bits = 16;
+    static const uint_t HIGHEST = 0xFFFF;
 };
 
 #define LIFT_LEN(m,q) (((m + q - 1) / q) * q)

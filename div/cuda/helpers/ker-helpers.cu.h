@@ -135,7 +135,7 @@ prec( uint_t u[Q]
     #pragma unroll
     for (int i = Q-1; i >= 0; i--) {
         if (u[i] != 0) {
-            atomicMax((uint_t*)sh_mem, Q * threadIdx.x + i + 1);
+            atomicMax((uint32_t*)sh_mem, Q * threadIdx.x + i + 1);
          //   atomicMax(sh_mem, Q * threadIdx.x + i + 1);
         }
     }
@@ -317,7 +317,7 @@ __device__ inline bool lt( uint_t u[Q]
             RReg[i] = (RReg[i] & ~0b10) | (RReg[i] & RReg[i-1] & 0b10);
         }
     }
-    return reduceBlock<LessThan>(RReg[Q-1], sh_mem) & 0b01;
+    return reduceBlock<uint_t, LessThan>(RReg[Q-1], sh_mem) & 0b01;
 }
 
 template<class uint_t, uint32_t M, uint32_t Q>
