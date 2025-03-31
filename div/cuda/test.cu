@@ -9,8 +9,8 @@ int main() {
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t num_instances = 1;
-    const uint32_t Q = 8;
-    const uint32_t M = 4096;
+    const uint32_t Q = 16;
+    const uint32_t M = 8192;
     const uint32_t total_work = M * num_instances;
 
     for (int i = 0; i < 100 && !stop; i++) {

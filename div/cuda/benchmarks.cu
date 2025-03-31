@@ -252,8 +252,8 @@ void testDivision( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = m - 1;
-    uint_t vPrec = (uPrec) - 4;
+    uint_t uPrec = m;
+    uint_t vPrec = uPrec - (m/4);
 
     uint_t* u = randBigInt(uPrec, m, num_instances);
     uint_t* v = randBigInt(vPrec, m, num_instances);
