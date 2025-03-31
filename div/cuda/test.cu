@@ -10,13 +10,13 @@ int main() {
     bool stop = false;
     const uint32_t num_instances = 1;
     const uint32_t Q = 8;
-    const uint32_t M = 3040;
+    const uint32_t M = 4096;
     const uint32_t total_work = M * num_instances;
 
-    for (int i = 0; i < 1000 && !stop; i++) {
+    for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint32_t uPrec = (M / 2) - 1;
-        uint32_t vPrec = (uPrec) - Q;
+        uint32_t uPrec = M - 1;
+        uint32_t vPrec = uPrec - Q;
         uint32_t* u = randBigInt(uPrec, M, num_instances);
         uint32_t* v = randBigInt(vPrec, M, num_instances);
         uint32_t* quo = (uint32_t*)calloc(total_work, sizeof(uint32_t));

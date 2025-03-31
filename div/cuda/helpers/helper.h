@@ -60,6 +60,7 @@ void div_gmp(uint32_t* u, uint32_t* v, uint32_t* q, uint32_t* r, uint32_t m)
     mpz_clear(d);
 }
 
+
 uint32_t* randBigInt(uint32_t prec, uint32_t m, uint32_t num_instances)
 {
     uint32_t* u = (uint32_t*)calloc(m*num_instances, sizeof(uint32_t));
@@ -143,3 +144,10 @@ void gmpQuo(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
     }
 }
 
+int gpuAssert(cudaError_t code) {
+  if(code != cudaSuccess) {
+    printf("GPU Error: %s\n", cudaGetErrorString(code));
+    return -1;
+  }
+  return 0;
+}

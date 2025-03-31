@@ -7,15 +7,6 @@
 #include "ker-division.cu.h"
 
 
-
-int gpuAssert(cudaError_t code) {
-  if(code != cudaSuccess) {
-    printf("GPU Error: %s\n", cudaGetErrorString(code));
-    return -1;
-  }
-  return 0;
-}
-
 int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
 {
     unsigned int resolution=1000000;
@@ -261,7 +252,7 @@ void testDivision( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = (m / 2) - 1;
+    uint_t uPrec = m - 1;
     uint_t vPrec = (uPrec) - 4;
 
     uint_t* u = randBigInt(uPrec, m, num_instances);
