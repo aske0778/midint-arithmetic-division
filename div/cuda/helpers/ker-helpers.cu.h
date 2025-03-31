@@ -73,6 +73,7 @@ void cpGlb2Reg ( uint32_t ipb
     for(int i=0; i<Q; i++) {
         Arg[i] = shmem[Q*threadIdx.x + i];
     }
+    __syncthreads();
 }
 
 template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
@@ -103,6 +104,7 @@ void cpReg2Glb ( uint32_t ipb
             rss[glb_offs + loc_pos] = shmem[loc_pos];
         }
     }
+    __syncthreads();
 }
 
 template<class uint_t, uint32_t Q>
@@ -113,6 +115,7 @@ cpyReg2Shm ( uint_t Rrg[Q]
     for(int i=0; i<Q; i++) {
         shmem[Q*threadIdx.x + i] = Rrg[i];
     }
+    __syncthreads();
 }
 
 template<class uint_t, uint32_t Q>
@@ -123,6 +126,7 @@ cpyShm2Reg ( volatile uint_t* shmem
     for(int i=0; i<Q; i++) {
         Rrg[i] = shmem[Q*threadIdx.x + i];
     }
+    __syncthreads();
 }
 
 template<class uint_t, uint32_t Q>
@@ -286,8 +290,7 @@ __device__ inline void quo( uint32_t bpow
 ) {
     uint64_t r = 1;
     #pragma unroll
-    for (int i = bpow - 1; i >= 0; i--)
-    {
+    for (int i = bpow - 1; i >= 0; i--) {
         r <<= 32; // TODO: Check if this is dependent on uint_t size
         if (r >= d) {
             if (threadIdx.x == i / Q) {
@@ -333,13 +336,11 @@ printRegs( const char *str
     __syncthreads();
     if (threadIdx.x == 0) {
         printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
+        for (int i = 0; i < M; i++) {
             printf("%u", sh_mem[i]);
             if (i < M - 1)
                 printf(", ");
         }
         printf("]\n");
     }
-    __syncthreads();
 }

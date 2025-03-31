@@ -10,8 +10,8 @@ int main()
     // using Base = U16bits;
     using uint_t = Base::uint_t;
 
-    const uint32_t M = 4096;
-    const uint32_t Q = 16;
+    const uint32_t Q = 32;
+    const uint32_t M = 8192;
     const uint32_t num_instances = 1;
     // const uint32_t total_work = M * num_instances;
     const uint32_t size = M * sizeof(uint_t);
@@ -30,6 +30,8 @@ int main()
 
     cudaMemcpy(d_u, u, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, size, cudaMemcpyHostToDevice);
+
+    cudaFuncSetAttribute(divShinv<Base, M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
 
     divShinv<Base, M, Q><<<1, M/Q, 2 * size>>>(d_u, d_v, d_quo, d_rem, num_instances);
     cudaDeviceSynchronize();
