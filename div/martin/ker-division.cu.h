@@ -169,8 +169,8 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     volatile uint32_t* USh = (uint32_t*)(VSh + M);
     uint32_t VReg[Q];
     uint32_t UReg[Q];
-    uint32_t RReg1[Q] = {0};
-    uint32_t RReg2[Q] = {0};
+    uint32_t RReg1[2*Q] = {0};
+    uint32_t* RReg2 = &RReg1[Q];
    // __syncthreads();
     cpyGlb2Sh2Reg<Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<Q>(u, USh, UReg);
@@ -183,11 +183,11 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     __syncthreads();
 
     uint32_t RReg3[Q*2] = {0};
-    bmulRegsQComplete<U32bits, 1, Q/2>(USh, VSh, UReg, RReg1, RReg3, M);
+    bmulRegsQComplete1<U32bits, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
-    shift1<M*2, Q>(-h, RReg3, VSh, RReg1);
+    shift2<M, Q>(-h, RReg1, VSh, RReg1);
+    __syncthreads();
 
-    __syncthreads();
     bmulRegsQ<U32bits, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
     bsubRegs<uint32_t, uint32_t, uint32_t, Q, UINT32_MAX>(VSh, UReg, RReg2, RReg2, M);

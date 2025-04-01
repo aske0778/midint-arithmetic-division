@@ -6,12 +6,12 @@
 
 
 int main() {
-    //srand(time(NULL));
+   // srand(time(NULL));
     bool stop = false;
-   // const uint32_t M = 64;
+   // const uint32_t M = 256;
   //  const uint32_t M = 3192;
     const uint32_t Q = 8;
-    const uint32_t M = 8192;
+    const uint32_t M = 3192;
     // const uint32_t Q = 32;
 
     for (int i = 0; i < 100 && !stop; i++) {

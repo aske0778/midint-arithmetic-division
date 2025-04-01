@@ -170,6 +170,41 @@ __device__ inline void shift1(int n, uint32_t u[Q*2], volatile uint32_t* sh_mem,
     __syncthreads();
 }
 
+template<uint32_t M, uint32_t Q>
+__device__ inline void shift2(int n, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t RReg[Q]) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+
+        int offset = idx + n;
+
+        if (offset >= 0 && offset < M) {
+            sh_mem[offset] = u[i];
+        }
+        else {
+            sh_mem[M-idx-1] = 0;
+        }
+    }
+    __syncthreads();
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = M + Q * threadIdx.x + i;
+
+        int offset = idx + n;
+
+        if (offset >= 0 && offset < M) {
+            sh_mem[offset] = u[Q+i];
+        }
+    }
+    __syncthreads();
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        RReg[i] = sh_mem[Q * threadIdx.x + i];
+    }
+    __syncthreads();
+}
+
 
 template<uint32_t Q>
 __device__ inline void quo(uint32_t bpow, uint32_t d, uint32_t RReg[Q]) {
