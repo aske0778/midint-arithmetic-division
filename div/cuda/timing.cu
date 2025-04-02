@@ -1,17 +1,30 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/time.h>
+#include <assert.h>
 #include <cuda_runtime.h>
-#include "ker-division.cu.h"
 #include "helpers/helper.h"
+#include "ker-division.cu.h"
+
+
+
+int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
+{
+    unsigned int resolution=1000000;
+    long int diff = (t2->tv_usec + resolution * t2->tv_sec) - (t1->tv_usec + resolution * t1->tv_sec);
+    result->tv_sec = diff / resolution;
+    result->tv_usec = diff % resolution;
+    return (diff<0);
+}
 
 // function calling division kernel
 // and does the timing of the kernel
-template<uint32_t M, uint32_t Q>
+template<class Base, uint32_t M, uint32_t Q>
 void gpuDiv (int num_instances){
     
     uint32_t total_work = M * num_instances;
 
-    uint32_t uPrec = (M / 2) - 1;
+    uint32_t uPrec = (M) - 1;
     uint32_t vPrec = (uPrec) - 3;
     uint32_t* u = randBigInt<uint32_t>(uPrec, M, num_instances);
     uint32_t* v = randBigInt<uint32_t>(vPrec, M, num_instances);
@@ -30,7 +43,7 @@ void gpuDiv (int num_instances){
     // dry run to load kernel into hardware 
     // what is the point of adding tuborg out of nowhere? bajer is best?
     {
-        divShinv<M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
+        divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
         cudaDeviceSynchronize();
         gpuAssert(cudaPeekAtLastError());
     }
@@ -43,8 +56,8 @@ void gpuDiv (int num_instances){
         gettimeofday(&t_start,NULL);
 
         // why 25 runs? follow the masters example 
-        for (int i = 0; i < 50; i++){
-            divShinv<M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
+        for (int i = 0; i < 25; i++){
+            divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
         }
 
         cudaDeviceSynchronize();
@@ -83,7 +96,7 @@ int main() {
     const uint32_t Q = 8;
     const uint32_t M = 4096;
 
-    gpuDiv<M,Q>(num_instances);
+    gpuDiv<U32bits,M,Q>(num_instances);
 
     return 0;
 }

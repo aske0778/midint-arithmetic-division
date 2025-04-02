@@ -30,3 +30,40 @@ shift-function   // shift function done, and seems to be fully correct
 
 note:
 all functions needed proper stress and batchd testing to ensure correctness.
+
+
+
+
+
+
+timing test with "timing":
+
+all enganged     = 1414745 mcs
+
+shinv disengaged = 884998 mcs 
+
+shinv is 38 % of runtime 
+
+bmulRegsQComplete disengaged = 733350 mcs 
+
+bmulRegsQComplete is 48 % of runtime 
+
+shiftDouble disengaged = 1414472 msc
+
+shiftDouble is 0% of runtime 
+
+bmulRegsQ disengaged = 1278520 msc 
+
+bmulRegsQ is 10 % of runtime
+
+bSubregsQ disengaged = 1433617
+
+bSubregsQ is -1 % of runtime
+
+if-statement disengaged = 1416056 msc
+
+0 % of runtime 
+
+2X cpyReg2Sh2Glb disengaged = 1409772 msc 
+
+1 % of runtime 
