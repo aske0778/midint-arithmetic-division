@@ -170,15 +170,15 @@ shinv( volatile typename Base::uint_t* USh
     int l = min(k, 2);    
     {
         if (threadIdx.x < (Q+3) / Q) {
-            uquad_t V = 0;
+            uint128_t V = 0;
             #pragma unroll
             for (int i = 0; i <= l; i++)
             {
-                V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
+                V += ((uint128_t)VSh[k - l + i]) << (Base::bits * i);
             }
         
-            uquad_t b2l = (uquad_t)1 << Base::bits * 2 * l;
-            uquad_t tmp = (b2l - V) / V + 1;
+            uint128_t b2l = (uint128_t)1 << Base::bits * 2 * l;
+            uint128_t tmp = (b2l - V) / V + 1;
 
             #pragma unroll
             for (int i = 0; i < Q; i++) {

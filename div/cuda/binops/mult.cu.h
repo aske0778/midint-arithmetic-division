@@ -303,20 +303,13 @@ void wrapperConvQ1( volatile S* Ash0, volatile S* Bsh0, S lhcs[2][Q+2], uint32_t
 template<class S, uint32_t Q>
 __device__ inline 
 void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry[2], bool isFirst, uint32_t n ) {
-    //__syncthreads();
-
     const uint32_t Q2 = 2*Q;
     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
-
+    //Refactoring in progress
     {    
-        // if (threadIdx.x == n/Q2 - 1) {
-        //     printf("HERE: %u \n", lhcs[0]);
-        // }
         int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
-      //  printf("NOWN %u \n", twoltid);
         #pragma unroll
         for(int q=0; q<Q; q++) {
-          //  if (lhcs[q] ==867742551 ) printf("HERE1 \n");
             Lsh[twoltid+q] = lhcs[q];
         }
         __syncthreads();
@@ -326,12 +319,8 @@ void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry
         }
         __syncthreads();
         if( threadIdx.x != n/Q2 - 1) {
-         //   printf("NOWN %u \n", twoltid);
-            // if (lhcs[Q] ==867742551 ) printf("HERE2 %u\n", twoltid+Q);
-            // if (lhcs[Q+1] ==867742551 ) printf("HERE3 \n");
             Hsh[twoltid+Q]   = lhcs[Q];
             Hsh[twoltid+Q+1] = lhcs[Q+1];
-          //  printf("NOWN %u \n", Lsh[0]);
         }
         __syncthreads();
         if (isFirst && threadIdx.x == n/Q2 - 1){
@@ -341,7 +330,6 @@ void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry
             Hsh[1] = 0;
         }
         else if (threadIdx.x == n/Q2 - 1){
-         //   printf("NOWN %u \n", twoltid+Q);
             Hsh[Q]   = lhcs[Q];
             Hsh[Q+1] = lhcs[Q+1];
             Lsh[0] = lhcs[0];
@@ -386,11 +374,6 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     wrapperConvQ1<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
     __syncthreads();
 
-    // printLhcs1<Q*2>("res", lhcs, 1, Bsh, M*2);
-    // __syncthreads();
-
-    // printLhcs<Q*2>("res", lhcs, Bsh, M*2);
-    // __syncthreads();
     volatile typename Base::uint_t* Lsh = Ash;
     volatile typename Base::uint_t* Hsh = Bsh;
 
@@ -400,13 +383,6 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     from4Reg2ShmQ2<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
     __syncthreads();
 
-    // printf("High: %u \n", highCarry[0]);
-    // printf("Carry: %u \n", highCarry[1]);
-    // printShMem("Lsh", Lsh, M);
-    // __syncthreads();
-    // printShMem("Hsh", Hsh, M);
-    // __syncthreads();
-
     // 4. load back to register and perform the addition of the carries.
     uint_t Lrg[2*Q];
     uint_t Hrg[2*Q];
@@ -415,31 +391,11 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
-    // printRegs1<Q*2>("res", Lrg, Lsh, M);
-    // __syncthreads();
-
-    // printRegs1<Q*2>("res", Hrg, Lsh, M);
-    // __syncthreads();
-
     bool overflow = baddRegsOverflow<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, (carry_t*)Hsh, Lrg, Hrg, Rrg, M );
     __syncthreads();
 
-    // printRegs1<Q*2>("res", Rrg, Lsh, M);
-    // __syncthreads();
-
     from4Reg2ShmQ2<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, false, M*2 );
     __syncthreads();
-
-    // if (threadIdx.x == M/(Q*2) - 1) {
-    //     printf("High: %u \n", highCarry[0]);
-    //     printf("Carry: %u \n", highCarry[1]);
-    // }
-    // printShMem("Lsh", Lsh, M);
-    // __syncthreads();
-    // printShMem("Hsh", Hsh, M);
-    // __syncthreads();
-
-   // printLhcs12<Q*2>("res", lhcs, Bsh, M*2);
 
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
     __syncthreads();
@@ -448,15 +404,11 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2], M );
     __syncthreads();
-    //printf("BOOL: %d \n", overflow);
+
     if (overflow) {
         add1<Base, Q*2>(&Rrg[Q*2], Lsh);
     }
     __syncthreads();
-
-    // printRegs1<Q*2>("res", Rrg, Hsh, M*2);
-    // __syncthreads();
-    // printf("HERE \n");
 }
 
 
