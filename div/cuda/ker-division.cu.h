@@ -170,23 +170,44 @@ shinv( volatile typename Base::uint_t* USh
     int l = min(k, 2);    
     {
         if (threadIdx.x < (Q+3) / Q) {
-            uquad_t V = 0;
+
+            uint_t V[4] = {0};
             #pragma unroll
-            for (int i = 0; i <= l; i++)
-            {
-                V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
+            for (int i = 0; i <= l; i++) {
+                V[i] = VSh[k - l + i];
             }
-        
-            uquad_t b2l = (uquad_t)1 << Base::bits * 2 * l;
-            uquad_t tmp = (b2l - V) / V + 1;
+            
+            uint_t tmp[4] = {1};
+            *tmp = *tmp << Base::bits * 2 * l;
+            for (int i = 0; i < 4; i++) {
+                tmp[i] = (tmp[i] - V[i]) / V[i] + 1;
+            }
 
             #pragma unroll
             for (int i = 0; i < Q; i++) {
                 int x = Q * threadIdx.x + i;
                 if (x < 4) {
-                    RReg[i] = (uint_t)(tmp >> Base::bits*x);
+                    RReg[i] = tmp[3-x];
                 }
             }
+
+            // uquad_t V = 0;
+            // #pragma unroll
+            // for (int i = 0; i <= l; i++)
+            // {
+            //     V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
+            // }
+        
+            // uquad_t b2l = (uquad_t)1 << Base::bits * 2 * l;
+            // uquad_t tmp = (b2l - V) / V + 1;
+
+            // #pragma unroll
+            // for (int i = 0; i < Q; i++) {
+            //     int x = Q * threadIdx.x + i;
+            //     if (x < 4) {
+            //         RReg[i] = (uint_t)(tmp >> Base::bits*x);
+            //     }
+            // }
         }
     }
     __syncthreads();
