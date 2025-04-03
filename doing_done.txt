@@ -67,3 +67,40 @@ if-statement disengaged = 1416056 msc
 2X cpyReg2Sh2Glb disengaged = 1409772 msc 
 
 1 % of runtime 
+
+
+
+% cosmin 
+
+N^2 Multiplication of 131072-bits Big-Numbers (in base = 64 bits) 
+runs 32768 instances in: 105200 microsecs, 
+Gu32ops/sec: 4593.00, 
+Mil-Instances/sec: 0.31
+
+
+bmulRegsQComplete timing:
+
+all enganged = 30227069 msc
+
+baddRegs disengaged = 2964137 msc 
+
+2 % of runtime  
+
+from4Reg2ShmQ disengaged =  2769262
+
+8 % of runtime 
+
+wrapperConvQ1 disengaged = 1468388
+
+49 % of runtime 
+
+
+    first convolutionq1 disengaged = 2434098
+
+    19 % of runtime
+
+    second convolutionQ1 disengaged = 2306798
+
+    23 % of runtime 
+
+

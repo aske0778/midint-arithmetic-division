@@ -6,6 +6,12 @@
 #include "helpers/helper.h"
 #include "ker-division.cu.h"
 
+#define GPU_RUNS_DIV    25
+#define GPU_RUNS_MUL    25
+#define ERR         0.000005
+
+#define WITH_VALIDATION 0
+
 
 
 int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
@@ -24,8 +30,8 @@ void gpuDiv (int num_instances){
     
     uint32_t total_work = M * num_instances;
 
-    uint32_t uPrec = (M) - 1;
-    uint32_t vPrec = (uPrec) - 3;
+    uint32_t uPrec = (M) ;
+    uint32_t vPrec = (uPrec) - (M/4);
     uint32_t* u = randBigInt<uint32_t>(uPrec, M, num_instances);
     uint32_t* v = randBigInt<uint32_t>(vPrec, M, num_instances);
     uint32_t* quo = (uint32_t*)calloc(total_work, sizeof(uint32_t));
@@ -56,7 +62,7 @@ void gpuDiv (int num_instances){
         gettimeofday(&t_start,NULL);
 
         // why 25 runs? follow the masters example 
-        for (int i = 0; i < 25; i++){
+        for (int i = 0; i < GPU_RUNS_DIV; i++){
             divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
         }
 
@@ -65,7 +71,7 @@ void gpuDiv (int num_instances){
         gettimeofday(&t_end,NULL);
         timeval_subtract(&t_diff, &t_end, &t_start);
 
-        time_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / 50;
+        time_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_DIV;
 
         gpuAssert(cudaPeekAtLastError());
 
