@@ -252,7 +252,7 @@ divShinv( typename Base::uint_t* u
 }
 
 /**
- * Implementation of multi-precision integer quotient using the shifted inverse 
+ * Implementation of multi-precision integer quotient using
  * the shifted inverse and classical multiplication
  */
 template<typename Base, uint32_t M, uint32_t Q>

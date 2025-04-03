@@ -392,25 +392,3 @@ void from4Reg2ShmQ1( S lhcs[2][Q+2], S Lrg[2*Q], S Hrg[2*Q], volatile S* Lsh, vo
         __syncthreads();
     }
 }
-
-
-template<uint32_t M, uint32_t Q>
-__device__ inline void printRegs(const char *str, uint32_t u[Q], volatile uint32_t* sh_mem)
-{
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
