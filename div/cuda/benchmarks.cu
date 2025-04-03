@@ -124,7 +124,7 @@ void gpuQuo ( uint32_t num_instances
     
     // 4. dry run
     {
-        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
+        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -139,7 +139,7 @@ void gpuQuo ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs, num_instances);
+            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -213,7 +213,7 @@ void gpuDiv ( uint32_t num_instances
     
     // 4. dry run
     {
-        divShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem, num_instances);
+        divShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -228,7 +228,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            divShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem, num_instances);
+            divShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem);
         }
         
         cudaDeviceSynchronize();
