@@ -215,23 +215,20 @@ quoShinv( typename Base::uint_t* u
 
     cpGlb2Reg<uint_t, 1, M, Q>(1, VSh, v, VReg);
     cpGlb2Reg<uint_t, 1, M, Q>(1, USh, u, UReg);
+    __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, USh);
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
-
+    
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
 
     shiftDouble<uint_t, M*2, Q>(-h, RReg1, VSh, RReg1);
-    
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
-    
-    shift<uint_t, M, Q>(-h, RReg1, USh, RReg1);
-    
+
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     
     bsubRegs<uint_t, uint_t, uint_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
-    
+
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { add1<Base, Q>(RReg1, VSh); }
 
     cpReg2Glb<uint_t, 1, M, Q>(1, VSh, RReg1, quo);
