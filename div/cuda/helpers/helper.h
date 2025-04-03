@@ -73,6 +73,7 @@ void div_gmp( uint_t* u
     mpz_clear(d);
 }
 
+
 template<class uint_t>
 uint_t* randBigInt( uint32_t prec
                   , uint32_t m
@@ -173,4 +174,15 @@ int gpuAssert(cudaError_t code) {
     return -1;
   }
   return 0;
+}
+
+uint32_t* randBigInt(uint32_t prec, uint32_t m)
+{
+    uint32_t* u = (uint32_t*)calloc(m, sizeof(uint32_t));
+
+    for (int i = 0; i < prec; i++)
+    {
+        u[i] = (uint32_t)rand();
+    }
+    return u;
 }

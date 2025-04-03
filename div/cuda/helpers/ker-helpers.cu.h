@@ -277,7 +277,6 @@ shiftDouble( int n
     }
 }
 
-
 template<typename Base, uint32_t Q>
 __device__ inline void 
 quo( uint32_t bpow

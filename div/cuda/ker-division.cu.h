@@ -200,7 +200,7 @@ shinv( volatile typename Base::uint_t* USh
 }
 
 /**
- * Implementation of multi precision integer division using
+ * Implementation of multi-precision integer division using
  * the shifted inverse and classical multiplication
  */
 template<typename Base, uint32_t M, uint32_t Q>
@@ -252,8 +252,8 @@ divShinv( typename Base::uint_t* u
 }
 
 /**
- * Implementation of long quotient using the shifted inverse 
- * and classical multiplication
+ * Implementation of multi-precision integer quotient using the shifted inverse 
+ * the shifted inverse and classical multiplication
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void
@@ -262,6 +262,7 @@ quoShinv( typename Base::uint_t* u
         , typename Base::uint_t* quo
 ) {
     using uint_t = typename Base::uint_t;
+    using carry_t = typename Base::carry_t;
 
     extern __shared__ char sh_mem[];
     volatile uint_t* VSh = (uint_t*)sh_mem;
@@ -290,7 +291,7 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
     
-    bsubRegs<uint_t, uint_t, uint_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
+    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
     
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();

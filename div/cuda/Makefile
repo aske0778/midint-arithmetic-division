@@ -15,6 +15,9 @@ main:
 test:
 	$(CXX) $(SRC_TEST).cu -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
 
+test-martin:
+	$(CXX) test-martin.cu -Xptxas -v -lgmp -o test-martin.exe && ./test-martin.exe
+
 time:
 	$(CXX) $(SRC_time).cu -lgmp -o $(SRC_time).exe && ./$(SRC_time).exe
 
