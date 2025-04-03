@@ -161,24 +161,12 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     wrapperConvQ<uint_t, ubig_t, Q>( Ash, Bsh, lhcs, M );
     __syncthreads();
 
-
-    // if (threadIdx.x == 0) {
-    //     printf("lhcs: %u \n", lhcs[1][0]);
-    // }
-
-    // printLhcs12<Q>("res", lhcs, Bsh, M);
-    // __syncthreads();
-
     volatile typename Base::uint_t* Lsh = Ash;
     volatile typename Base::uint_t* Hsh = Bsh;
 
     // 3. publish the low parts normally, and the high and carry shifted by one.
     from4Reg2ShmQ<uint_t, Q>( lhcs, Lsh, Hsh, M );
     __syncthreads();
-    // printShMem("Lsh", Lsh, M);
-    // __syncthreads();
-    // printShMem("Hsh", Hsh, M);
-    // __syncthreads();
 
     // 4. load back to register and perform the addition of the carries.
     uint_t Lrg[2*Q];
@@ -187,18 +175,7 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
-    // printRegs1<Q*2>("res", Lrg, Lsh, M);
-    // __syncthreads();
-
-    // printRegs1<Q*2>("res", Hrg, Lsh, M);
-    // __syncthreads();
-
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
-
-    // printRegs1<Q*2>("res:", Rrg, Lsh, M);
-    // __syncthreads();
-
-
 }
 
 
