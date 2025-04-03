@@ -8,10 +8,10 @@
 
 using namespace std;
 
-#define GPU_RUNS_DIV    2
+#define GPU_RUNS_DIV    15
 #define ERR         0.000005
 
-#define WITH_VALIDATION 1
+#define WITH_VALIDATION 0
 
 #define Q 32
 
@@ -330,8 +330,8 @@ void runQuotients(uint64_t total_work) {
     res_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
     
 #if 1
-    // testQuotient<Base, 8192>( total_work/8192, res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base, 8192>( total_work/8192, res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
@@ -339,7 +339,7 @@ void runQuotients(uint64_t total_work) {
     testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
 #endif
     free(res_gmp);
     free(res_our);
@@ -386,5 +386,5 @@ int main (int argc, char * argv[]) {
     cudaSetDevice(1);
 
     runQuotients<U32bits>(total_work);
-    // runDivisions<U32bits>(total_work);
+    runDivisions<U32bits>(total_work);
 }

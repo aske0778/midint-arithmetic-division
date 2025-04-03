@@ -283,15 +283,15 @@ shiftDouble( int n
     __syncthreads();
 }
 
-template<class uint_t, uint32_t Q>
+template<typename Base, uint32_t Q>
 __device__ inline void quo( uint32_t bpow
                           , uint32_t d
-                          , uint_t RReg[Q]
+                          , typename Base::uint_t RReg[Q]
 ) {
     uint64_t r = 1;
     #pragma unroll
     for (int i = bpow - 1; i >= 0; i--) {
-        r <<= 32; // TODO: Check if this is dependent on uint_t size
+        r <<= Base::bits; // TODO: Check if this is dependent on uint_t size
         if (r >= d) {
             if (threadIdx.x == i / Q) {
                 RReg[i % Q] = r / d;
