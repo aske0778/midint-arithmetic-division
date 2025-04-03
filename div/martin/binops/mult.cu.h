@@ -126,7 +126,7 @@ void from4Reg2ShmQ( S lhcs[2][Q+2], volatile S* Lsh, volatile S* Hsh, uint32_t n
         Hsh[twoltid+Q]   = lhcs[0][Q];
         Hsh[twoltid+Q+1] = lhcs[0][Q+1];
     }
-    //__syncthreads();
+    __syncthreads();
     {
         int32_t n_m_2ltid = offset + n - Q*tid_mod_m - Q;
         #pragma unroll
@@ -597,13 +597,14 @@ void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry
             Hsh[twoltid+Q+1] = lhcs[Q+1];
           //  printf("NOWN %u \n", Lsh[0]);
         }
-        else if (isFirst){
+        __syncthreads();
+        if (isFirst && threadIdx.x == n/Q2 - 1){
             highCarry[0] = lhcs[Q];
             highCarry[1] = lhcs[Q+1];
             Hsh[0] = 0;
             Hsh[1] = 0;
         }
-        else {
+        else if (threadIdx.x == n/Q2 - 1){
          //   printf("NOWN %u \n", twoltid+Q);
             Hsh[Q]   = lhcs[Q];
             Hsh[Q+1] = lhcs[Q+1];
@@ -639,6 +640,7 @@ void bmulRegsQComplete1( volatile typename Base::uint_t* Ash
     
     // 1. copy from global to shared to register memory
     cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
+    __syncthreads();
     cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
     __syncthreads();
   
@@ -658,7 +660,7 @@ void bmulRegsQComplete1( volatile typename Base::uint_t* Ash
 
     // 3. publish the low parts normally, and the high and carry shifted by one.
     uint_t highCarry[2];
-
+    __syncthreads();
     from4Reg2ShmQ2<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
     __syncthreads();
 
@@ -673,6 +675,7 @@ void bmulRegsQComplete1( volatile typename Base::uint_t* Ash
     uint_t Lrg[2*Q];
     uint_t Hrg[2*Q];
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
+    __syncthreads();
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
@@ -703,6 +706,7 @@ void bmulRegsQComplete1( volatile typename Base::uint_t* Ash
    // printLhcs12<Q*2>("res", lhcs, Bsh, M*2);
 
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
+    __syncthreads();
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 

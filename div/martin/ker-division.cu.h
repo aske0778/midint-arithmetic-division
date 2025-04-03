@@ -40,15 +40,19 @@ powDiff(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32
     }
     else {
         multMod<M, Q>(USh, VSh, VReg, RReg, L, VReg);
-      //  __syncthreads();
+      //  printf("1");
+        __syncthreads();
         if (!ez<Q>(VReg, USh)) {
-          //  __syncthreads();
+            __syncthreads();
             if (ez<Q>(VReg, L-1, VSh)) {
                 sign = 0;
             }
             else {
-            //    __syncthreads();
+             //   __syncthreads();
+              //  printf("1");
+              //  __syncthreads();
                 sub<Q>(L, VReg, USh);
+                __syncthreads();
             }
         }
     }
@@ -120,13 +124,13 @@ shinv(volatile uint32_t* USh, volatile uint32_t* VSh, uint32_t VReg[Q], uint32_t
     }
     __syncthreads();
     if (k == h-1 && VSh[k] > UINT32_MAX / 2 ) {
-     //   __syncthreads();
+        __syncthreads();
         set<Q>(RReg, 1, 0);
         return;
     }
     __syncthreads();
     if (eq<Q>(VReg, k, USh)) {
-     //   __syncthreads();
+        __syncthreads();
         set<Q>(RReg, 1, h - k);
         return;
     }
@@ -171,8 +175,9 @@ __global__ void divShinv(uint32_t* u, uint32_t* v, uint32_t* quo, uint32_t* rem)
     uint32_t UReg[Q];
     uint32_t RReg1[2*Q] = {0};
     uint32_t* RReg2 = &RReg1[Q];
-   // __syncthreads();
+    __syncthreads();
     cpyGlb2Sh2Reg<Q>(v, VSh, VReg);
+    __syncthreads();
     cpyGlb2Sh2Reg<Q>(u, USh, UReg);
     __syncthreads();
 

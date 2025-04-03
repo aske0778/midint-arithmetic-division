@@ -15,7 +15,7 @@ __device__ inline int reduceBlock(uint32_t u, volatile uint32_t* sh_mem) {
     const unsigned int warpid = idx >> lgWARP;
 
     int res = scanIncWarp<OP>(u, lane);
-
+    __syncthreads();   
     if (lane == (WARP-1) || idx == blockDim.x - 1) { sh_mem[warpid] = res; } 
     __syncthreads();
 
@@ -52,7 +52,7 @@ scanIncBlock(volatile typename OP::RedElTp* ptr, const unsigned int idx) {
 
     // 1. perform scan at warp level
     typename OP::RedElTp res = scanIncWarp<OP>(ptr,idx);
-    
+    __syncthreads();   
     if(blockDim.x <= 32) { // block < WARP optimization
         return res;
     }

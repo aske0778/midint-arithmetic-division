@@ -64,6 +64,7 @@ __device__ bool baddRegsOverflow( volatile CT* Csh
                          ) {
     //D  rs[q];
     Dsh[0] = false;
+    __syncthreads();
     CT cs[q];
     
     // 1. map: add the digits pairwise, build the 

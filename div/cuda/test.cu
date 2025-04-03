@@ -37,7 +37,7 @@ int main() {
 
         cudaFuncSetAttribute(divShinv<Base, M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
 
-        divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem, num_instances);
+        divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
 
