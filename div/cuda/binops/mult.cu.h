@@ -387,7 +387,3 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     }
     __syncthreads();
 }
-
-
-
-

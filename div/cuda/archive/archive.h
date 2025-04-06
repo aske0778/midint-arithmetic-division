@@ -258,8 +258,9 @@ __device__ inline void printLhcs12(const char *str, uint32_t lhcs[2][Q+2], volat
 }
 
 
-template<uint32_t M, uint32_t Q>
-__device__ inline void shift1(int n, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t RReg[Q]) {
+
+template<class uint_t, uint32_t M, uint32_t Q>
+__device__ inline void shiftDouble(int n, uint_t u[Q*2], volatile uint_t* sh_mem, uint_t RReg[Q]) {
     #pragma unroll
     for (int i = 0; i < Q*2; i++) {
         int idx = Q*2 * threadIdx.x + i;
@@ -281,62 +282,6 @@ __device__ inline void shift1(int n, uint32_t u[Q*2], volatile uint32_t* sh_mem,
     __syncthreads();
 }
 
-
-template<class Base, uint32_t IPB, uint32_t Q>
-__device__ 
-void bmulRegsQComplete( volatile typename Base::uint_t* Ash
-              , volatile typename Base::uint_t* Bsh
-              , typename Base::uint_t Arg[2*Q]
-              , typename Base::uint_t Brg[2*Q]
-              , typename Base::uint_t Rrg[4*Q]
-              , uint32_t M
-              ) 
-{
-    using uint_t = typename Base::uint_t;
-    using ubig_t = typename Base::ubig_t;
-    using carry_t= typename Base::carry_t;
-    
-    // 1. copy from global to shared to register memory
-    cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
-    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
-    __syncthreads();
-  
-    // 2. perform the convolution
-    uint_t lhcs[2][2*Q+2];
-
-    wrapperConvQ1<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
-    __syncthreads();
-
-    // printLhcs1<Q*2>("res", lhcs, 1, Bsh, M*2);
-    // __syncthreads();
-
-    // printLhcs12<Q*2>("res", lhcs, Bsh, M*2);
-    // __syncthreads();
-
-    // if (threadIdx.x == 8) {
-    //     printf("lhcs: %u \n", lhcs[0][0]);
-    // }
-    volatile typename Base::uint_t* Lsh = Bsh;
-
-    uint_t Lrg[4*Q];
-    uint_t Hrg[4*Q];
-
-    from4Reg2ShmQ1<uint_t, Q*2>( lhcs, Lrg, Hrg, Lsh, Lsh, M*2 );
-    __syncthreads();
-
-    // printRegs1<Q*4>("Lrg", Lrg, Lsh, M*2);
-    // __syncthreads();
-    // printRegs1<Q*4>("Hrg", Hrg, Lsh, M*2);
-    // __syncthreads();
-
-
-
-    baddRegs<uint_t, uint_t, carry_t, 4*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M*2 );
-
-    // printRegs1<Q*4>("res", Rrg, Lsh, M*2);
-    // __syncthreads();
-
-}
 
 template<class S, uint32_t Q>
 __device__ inline 
@@ -391,4 +336,41 @@ void from4Reg2ShmQ1( S lhcs[2][Q+2], S Lrg[2*Q], S Hrg[2*Q], volatile S* Lsh, vo
         cpyShm2Reg<S,2*Q>( Hsh, Hrg );
         __syncthreads();
     }
+}
+
+
+template<class Base, uint32_t IPB, uint32_t Q>
+__device__ 
+void bmulRegsQComplete( volatile typename Base::uint_t* Ash
+              , volatile typename Base::uint_t* Bsh
+              , typename Base::uint_t Arg[2*Q]
+              , typename Base::uint_t Brg[2*Q]
+              , typename Base::uint_t Rrg[4*Q]
+              , uint32_t M
+              ) 
+{
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+    
+    // 1. copy from global to shared to register memory
+    cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
+    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
+    __syncthreads();
+  
+    // 2. perform the convolution
+    uint_t lhcs[2][2*Q+2];
+
+    wrapperConvQ1<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
+    __syncthreads();
+
+    volatile typename Base::uint_t* Lsh = Bsh;
+
+    uint_t Lrg[4*Q];
+    uint_t Hrg[4*Q];
+
+    from4Reg2ShmQ1<uint_t, Q*2>( lhcs, Lrg, Hrg, Lsh, Lsh, M*2 );
+    __syncthreads();
+
+    baddRegs<uint_t, uint_t, carry_t, 4*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M*2 );
 }
