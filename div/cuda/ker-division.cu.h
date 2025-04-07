@@ -17,7 +17,7 @@ multMod( volatile typename Base::uint_t* USh
        , int d
        , typename Base::uint_t RReg[Q]
 ) {
-    bmulRegsQ<U32bits, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M); 
+    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M); 
 
     #pragma unroll
     for (int i=0; i < Q; i++) {
@@ -84,15 +84,15 @@ step( volatile typename Base::uint_t* USh
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
-    bmulRegsQ<U32bits, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
+    bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
     __syncthreads();
 
     if (sign) {
-        baddRegs<uint_t, uint_t, carry_t, Q, UINT32_MAX>(VSh, RReg, VReg, RReg, M);
+        baddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg, M);
     } else {
-        bsubRegs<uint_t, uint_t, carry_t, Q, UINT32_MAX>(VSh, RReg, VReg, RReg, M);
+        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg, M);
         __syncthreads();
     }
 }
@@ -234,7 +234,7 @@ divShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
 
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
+    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2, M);
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
         __syncthreads();

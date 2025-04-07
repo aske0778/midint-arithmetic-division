@@ -66,7 +66,7 @@ sub( uint32_t bpow
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] != Base::HIGHEST) {
-            atomicMin((uint_t*)sh_mem, Q * threadIdx.x + i);
+            atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
             break;
         }
     }

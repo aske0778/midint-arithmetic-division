@@ -1,5 +1,6 @@
 template<class OP>
-__device__ inline int scanIncWarp(int u, uint32_t lane) {
+__device__ inline int 
+scanIncWarp(int u, uint32_t lane) {
     #pragma unroll
     for (int i = 1; i < WARP; i *= 2) {
         int elm = __shfl_up_sync(0xFFFFFFFF, u, (lane >= i) ? i : 0);
@@ -8,8 +9,9 @@ __device__ inline int scanIncWarp(int u, uint32_t lane) {
     return u;
 }
 
-template<class OP>
-__device__ inline int reduceBlock(uint32_t u, volatile uint32_t* sh_mem) {
+template<class OP, class uint_t>
+__device__ inline int 
+reduceBlock(uint32_t u, volatile uint_t* sh_mem) {
     int idx = threadIdx.x;
     const unsigned int lane   = idx & (WARP-1);
     const unsigned int warpid = idx >> lgWARP;

@@ -9,15 +9,16 @@ int main() {
 
     using Base = U32bits;
   //  using Base = U64bits;
+   // using Base = U16bits;
     using uint_t = Base::uint_t;
 
     srand(time(NULL));
     bool stop = false;
    // const uint32_t M = 256;
   //  const uint32_t M = 3192;
-    const uint32_t Q = 16;
-    const uint32_t M = 4896;
     // const uint32_t Q = 16;
+    const uint32_t M = 4896;
+    const uint32_t Q = 16;
     // const uint32_t M = 8192;
     // const uint32_t Q = 32;
     // const uint32_t Q = 4;
