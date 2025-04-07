@@ -213,8 +213,8 @@ divShinv( typename Base::uint_t* u
     uint_t RReg1[2*Q] = {0};
     uint_t* RReg2 = &RReg1[Q];
 
-    cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, VReg);
-    cpyGlb2Sh2Reg<uint_t, M, Q>(u, USh, UReg);
+    cpGlb2Reg<uint_t, 1, M, Q>(1, VSh, v, VReg);
+    cpGlb2Reg<uint_t, 1, M, Q>(1, USh, u, UReg);
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, USh);
@@ -240,9 +240,9 @@ divShinv( typename Base::uint_t* u
         bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, RReg2, VReg, RReg2, M);
     }
 
-   __syncthreads();
-    cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
-    cpyReg2Sh2Glb<uint_t, M, Q>(rem, USh, RReg2);
+    __syncthreads();
+    cpReg2Glb<uint_t, 1, M, Q>(1, VSh, RReg1, quo);
+    cpReg2Glb<uint_t, 1, M, Q>(1, USh, RReg2, rem);
 }
 
 /**
