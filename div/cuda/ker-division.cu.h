@@ -143,20 +143,20 @@ shinv( volatile typename Base::uint_t* USh
     using uint_t = typename Base::uint_t;
     using uquad_t = typename Base::uquad_t;
     
-    int k = prec<uint_t, Q>(VReg, &USh[0]) - 1;
+    int k = prec<uint_t, Q>(VReg, &USh[1]) - 1;
 
     if (k == 0) {
         quo<Base, Q>(h, VSh[0], RReg);
         return;
     }
-    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[1])) {
+    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[2])) {
         return;
     }
     if (k == h-1 && VSh[k] > Base::HIGHEST / 2 ) {
         set<uint_t, Q>(RReg, 1, 0);
         return;
     }
-    if (eq<uint_t, Q>(VReg, k, &USh[1])) {
+    if (eq<uint_t, Q>(VReg, k, &USh[3])) {
         set<uint_t, Q>(RReg, 1, h - k);
         return;
     }
@@ -166,15 +166,21 @@ shinv( volatile typename Base::uint_t* USh
         if (threadIdx.x == 0) {
             uquad_t V = 0;
             #pragma unroll
-            for (int i = 0; i <= l; i++) {
-                V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
+            for (int i = 0; i < l; i++) {
+                V += ((uquad_t)VSh[k - l + i + 1]) << (Base::bits * i);
             }
-        
-            uquad_t b2l = (uquad_t)1 << Base::bits * 2 * l;
-            uquad_t tmp = (b2l - V) / V + 1;
-
+            uquad_t tmp = 0;
+            if (Base::bits == 64) {
+                uquad_t tmp1 = ((uquad_t)0 - V) / V + 1;
+                uquad_t tmp2 = (((uquad_t)0 - V*tmp1) << Base::bits) / tmp1;
+                tmp = tmp2 + (tmp1 << Base::bits);
+            }
+            else {
+                uquad_t b2l = (uquad_t)1 << Base::bits * (2 * l - 1);
+                tmp = (b2l - V) / V + 1;
+            }
             #pragma unroll
-            for (int i = 0; i < Q; i++) {
+            for (int i = 0; i < 2; i++) {
                 RReg[i] = (uint_t)(tmp >> Base::bits*i);
             }
         }
@@ -215,7 +221,6 @@ divShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, USh);
-    __syncthreads();
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
@@ -234,7 +239,7 @@ divShinv( typename Base::uint_t* u
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Base, Q>(RReg1, USh);
-        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, RReg2, VReg, RReg2, M);
+        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg2, VReg, RReg2, M);
     }
 
     __syncthreads();
@@ -268,7 +273,6 @@ quoShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, USh);
-    __syncthreads();
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
@@ -282,7 +286,7 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M);
     __syncthreads();
     
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
+    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2, M);
     
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();

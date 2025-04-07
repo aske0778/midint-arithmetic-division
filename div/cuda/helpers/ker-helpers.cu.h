@@ -280,10 +280,9 @@ quo( uint32_t bpow
    , uint32_t d
    , typename Base::uint_t RReg[Q]
 ) {
-    uint64_t r = 1;
+    typename Base::ubig_t r = 1;
     #pragma unroll
-    for (int i = bpow - 1; i >= 0; i--)
-    {
+    for (int i = bpow - 1; i >= 0; i--) {
         r <<= Base::bits; 
         if (r >= d) {
             if (threadIdx.x == i / Q) {

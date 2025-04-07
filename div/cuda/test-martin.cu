@@ -8,30 +8,31 @@
 int main() {
 
     using Base = U32bits;
+  //  using Base = U64bits;
     using uint_t = Base::uint_t;
 
     srand(time(NULL));
     bool stop = false;
    // const uint32_t M = 256;
   //  const uint32_t M = 3192;
-    // const uint32_t Q = 8;
+    const uint32_t Q = 16;
     const uint32_t M = 4896;
-    const uint32_t Q = 32;
+    // const uint32_t Q = 16;
     // const uint32_t M = 8192;
     // const uint32_t Q = 32;
-    // const uint32_t Q = 8;
+    // const uint32_t Q = 4;
     // const uint32_t M = 2048;
 
     for (int i = 0; i < 100 && !stop; i++) {
-        printf("Iteration: %u \n", i);
+        printf("\rIteration: %u", i);
         uint_t uPrec = (rand() % (M-3)) + 1;
         uint_t vPrec = (rand() % uPrec) + 3;
-        uint_t* u = randBigInt(uPrec, M);
-        uint_t* v = randBigInt(vPrec, M);
+        uint_t* u = randBigInt<uint_t>(uPrec, M);
+        uint_t* v = randBigInt<uint_t>(vPrec, M);
         // prnt("u", u, M);
         // prnt("v", v, M);
-        uint_t* quo = (uint32_t*)calloc(M, sizeof(uint_t));
-        uint_t* rem = (uint32_t*)calloc(M, sizeof(uint_t));
+        uint_t* quo = (uint_t*)calloc(M, sizeof(uint_t));
+        uint_t* rem = (uint_t*)calloc(M, sizeof(uint_t));
 
         uint_t *d_u, *d_v, *d_quo, *d_rem;
         cudaMalloc((void **)&d_u, M * sizeof(uint_t));
@@ -54,8 +55,8 @@ int main() {
         cudaMemcpy(quo, d_quo, M * sizeof(uint_t), cudaMemcpyDeviceToHost);
         cudaMemcpy(rem, d_rem, M * sizeof(uint_t), cudaMemcpyDeviceToHost);
 
-        uint_t* quo_gmp = (uint32_t*)calloc(M, sizeof(uint_t));
-        uint_t* rem_gmp = (uint32_t*)calloc(M, sizeof(uint_t));
+        uint_t* quo_gmp = (uint_t*)calloc(M, sizeof(uint_t));
+        uint_t* rem_gmp = (uint_t*)calloc(M, sizeof(uint_t));
         div_gmp(u, v, quo_gmp, rem_gmp, M);
         
         for (int i = 0; i < M; i++) {
