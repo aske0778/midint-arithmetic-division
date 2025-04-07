@@ -1,5 +1,10 @@
 
 
+def prec [n] (u : [n]u32) : (u32) = 
+    let bar = reduce (\idx1 idx2 -> 
+                        if u[idx2] != 0 then idx2 else idx1) (0i64) (iota n)
+    in u32.i64(bar)
+
 -- cheaks if given bigint = 0
 def bigint_ez [n] (u : [n]u32) : bool = 
     all (== 0) u 
@@ -17,6 +22,22 @@ def bigint_lt [n] (u : [n]u32) (v : [n]u32) : bool =
 -- checks if two bigints are equal
 def bigint_eq [n] (u : [n]u32) (v : [n]u32) : bool =
     reduce (\ x y -> (x == y && x != false)) true (trace (map2 (==) u v))
+
+def set [n] (u : *[n]u32) (d : u32) (idx : i64) : [n]u32 = 
+    let u[idx] =  d in u
+    
+def set_and_zero (d : u32) (m : i64) : ([]u32) = 
+    let foo = replicate m 0u32 
+    let foo[0] = d
+    in foo
+
+def shift [n] (shft : i64) (u : [n]u32) : ([n]u32) = 
+    let foo = replicate shft 0u32
+    let bar = if n > 0 then (foo ++ u[:(n - shft)]) :> [n]u32 
+                       else (u[(n - shft):] ++ foo) :> [n]u32
+    in bar
+
+
 
 
 entry ez_test = bigint_ez
