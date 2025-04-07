@@ -222,8 +222,7 @@ shift( int n
 
         if (offset >= 0 && offset < M) {
             sh_mem[offset] = u[i];
-        }
-        else {
+        } else {
             sh_mem[M-idx-1] = 0;
         }
     }

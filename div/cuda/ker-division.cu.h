@@ -21,8 +21,7 @@ multMod( volatile typename Base::uint_t* USh
 
     #pragma unroll
     for (int i=0; i < Q; i++) {
-        if (Q * threadIdx.x + i >= d)
-        {
+        if (Q * threadIdx.x + i >= d) {
             RReg[i] = 0;
         }
     }
@@ -49,20 +48,17 @@ powDiff( volatile typename Base::uint_t* USh
     
     if (vPrec == 0 || rPrec == 0) {
         zeroAndSet<uint_t, Q>(VReg, 1, h);
-    }
-    else if (L >= h) {
+    } else if (L >= h) {
         __syncthreads();
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M);
         sub<Base, Q>(h, VReg, USh);
-    }
-    else {
+    } else {
         __syncthreads();
         multMod<Base, M, Q>(USh, VSh, VReg, RReg, L, VReg);
         if (!ez<uint_t, Q>(VReg, USh)) {
             if (ez<uint_t, Q>(VReg, L-1, VSh)) {
                 sign = 0;
-            }
-            else {
+            } else {
                 sub<Base, Q>(L, VReg, VSh);
             }
         }
@@ -95,9 +91,9 @@ step( volatile typename Base::uint_t* USh
 
     if (sign) {
         baddRegs<uint_t, uint_t, carry_t, Q, UINT32_MAX>(VSh, RReg, VReg, RReg, M);
-    }
-    else {
+    } else {
         bsubRegs<uint_t, uint_t, carry_t, Q, UINT32_MAX>(VSh, RReg, VReg, RReg, M);
+        __syncthreads();
     }
 }
 
@@ -126,7 +122,6 @@ refine( volatile typename Base::uint_t* USh
         shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
-        __syncthreads();
         shift<uint_t, M, Q>(-1, RReg, USh, RReg);
         l = l + n - 1;
     }

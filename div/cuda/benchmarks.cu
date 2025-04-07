@@ -104,27 +104,16 @@ void gpuQuo ( uint32_t num_instances
     // 3. kernel dimensions
     const uint32_t q = Q; // use 8 for A4500 
     
-#if 1
-    const uint32_t Bprf = 256;
-    const uint32_t m_lft = LIFT_LEN(m, q);
-    const uint32_t ipb = ((m_lft / q) >= Bprf) ? 1 : 
-                           (Bprf + (m_lft / q) - 1) / (m_lft / q);
-#else
-    const uint32_t m_lft = m;
-    const uint32_t ipb = (128 + m/q - 1) / (m/q);
-#endif
-    assert(m_lft % q == 0 && m_lft >= q);
-    
     { // maximize the amount of shared memory for the kernel
         cudaFuncSetAttribute(quoShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
     }    
 
-    dim3 block( ipb * (m_lft/q), 1, 1);
-    dim3 grid ( (num_instances + ipb - 1)/ipb, 1, 1);
+    uint_t block_size = m/q;
+    uint_t shmem_size = 2 * m * sizeof(uint_t);
     
     // 4. dry run
     {
-        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_rs);
+        quoShinv<Base, m, q><<<num_instances, block_size, shmem_size>>>(d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -139,7 +128,7 @@ void gpuQuo ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_rs);
+            quoShinv<Base, m, q><<<num_instances, block_size, shmem_size>>>(d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
