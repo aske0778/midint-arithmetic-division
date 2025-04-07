@@ -108,12 +108,12 @@ void gpuQuo ( uint32_t num_instances
         cudaFuncSetAttribute(quoShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
     }    
 
-    uint_t block_size = m/q;
-    uint_t shmem_size = 2 * m * sizeof(uint_t);
+    dim3 block( m/q, 1, 1 );
+    dim3 grid ( num_instances, 1, 1);
     
     // 4. dry run
     {
-        quoShinv<Base, m, q><<<num_instances, block_size, shmem_size>>>(d_as, d_bs, d_rs);
+        quoShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -128,7 +128,7 @@ void gpuQuo ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<Base, m, q><<<num_instances, block_size, shmem_size>>>(d_as, d_bs, d_rs);
+            quoShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -187,22 +187,16 @@ void gpuDiv ( uint32_t num_instances
     // 3. kernel dimensions
     const uint32_t q = Q; // use 8 for A4500 
     
-    const uint32_t Bprf = 256;
-    const uint32_t m_lft = LIFT_LEN(m, q);
-    const uint32_t ipb = ((m_lft / q) >= Bprf) ? 1 : 
-                           (Bprf + (m_lft / q) - 1) / (m_lft / q);
-    assert(m_lft % q == 0 && m_lft >= q);
-    
     { // maximize the amount of shared memory for the kernel
         cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
     }    
 
-    dim3 block( ipb * (m_lft/q), 1, 1);
-    dim3 grid ( (num_instances + ipb - 1)/ipb, 1, 1);
+    dim3 block( m/q, 1, 1 );
+    dim3 grid ( num_instances, 1, 1);
     
     // 4. dry run
     {
-        divShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_quo, d_rem);
+        divShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -217,7 +211,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            divShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_quo, d_rem);
+            divShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_quo, d_rem);
         }
         
         cudaDeviceSynchronize();
