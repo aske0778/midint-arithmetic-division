@@ -12,15 +12,15 @@ int main() {
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t num_instances = 1;
-    const uint32_t Q = 32;
-    const uint32_t M = 8192;
+    const uint32_t Q = 8;
+    const uint32_t M = 2048;
     const uint32_t total_work = M * num_instances;
     const uint32_t total_work_size = total_work * sizeof(uint_t);
 
     for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint32_t uPrec = M - 1;
-        uint32_t vPrec = uPrec - Q;
+        uint_t uPrec = (rand() % (M-3)) + 1;
+        uint_t vPrec = (rand() % uPrec) + 3;
         uint_t* u = randBigInt<uint_t>(uPrec, M, num_instances);
         uint_t* v = randBigInt<uint_t>(vPrec, M, num_instances);
         uint_t* quo = (uint_t*)calloc(total_work, sizeof(uint_t));

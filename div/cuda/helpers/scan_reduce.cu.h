@@ -17,7 +17,7 @@ __device__ inline int reduceBlock(uint32_t u, volatile uint32_t* sh_mem) {
     int res = scanIncWarp<OP>(u, lane);
 
     if (lane == (WARP-1) || idx == blockDim.x - 1) { sh_mem[warpid] = res; } 
-    // __syncthreads();
+    __syncthreads();
 
     if (warpid == 0) {
         res = scanIncWarp<OP>(sh_mem[threadIdx.x], lane);
