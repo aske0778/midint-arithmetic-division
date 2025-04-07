@@ -233,11 +233,13 @@ divShinv( typename Base::uint_t* u
 
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
+
     shiftDouble<uint_t, M, Q>(-h, RReg1, VSh, RReg1);
     __syncthreads();
 
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
+
     bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
@@ -285,10 +287,10 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
 
-    shiftDouble<uint_t, M*2, Q>(-h, RReg1, VSh, RReg1);
+    shiftDouble<uint_t, M, Q>(-h, RReg1, VSh, RReg1);
     __syncthreads();
 
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
+    bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M);
     __syncthreads();
     
     bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(VSh, UReg, RReg2, RReg2, M);

@@ -8,10 +8,10 @@
 
 using namespace std;
 
-#define GPU_RUNS_DIV    15
+#define GPU_RUNS_DIV    10
 #define ERR         0.000005
 
-#define WITH_VALIDATION 0
+#define WITH_VALIDATION 1
 
 #define Q 32
 
@@ -330,16 +330,16 @@ void runQuotients(uint64_t total_work) {
     res_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
     
 #if 1
-    testQuotient<Base, 8192>( total_work/8192, res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base, 8192>( total_work/8192, res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
 #endif
     free(res_gmp);
     free(res_our);
@@ -357,16 +357,16 @@ void runDivisions(uint64_t total_work) {
     our_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
 #if 1
-    testDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
 #endif
     free(gmp_quo);
     free(gmp_rem);
