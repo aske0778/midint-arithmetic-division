@@ -14,13 +14,15 @@ int main() {
     bool stop = false;
    // const uint32_t M = 256;
   //  const uint32_t M = 3192;
-    const uint32_t Q = 8;
+    // const uint32_t Q = 8;
     const uint32_t M = 4896;
-    // const uint32_t Q = 32;
+    const uint32_t Q = 32;
     // const uint32_t M = 8192;
     // const uint32_t Q = 32;
+    // const uint32_t Q = 8;
+    // const uint32_t M = 2048;
 
-    for (int i = 0; i < 1000 && !stop; i++) {
+    for (int i = 0; i < 100 && !stop; i++) {
         printf("Iteration: %u \n", i);
         uint_t uPrec = (rand() % (M-3)) + 1;
         uint_t vPrec = (rand() % uPrec) + 3;

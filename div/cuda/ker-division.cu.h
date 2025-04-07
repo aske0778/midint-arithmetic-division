@@ -163,7 +163,7 @@ shinv( volatile typename Base::uint_t* USh
 
     int l = min(k, 2);    
     {
-        if (threadIdx.x < (Q+3) / Q) {
+        if (threadIdx.x == 0) {
             uquad_t V = 0;
             #pragma unroll
             for (int i = 0; i <= l; i++) {
@@ -175,10 +175,7 @@ shinv( volatile typename Base::uint_t* USh
 
             #pragma unroll
             for (int i = 0; i < Q; i++) {
-                int x = Q * threadIdx.x + i;
-                if (x < 4) {
-                    RReg[i] = (uint_t)(tmp >> Base::bits*x);
-                }
+                RReg[i] = (uint_t)(tmp >> Base::bits*i);
             }
         }
     }
