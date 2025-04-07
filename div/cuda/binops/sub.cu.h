@@ -51,7 +51,6 @@ __device__ void bsubRegs( volatile CT* Csh
             carry = CarrySegBop<CT>::apply(carry, cs[i]);         
         }
     }
-    __syncthreads();
 }
 
 template<typename Base, uint32_t Q>

@@ -320,7 +320,6 @@ void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry
             Hsh[1] = 0;
         }
     }
-    __syncthreads();
 }
 
 
@@ -333,15 +332,13 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
               , typename Base::uint_t Brg[2*Q]
               , typename Base::uint_t Rrg[4*Q]
               , uint32_t M
-              ) 
-{
+) {
     using uint_t = typename Base::uint_t;
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
     
     // 1. copy from global to shared to register memory
     cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
-    __syncthreads();
     cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
     __syncthreads();
   
@@ -351,12 +348,12 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     wrapperConvQ1<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
     __syncthreads();
 
-    volatile typename Base::uint_t* Lsh = Ash;
-    volatile typename Base::uint_t* Hsh = Bsh;
+    volatile uint_t* Lsh = Ash;
+    volatile uint_t* Hsh = Bsh;
 
     // 3. publish the low parts normally, and the high and carry shifted by one.
     uint_t highCarry[2];
-    __syncthreads();
+
     from4Reg2ShmQ2<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
     __syncthreads();
 
@@ -364,26 +361,21 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     uint_t Lrg[2*Q];
     uint_t Hrg[2*Q];
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
-    __syncthreads();
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
     bool overflow = baddRegsOverflow<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, (carry_t*)Hsh, Lrg, Hrg, Rrg, M );
-    __syncthreads();
 
     from4Reg2ShmQ2<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, false, M*2 );
     __syncthreads();
 
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
-    __syncthreads();
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2], M );
-    __syncthreads();
 
     if (overflow) {
         add1<Base, Q*2>(&Rrg[Q*2], Lsh);
     }
-    __syncthreads();
 }

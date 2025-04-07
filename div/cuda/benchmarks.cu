@@ -124,7 +124,7 @@ void gpuQuo ( uint32_t num_instances
     
     // 4. dry run
     {
-        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs);
+        quoShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -139,7 +139,7 @@ void gpuQuo ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_rs);
+            quoShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -154,7 +154,7 @@ void gpuQuo ( uint32_t num_instances
         double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
         double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
-        printf( "Division on %d-bit Big-Numbers (base u%d) runs %d instances in: \
+        printf( "Quotient on %d-bit Big-Numbers (base u%d) runs %d instances in: \
 %lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
               , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
               );
@@ -213,7 +213,7 @@ void gpuDiv ( uint32_t num_instances
     
     // 4. dry run
     {
-        divShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem);
+        divShinv<Base, m, q><<<num_instances, m/q, 2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -228,7 +228,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            divShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint32_t)>>>(d_as, d_bs, d_quo, d_rem);
+            divShinv<Base, m,q><<< num_instances, m/q,  2 * m * sizeof(uint_t)>>>(d_as, d_bs, d_quo, d_rem);
         }
         
         cudaDeviceSynchronize();
@@ -337,8 +337,8 @@ void runQuotients(uint64_t total_work) {
     // testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
     // testQuotient<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
     // testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
-    testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
+    // testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
     // testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
 #endif
     free(res_gmp);
@@ -364,8 +364,8 @@ void runDivisions(uint64_t total_work) {
     // testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    // testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
 #endif
     free(gmp_quo);

@@ -126,18 +126,18 @@ add1( typename Base::uint_t u[Q]
     using uint_t = typename Base::uint_t;
 
     sh_mem[0] = Base::HIGHEST;
-    __syncthreads();
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] != Base::HIGHEST) {
             
             atomicMin((uint_t*)sh_mem, Q * threadIdx.x + i);
-            break;
         }
     }
     __syncthreads();
 
     uint32_t min_index = sh_mem[0];
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         uint32_t idx = Q * threadIdx.x + i;

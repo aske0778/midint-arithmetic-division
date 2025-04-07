@@ -148,32 +148,30 @@ shinv( volatile typename Base::uint_t* USh
     using uint_t = typename Base::uint_t;
     using uquad_t = typename Base::uquad_t;
     
-    int k = prec<uint_t, Q>(VReg, USh) - 1;
+    int k = prec<uint_t, Q>(VReg, &USh[0]) - 1;
 
     if (k == 0) {
         quo<Base, Q>(h, VSh[0], RReg);
         return;
     }
-    __syncthreads();
-    if (k >= h && !eq<uint_t, Q>(VReg, h, USh)) {
+    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[1])) {
         return;
     }
     if (k == h-1 && VSh[k] > Base::HIGHEST / 2 ) {
         set<uint_t, Q>(RReg, 1, 0);
         return;
     }
-    __syncthreads();
-    if (eq<uint_t, Q>(VReg, k, USh)) {
+    if (eq<uint_t, Q>(VReg, k, &USh[1])) {
         set<uint_t, Q>(RReg, 1, h - k);
         return;
     }
+
     int l = min(k, 2);    
     {
         if (threadIdx.x < (Q+3) / Q) {
             uquad_t V = 0;
             #pragma unroll
-            for (int i = 0; i <= l; i++)
-            {
+            for (int i = 0; i <= l; i++) {
                 V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
             }
         
@@ -193,8 +191,7 @@ shinv( volatile typename Base::uint_t* USh
 
     if (h - k <= l) {
         shift<uint_t, M, Q>(h-k-l, RReg, USh, RReg);
-    }
-    else {
+    } else {
         refine<Base, M, Q>(USh, VSh, VReg, TReg, h, k, l, RReg);
     }
 }

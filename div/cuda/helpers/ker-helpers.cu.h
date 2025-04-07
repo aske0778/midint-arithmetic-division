@@ -68,7 +68,6 @@ void cpGlb2Reg ( uint32_t ipb
     for(int i=0; i<Q; i++) {
         Arg[i] = shmem[Q*threadIdx.x + i];
     }
-    __syncthreads();
 }
 
 template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
@@ -99,7 +98,6 @@ void cpReg2Glb ( uint32_t ipb
             rss[glb_offs + loc_pos] = shmem[loc_pos];
         }
     }
-    __syncthreads();
 }
 
 template<class uint_t, uint32_t Q>
@@ -129,11 +127,11 @@ prec( uint_t u[Q]
 ) {
     sh_mem[0] = 0;
     __syncthreads();   
+
     #pragma unroll
     for (int i = Q-1; i >= 0; i--) {
         if (u[i] != 0) {
             atomicMax((uint_t*)sh_mem, Q * threadIdx.x + i + 1);
-            break;
         }
     }
     __syncthreads();
@@ -147,12 +145,12 @@ eq( uint_t u[Q]
   , volatile uint_t* sh_mem
 ) {
     sh_mem[0] = true;
-    __syncthreads();   
+    __syncthreads(); 
+      
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] != (bpow == (i * blockDim.x + threadIdx.x))) {
             sh_mem[0] = false;
-            break;
         }
     }
     __syncthreads();    
@@ -170,7 +168,6 @@ ez( uint_t u[Q]
     for (int i = 0; i < Q; i++) {
         if (u[i] != 0) {
             sh_mem[0] = false;
-            break;
         }
     }
     __syncthreads();   
@@ -259,6 +256,7 @@ shiftDouble( int n
         }
     }
     __syncthreads();
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = M + Q * threadIdx.x + i;
@@ -317,10 +315,7 @@ lt( uint_t u[Q]
             RReg[i] = (RReg[i] & ~0b10) | (RReg[i] & RReg[i-1] & 0b10);
         }
     }
-    __syncthreads();   
-    bool res = reduceBlock<LessThan>(RReg[Q-1], sh_mem) & 0b01;
-    __syncthreads();
-    return res;
+    return reduceBlock<LessThan>(RReg[Q-1], sh_mem) & 0b01;
 }
 
 template<class uint_t, uint32_t M, uint32_t Q>
