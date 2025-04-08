@@ -9,20 +9,21 @@ int main() {
 
     using Base = U32bits;
   //  using Base = U64bits;
-   // using Base = U16bits;
+  //  using Base = U16bits;
     using uint_t = Base::uint_t;
 
-    srand(time(NULL));
+  //  srand(time(NULL));
     bool stop = false;
-   // const uint32_t M = 256;
   //  const uint32_t M = 3192;
     // const uint32_t Q = 16;
-    const uint32_t M = 4896;
-    const uint32_t Q = 16;
-    // const uint32_t M = 8192;
-    // const uint32_t Q = 32;
+    // const uint32_t M = 4896;
+    // const uint32_t Q = 16;
+    const uint32_t M = 8192;
+    const uint32_t Q = 32;
     // const uint32_t Q = 4;
     // const uint32_t M = 2048;
+    // const uint32_t Q = 4;
+    // const uint32_t M = 64;
 
     for (int i = 0; i < 100 && !stop; i++) {
         printf("\rIteration: %u", i);
@@ -30,8 +31,8 @@ int main() {
         uint_t vPrec = (rand() % uPrec) + 3;
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
-        // prnt("u", u, M);
-        // prnt("v", v, M);
+        // prnt<uint_t>("u", u, M);
+        // prnt<uint_t>("v", v, M);
         uint_t* quo = (uint_t*)calloc(M, sizeof(uint_t));
         uint_t* rem = (uint_t*)calloc(M, sizeof(uint_t));
 

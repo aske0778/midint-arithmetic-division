@@ -1,6 +1,7 @@
 #include <gmp.h>
 
-void prnt(const char *str, uint32_t *u, uint32_t m)
+template<class uint_t>
+void prnt(const char *str, uint_t *u, uint32_t m)
 {
     printf("%s: [", str);
     for (int i = 0; i < m; i++)

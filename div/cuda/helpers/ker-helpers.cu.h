@@ -123,10 +123,10 @@ cpyShm2Reg ( volatile uint_t* shmem
 template<class uint_t, uint32_t Q>
 __device__ inline uint32_t 
 prec( uint_t u[Q]
-    , volatile uint_t* sh_mem
+    , volatile uint32_t* sh_mem
 ) {
     sh_mem[0] = 0;
-    __syncthreads();   
+    __syncthreads();
 
     #pragma unroll
     for (int i = Q-1; i >= 0; i--) {
