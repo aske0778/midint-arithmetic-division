@@ -188,11 +188,10 @@ shinv( volatile typename Base::uint_t* USh
             }
         }
     }
-
+    __syncthreads();
     if (h - k <= l) {
         shift<uint_t, M, Q>(h-k-l, RReg, VSh, RReg);
     } else {
-        __syncthreads();
         refine<Base, M, Q>(USh, VSh, VReg, TReg, h, k, l, RReg);
     }
 }
