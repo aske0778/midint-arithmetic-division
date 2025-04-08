@@ -31,7 +31,7 @@ void printSlice( uint_t* u
 
 template<class uint_t>
 void set( uint_t* u
-        , uint32_t d
+        , uint_t d
         , uint32_t m
 ) {
     for (int i = 0; i < m; i++)
@@ -48,8 +48,8 @@ void div_gmp( uint_t* u
             , uint_t* r
             , uint32_t m
 ) {
-    set(q, 0, m);
-    set(r, 0, m);
+    set<uint_t>(q, 0, m);
+    set<uint_t>(r, 0, m);
 
     mpz_t a;
     mpz_init(a);

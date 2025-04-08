@@ -51,6 +51,7 @@ powDiff( volatile typename Base::uint_t* USh
     } else if (L >= h) {
         __syncthreads();
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M);
+        __syncthreads();
         sub<Base, Q>(h, VReg, USh);
     } else {
         __syncthreads();
@@ -85,6 +86,7 @@ step( volatile typename Base::uint_t* USh
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
+    __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
     __syncthreads();
@@ -166,8 +168,8 @@ shinv( volatile typename Base::uint_t* USh
         if (threadIdx.x == 0) {
             uquad_t V = 0;
             #pragma unroll
-            for (int i = 0; i < l; i++) {
-                V += ((uquad_t)VSh[k - l + i + 1]) << (Base::bits * i);
+            for (int i = 0; i <= l; i++) {
+                V += ((uquad_t)VSh[k - l + i]) << (Base::bits * i);
             }
 
             uquad_t tmp = 0;
@@ -177,7 +179,7 @@ shinv( volatile typename Base::uint_t* USh
                 tmp = tmp2 + (tmp1 << Base::bits);
             }
             else {
-                uquad_t b2l = (uquad_t)1 << Base::bits * (2 * l - 1);
+                uquad_t b2l = (uquad_t)1 << Base::bits * (2 * l);
                 tmp = (b2l - V) / V + 1;
             }
             #pragma unroll

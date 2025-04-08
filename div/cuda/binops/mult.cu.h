@@ -376,6 +376,6 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2], M );
 
     if (overflow) {
-        add1<Base, Q*2>(&Rrg[Q*2], Lsh);
+        add1<Base, Q*2>(&Rrg[Q*2], Hsh);
     }
 }

@@ -6,41 +6,43 @@
 
 int main()
 {
-    const uint32_t M = 32;
-    const uint32_t Q = 8;
+  //  using Base = U32bits;
+  //  using Base = U64bits;
+    using Base = U16bits;
+    using uint_t = Base::uint_t;
+    const uint32_t M = 8;
+    const uint32_t Q = 4;
 
-    uint32_t u[32] = {1681692777, 1714636915, 1957747793, 424238335, 719885386, 1649760492, 596516649, 1189641421, 1025202362, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t u[8] = {40297, 27088, 4196, 45600, 62758, 0, 0, 0};
+    uint_t v[8] = {24248, 1153, 37231, 0, 0, 0, 0, 0};
 
-    uint32_t v[32] = {1350490027, 783368690, 1102520059, 2044897763, 1967513926, 1365180540, 1540383426, 304089172, 1303455736, 35005211, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    
-    uint32_t quo[M] = {0};
-    uint32_t rem[M] = {0};
+    uint_t quo[M] = {0};
+    uint_t rem[M] = {0};
 
-    uint32_t *d_u, *d_v, *d_quo, *d_rem;
-    cudaMalloc((void **)&d_u, M * sizeof(uint32_t));
-    cudaMalloc((void **)&d_v, M * sizeof(uint32_t));
-    cudaMalloc((void **)&d_quo, M * sizeof(uint32_t));
-    cudaMalloc((void **)&d_rem, M * sizeof(uint32_t));
+    uint_t *d_u, *d_v, *d_quo, *d_rem;
+    cudaMalloc((void **)&d_u, M * sizeof(uint_t));
+    cudaMalloc((void **)&d_v, M * sizeof(uint_t));
+    cudaMalloc((void **)&d_quo, M * sizeof(uint_t));
+    cudaMalloc((void **)&d_rem, M * sizeof(uint_t));
 
-    cudaMemcpy(d_u, u, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_v, v, M * sizeof(uint32_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_u, u, M * sizeof(uint_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_v, v, M * sizeof(uint_t), cudaMemcpyHostToDevice);
 
-    divShinv<M, Q><<<1, M/Q, 2 * M * sizeof(uint32_t)>>>(d_u, d_v, d_quo, d_rem);
+    divShinv<Base, M, Q><<<1, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
     cudaDeviceSynchronize();
 
-    cudaMemcpy(quo, d_quo, M * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(rem, d_rem, M * sizeof(uint32_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(quo, d_quo, M * sizeof(uint_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(rem, d_rem, M * sizeof(uint_t), cudaMemcpyDeviceToHost);
 
-    uint32_t quo_gmp[M] = {0};
-    uint32_t rem_gmp[M] = {0};
+    uint_t quo_gmp[M] = {0};
+    uint_t rem_gmp[M] = {0};
     div_gmp(u, v, quo_gmp, rem_gmp, M);
 
-    // printf("GMP:\n");
-    // prnt("quo", quo_gmp, M);
-    // prnt("rem", rem_gmp, M);
-    // printf("Cuda:\n");
-    // prnt("quo", quo, M);
-    // prnt("rem", rem, M);
+    prnt<uint_t>("quo", quo, M);
+    prnt<uint_t>("rem", rem, M);
+    prnt<uint_t>("quo_gmp", quo_gmp, M);
+    prnt<uint_t>("rem_gmp", rem_gmp, M);
+
     for (int i = 0; i < M; i++)
     {
         if (quo[i] != quo_gmp[i] || rem[i] != rem_gmp[i])

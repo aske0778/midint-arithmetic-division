@@ -51,7 +51,6 @@ __device__ void baddRegs( volatile CT* Csh
             carry = CarrySegBop<CT>::apply(carry, cs[i]);         
         }
     }
-    __syncthreads();
 }
 
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
