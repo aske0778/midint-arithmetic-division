@@ -9,7 +9,7 @@ typedef unsigned __int128 uint128_t;
 struct U64bits {
     using uint_t = uint64_t;
     using sint_t = int64_t;
-    using ubig_t = unsigned uint128_t;
+    using ubig_t = uint128_t;
     using uquad_t = uint128_t;
     using carry_t= uint32_t;
     static const int32_t  bits = 64;
