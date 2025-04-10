@@ -114,6 +114,7 @@ uint_t* randBigInt( uint32_t prec, uint32_t m )
     for (int i = 0; i < prec; i++)
     {
         u[i] = (uint_t)rand();
+        //u[i] = ((uint_t)rand() % 10) + 1;
     }
     return u;
 }
