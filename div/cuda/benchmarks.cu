@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#define GPU_RUNS_DIV    10
+#define GPU_RUNS_DIV    5
 #define ERR         0.000005
 
 #define WITH_VALIDATION 1
@@ -104,16 +104,17 @@ void gpuQuo ( uint32_t num_instances
     // 3. kernel dimensions
     const uint32_t q = Q; // use 8 for A4500 
     
-    { // maximize the amount of shared memory for the kernel
+    dim3 block( m/q, 1, 1 );
+    dim3 grid ( num_instances, 1, 1);
+    uint32_t sh_mem = 2 * m * sizeof(uint_t);
+
+    if (sh_mem >= 64000) { // maximize the amount of shared memory for the kernel
         cudaFuncSetAttribute(quoShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
     }    
 
-    dim3 block( m/q, 1, 1 );
-    dim3 grid ( num_instances, 1, 1);
-    
     // 4. dry run
     {
-        quoShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_rs);
+        quoShinv<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -128,7 +129,7 @@ void gpuQuo ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            quoShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_rs);
+            quoShinv<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -186,17 +187,18 @@ void gpuDiv ( uint32_t num_instances
 
     // 3. kernel dimensions
     const uint32_t q = Q; // use 8 for A4500 
-    
-    { // maximize the amount of shared memory for the kernel
-        cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
-    }    
 
     dim3 block( m/q, 1, 1 );
     dim3 grid ( num_instances, 1, 1);
+    uint32_t sh_mem = 2 * m * sizeof(uint_t);
+
+    if (sh_mem >= 64000) { // maximize the amount of shared memory for the kernel
+        cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
+    }    
     
     // 4. dry run
     {
-        divShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_quo, d_rem);
+        divShinv<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -211,7 +213,7 @@ void gpuDiv ( uint32_t num_instances
         gettimeofday(&t_start, NULL); 
         
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            divShinv<Base, m, q><<< grid, block >>>(d_as, d_bs, d_quo, d_rem);
+            divShinv<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_quo, d_rem);
         }
         
         cudaDeviceSynchronize();
