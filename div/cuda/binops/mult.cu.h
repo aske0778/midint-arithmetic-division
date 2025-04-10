@@ -38,7 +38,7 @@ void from4Reg2ShmQ( S lhcs[2][Q+2]
             Hsh[n_m_2ltid + q] = 0;
         }
         S high = lhcs[1][Q];
-        S carry= lhcs[1][Q+1];
+        uint32_t carry= lhcs[1][Q+1];
         uint32_t ind = n_m_2ltid + Q;
         if( tid_mod_m == 0 ) {
             high  = 0;
@@ -60,7 +60,7 @@ void computeIter64( uint32_t i
                   , volatile S* Ash
                   , volatile S* Bsh
                   , D& accum
-                  , D& carry
+                  , uint32_t& carry
 ) {
     const uint32_t SHFT = 8*sizeof(S);
     S ai = Ash[i];
@@ -79,7 +79,7 @@ void computeIter64( uint32_t i
 template<class S, class D, uint32_t Q>
 __device__ inline
 void combineQ( D accums[Q]
-             , D carrys[Q]
+             , uint32_t carrys[Q]
              , S lhcs[Q+2]
 ) {
     uint32_t SHFT = 8 * sizeof(S);
@@ -110,8 +110,8 @@ void convolutionQ( uint32_t k1
                  , volatile S* Bsh
                  , S lhcs[Q+2]
 ) {
-    D accums[Q]; 
-    D carrys[Q];
+    D        accums[Q]; 
+    uint32_t carrys[Q];
     
     #pragma unroll
     for(int q=0; q<Q; q++) { 
