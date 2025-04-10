@@ -1,8 +1,10 @@
 #include <gmp.h>
 
 template<class uint_t>
-void prnt(const char *str, uint_t *u, uint32_t m)
-{
+void prnt( const char *str
+         , uint_t *u
+         , uint32_t m
+) {
     printf("%s: [", str);
     for (int i = 0; i < m; i++)
     {
@@ -93,19 +95,22 @@ uint_t* randBigInt( uint32_t prec
 #define GMP_ORDER   (-1)
 
 
-template<uint32_t m>
-void gmpQuoOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
-    uint32_t buff[4*m];
+template<class uint_t, uint32_t m>
+void gmpQuoOnce( uint_t* inst_as
+               , uint_t* inst_bs
+               , uint_t* inst_rs
+) {
+    uint_t buff[4*m];
     mpz_t a; mpz_t b; mpz_t r;        
     mpz_init(a); mpz_init(b); mpz_init(r);
 
-    mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
-    mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
+    mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
 
     mpz_fdiv_q(r, a, b);
         
     size_t countp = 0;
-    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
+    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint_t), 0, 0, r);
         
     for(int j=0; j<m; j++) {
         inst_rs[j] = buff[j];
@@ -115,22 +120,26 @@ void gmpQuoOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_rs) {
     }
 }
 
-template<uint32_t m>
-void gmpDivOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_quo, uint32_t* inst_rem) {
-    uint32_t buffq[4*m];
-    uint32_t buffr[4*m];
+template<class uint_t, uint32_t m>
+void gmpDivOnce( uint_t* inst_as
+               , uint_t* inst_bs
+               , uint_t* inst_quo
+               , uint_t* inst_rem
+) {
+    uint_t buffq[4*m];
+    uint_t buffr[4*m];
     mpz_t a; mpz_t b; mpz_t q; mpz_t r;   
     mpz_init(a); mpz_init(b); mpz_init(q); mpz_init(r);
 
-    mpz_import(a, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_as);
-    mpz_import(b, m, GMP_ORDER, sizeof(uint32_t), 0, 0, inst_bs);
+    mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
 
     mpz_fdiv_qr(q, r, a, b);
         
     size_t countq = 0;
     size_t countr = 0;
-    mpz_export (buffq, &countq, GMP_ORDER, sizeof(uint32_t), 0, 0, q);
-    mpz_export (buffr, &countr, GMP_ORDER, sizeof(uint32_t), 0, 0, r);
+    mpz_export (buffq, &countq, GMP_ORDER, sizeof(uint_t), 0, 0, q);
+    mpz_export (buffr, &countr, GMP_ORDER, sizeof(uint_t), 0, 0, r);
         
     for(int j=0; j<m; j++) {
         inst_quo[j] = buffq[j];
@@ -144,32 +153,42 @@ void gmpDivOnce(uint32_t* inst_as, uint32_t* inst_bs, uint32_t* inst_quo, uint32
     }
 }
 
-template<int m>
-void gmpQuo(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
-    uint32_t* it_as = as;
-    uint32_t* it_bs = bs;
-    uint32_t* it_rs = rs;
+template<class uint_t, int m>
+void gmpQuo( int num_instances
+           , uint_t* as
+           , uint_t* bs
+           , uint_t* rs
+) {
+    uint_t* it_as = as;
+    uint_t* it_bs = bs;
+    uint_t* it_rs = rs;
         
     for(int i=0; i<num_instances; i++) {
-        gmpQuoOnce<m>(it_as, it_bs, it_rs);
+        gmpQuoOnce<uint_t, m>(it_as, it_bs, it_rs);
         it_as += m; it_bs += m; it_rs += m;
     }
 }
 
-template<int m>
-void gmpDiv(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* quo, uint32_t* rem) {
-    uint32_t* it_as = as;
-    uint32_t* it_bs = bs;
-    uint32_t* it_quo = quo;
-    uint32_t* it_rem = rem;
+template<class uint_t, int m>
+void gmpDiv( int num_instances
+           , uint_t* as
+           , uint_t* bs
+           , uint_t* quo
+           , uint_t* rem
+) {
+    uint_t* it_as = as;
+    uint_t* it_bs = bs;
+    uint_t* it_quo = quo;
+    uint_t* it_rem = rem;
         
     for(int i=0; i<num_instances; i++) {
-        gmpDivOnce<m>(it_as, it_bs, it_quo, it_rem);
+        gmpDivOnce<uint_t, m>(it_as, it_bs, it_quo, it_rem);
         it_as += m; it_bs += m; it_quo += m; it_rem += m;
     }
 }
 
-int gpuAssert(cudaError_t code) {
+int gpuAssert( cudaError_t code )
+{
   if(code != cudaSuccess) {
     printf("GPU Error: %s\n", cudaGetErrorString(code));
     return -1;
@@ -178,7 +197,7 @@ int gpuAssert(cudaError_t code) {
 }
 
 template<class uint_t>
-uint_t* randBigInt(uint32_t prec, uint32_t m)
+uint_t* randBigInt( uint32_t prec, uint32_t m )
 {
     uint_t* u = (uint_t*)calloc(m, sizeof(uint_t));
 

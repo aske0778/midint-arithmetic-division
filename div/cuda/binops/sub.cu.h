@@ -1,10 +1,11 @@
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
-__device__ void bsubRegs( volatile CT* Csh
-                         , D Arg[q]
-                         , S Brg[q]
-                         , D rs[q]
-                         , uint32_t m
-                         ) {
+__device__ inline void
+bsubRegs( volatile CT* Csh
+        , D Arg[q]
+        , S Brg[q]
+        , D rs[q]
+        , uint32_t m
+) {
     //D  rs[q];
     CT cs[q];
     
@@ -67,7 +68,6 @@ sub( uint32_t bpow
     for (int i = 0; i < Q; i++) {
         if (u[i] != Base::HIGHEST) {
             atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
-            break;
         }
     }
     __syncthreads();

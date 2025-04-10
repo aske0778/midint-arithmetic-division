@@ -1,10 +1,11 @@
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
-__device__ void baddRegs( volatile CT* Csh
-                         , D Arg[q]
-                         , S Brg[q]
-                         , D rs[q]
-                         , uint32_t m
-                         ) {
+__device__ inline void
+baddRegs( volatile CT* Csh
+        , D Arg[q]
+        , S Brg[q]
+        , D rs[q]
+        , uint32_t m
+) {
     //D  rs[q];
     CT cs[q];
     
@@ -54,13 +55,14 @@ __device__ void baddRegs( volatile CT* Csh
 }
 
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
-__device__ bool baddRegsOverflow( volatile CT* Csh
-                         , volatile CT* Dsh
-                         , D Arg[q]
-                         , S Brg[q]
-                         , D rs[q]
-                         , uint32_t m
-                         ) {
+__device__ inline bool
+baddRegsOverflow( volatile CT* Csh
+                , volatile CT* Dsh
+                , D Arg[q]
+                , S Brg[q]
+                , D rs[q]
+                , uint32_t m
+) {
     //D  rs[q];
     Dsh[0] = false;
     __syncthreads();

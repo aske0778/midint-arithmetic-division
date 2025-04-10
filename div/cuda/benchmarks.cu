@@ -261,7 +261,7 @@ void testQuotient( int num_instances
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
     if(with_validation)
-        gmpQuo<m>(num_instances, u, v, res_gmp);
+        gmpQuo<uint_t, m>(num_instances, u, v, res_gmp);
 
     gpuQuo<Base, m/x>(num_instances, u, v, res_our);
 
@@ -289,7 +289,7 @@ void testDivision( int num_instances
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
     if(with_validation)
-        gmpDiv<m>(num_instances, u, v, gmp_quo, gmp_rem);
+        gmpDiv<uint_t, m>(num_instances, u, v, gmp_quo, gmp_rem);
 
     gpuDiv<Base, m/x>(num_instances, u, v, our_quo, our_rem);
 

@@ -126,7 +126,7 @@ prec( uint_t u[Q]
     , volatile uint32_t* sh_mem
 ) {
     sh_mem[0] = 0;
-    __syncthreads();
+    __syncthreads();   
 
     #pragma unroll
     for (int i = Q-1; i >= 0; i--) {
@@ -188,7 +188,7 @@ ez( uint_t u[Q]
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 set( uint_t u[Q]
-   , uint32_t d
+   , uint_t d
    , uint32_t idx
 ) {
     if (threadIdx.x == idx / Q) {
@@ -199,7 +199,7 @@ set( uint_t u[Q]
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 zeroAndSet( uint_t u[Q]
-          , uint32_t d
+          , uint_t d
           , uint32_t idx
 ) {
     for (uint32_t i = 0; i < Q; ++i) {
@@ -219,6 +219,9 @@ shift( int n
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
+
+        // bool condition = (offset >= 0 && offset < M);
+        // sh_mem[offset * condition + (M-idx-1) * (1-condition)] = u[i] * condition + 0 * (1-condition);
 
         if (offset >= 0 && offset < M) {
             sh_mem[offset] = u[i];
@@ -249,8 +252,7 @@ shiftDouble( int n
 
         if (offset >= 0 && offset < M) {
             sh_mem[offset] = u[i];
-        }
-        else {
+        } else {
             sh_mem[M-idx-1] = 0;
         }
     }
@@ -277,10 +279,11 @@ shiftDouble( int n
 template<typename Base, uint32_t Q>
 __device__ inline void 
 quo( uint32_t bpow
-   , uint32_t d
+   , typename Base::uint_t d
    , typename Base::uint_t RReg[Q]
 ) {
     typename Base::ubig_t r = 1;
+    
     #pragma unroll
     for (int i = bpow - 1; i >= 0; i--) {
         r <<= Base::bits; 

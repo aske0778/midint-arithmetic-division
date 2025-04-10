@@ -1,8 +1,10 @@
 template<class S, uint32_t Q>
 __device__ inline 
-void from4Reg2ShmQ( S lhcs[2][Q+2], volatile S* Lsh, volatile S* Hsh, uint32_t n ) {
-    //__syncthreads();
-
+void from4Reg2ShmQ( S lhcs[2][Q+2]
+                  , volatile S* Lsh
+                  , volatile S* Hsh
+                  , uint32_t n
+) {
     const uint32_t Q2 = 2*Q;
     const uint32_t offset = ( threadIdx.x / (n/Q2) ) * n;
     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
@@ -46,9 +48,12 @@ void from4Reg2ShmQ( S lhcs[2][Q+2], volatile S* Lsh, volatile S* Hsh, uint32_t n
 
 template<class S, class D>
 __device__ inline
-void computeIter64( uint32_t i, uint32_t j
-                  , volatile S* Ash, volatile S* Bsh
-                  , D& accum, uint32_t& carry
+void computeIter64( uint32_t i
+                  , uint32_t j
+                  , volatile S* Ash
+                  , volatile S* Bsh
+                  , D& accum
+                  , D& carry
 ) {
     const uint32_t SHFT = 8*sizeof(S);
     S ai = Ash[i];
@@ -63,7 +68,10 @@ void computeIter64( uint32_t i, uint32_t j
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void combineQ( D accums[Q], uint32_t carrys[Q], S lhcs[Q+2] ) {
+void combineQ( D accums[Q]
+             , D carrys[Q]
+             , S lhcs[Q+2]
+) {
     uint32_t SHFT = 8 * sizeof(S);
     
     lhcs[0] = (S) accums[0];
@@ -84,9 +92,13 @@ void combineQ( D accums[Q], uint32_t carrys[Q], S lhcs[Q+2] ) {
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void convolutionQ( uint32_t k1, volatile S* Ash, volatile S* Bsh, S lhcs[Q+2]) {
-    D        accums[Q]; 
-    uint32_t carrys[Q];
+void convolutionQ( uint32_t k1
+                 , volatile S* Ash
+                 , volatile S* Bsh
+                 , S lhcs[Q+2]
+) {
+    D accums[Q]; 
+    D carrys[Q];
     
     #pragma unroll
     for(int q=0; q<Q; q++) { 
@@ -118,7 +130,11 @@ void convolutionQ( uint32_t k1, volatile S* Ash, volatile S* Bsh, S lhcs[Q+2]) {
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void wrapperConvQ( volatile S* Ash0, volatile S* Bsh0, S lhcs[2][Q+2], uint32_t M ) {
+void wrapperConvQ( volatile S* Ash0
+                 , volatile S* Bsh0
+                 , S lhcs[2][Q+2]
+                 , uint32_t M
+) {
     const uint32_t offset = ( threadIdx.x / (M/(2*Q)) ) * M;
     volatile S* Ash = Ash0 + offset;
     volatile S* Bsh = Bsh0 + offset;
@@ -185,9 +201,12 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
 
 template<class S, class D>
 __device__ inline
-void computeIter641( uint32_t i, uint32_t j
-                  , volatile S* Ash, volatile S* Bsh
-                  , D& accum, uint32_t& carry
+void computeIter641( uint32_t i
+                   , uint32_t j
+                   , volatile S* Ash
+                   , volatile S* Bsh
+                   , D& accum
+                   , D& carry
 ) {
     const uint32_t SHFT = 8*sizeof(S);
     S ai = Ash[i];
@@ -202,7 +221,10 @@ void computeIter641( uint32_t i, uint32_t j
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void combineQ1( D accums[Q], uint32_t carrys[Q], S lhcs[Q+2] ) {
+void combineQ1( D accums[Q]
+              , D carrys[Q]
+              , S lhcs[Q+2]
+) {
     uint32_t SHFT = 8 * sizeof(S);
     
     lhcs[0] = (S) accums[0];
@@ -223,9 +245,14 @@ void combineQ1( D accums[Q], uint32_t carrys[Q], S lhcs[Q+2] ) {
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void convolutionQ1( uint32_t k1, volatile S* Ash, volatile S* Bsh, S lhcs[Q+2], uint32_t M) {
-    D        accums[Q]; 
-    uint32_t carrys[Q];
+void convolutionQ1( uint32_t k1
+                  , volatile S* Ash
+                  , volatile S* Bsh
+                  , S lhcs[Q+2]
+                  , uint32_t M
+) {
+    D accums[Q]; 
+    D carrys[Q];
     
     #pragma unroll
     for(int q=0; q<Q; q++) { 
@@ -261,7 +288,11 @@ void convolutionQ1( uint32_t k1, volatile S* Ash, volatile S* Bsh, S lhcs[Q+2], 
 
 template<class S, class D, uint32_t Q>
 __device__ inline
-void wrapperConvQ1( volatile S* Ash0, volatile S* Bsh0, S lhcs[2][Q+2], uint32_t M ) {
+void wrapperConvQ1( volatile S* Ash0
+                  , volatile S* Bsh0
+                  , S lhcs[2][Q+2]
+                  , uint32_t M
+) {
     volatile S* Ash = Ash0;
     volatile S* Bsh = Bsh0;
 
@@ -279,7 +310,13 @@ void wrapperConvQ1( volatile S* Ash0, volatile S* Bsh0, S lhcs[2][Q+2], uint32_t
 
 template<class S, uint32_t Q>
 __device__ inline 
-void from4Reg2ShmQ2( S lhcs[Q+2], volatile S* Lsh, volatile S* Hsh,  S highCarry[2], bool isFirst, uint32_t n ) {
+void from4Reg2ShmQ2( S lhcs[Q+2]
+                   , volatile S* Lsh
+                   , volatile S* Hsh
+                   , S highCarry[2]
+                   , bool isFirst
+                   , uint32_t n
+) {
     const uint32_t Q2 = 2*Q;
     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
     //Refactoring in progress
