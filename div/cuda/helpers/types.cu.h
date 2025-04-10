@@ -31,7 +31,7 @@ struct U16bits {
     using sint_t = int16_t;
     using ubig_t = uint32_t;
     using uquad_t = uint64_t;
-    using carry_t= uint16_t;
+    using carry_t= uint32_t;
     static const int16_t  bits = 16;
     static const uint_t HIGHEST = 0xFFFF;
 };

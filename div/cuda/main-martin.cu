@@ -10,11 +10,11 @@ int main()
   //  using Base = U64bits;
     using Base = U16bits;
     using uint_t = Base::uint_t;
-    const uint32_t M = 8;
+    const uint32_t M = 64;
     const uint32_t Q = 4;
 
-    uint_t u[8] = {40297, 27088, 4196, 45600, 62758, 0, 0, 0};
-    uint_t v[8] = {24248, 1153, 37231, 0, 0, 0, 0, 0};
+    uint_t u[64] = {19228, 13714, 45438, 60290, 29659, 50307, 11743, 55741, 7636, 42647, 11719, 5733, 53714, 20357, 30248, 64443, 1267, 17478, 61816, 45436, 21483, 45893, 60071, 5797, 38217, 59222, 56186, 1166, 877, 64152, 24292, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t v[64] = {20105, 12330, 4194, 14859, 41989, 54501, 26602, 32194, 62137, 3713, 43913, 2335, 57427, 64270, 32583, 56335, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     uint_t quo[M] = {0};
     uint_t rem[M] = {0};
@@ -38,10 +38,13 @@ int main()
     uint_t rem_gmp[M] = {0};
     div_gmp(u, v, quo_gmp, rem_gmp, M);
 
-    prnt<uint_t>("quo", quo, M);
-    prnt<uint_t>("rem", rem, M);
-    prnt<uint_t>("quo_gmp", quo_gmp, M);
-    prnt<uint_t>("rem_gmp", rem_gmp, M);
+    // prnt<uint_t>("u", u, M);
+    // prnt<uint_t>("v", v, M);
+
+    // prnt<uint_t>("quo", quo, M);
+    // prnt<uint_t>("rem", rem, M);
+    // prnt<uint_t>("quo_gmp", quo_gmp, M);
+    // prnt<uint_t>("rem_gmp", rem_gmp, M);
 
     for (int i = 0; i < M; i++)
     {

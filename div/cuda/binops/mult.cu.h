@@ -201,6 +201,7 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     from4Reg2ShmQ<uint_t, Q>( lhcs, Lsh, Hsh, M );
     __syncthreads();
 
+
     // 4. load back to register and perform the addition of the carries.
     uint_t Lrg[2*Q];
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
@@ -208,6 +209,25 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
+    // Hsh[0] = 0;
+    // __syncthreads();
+    // for (int i=0; i < Q*2; i++) {
+    //     int idx = Q*2 * threadIdx.x + i;
+    //     if (idx == M/2 && (Lrg[i] != 0 || Rrg[i] != 0)) {
+    //         Hsh[0] = 1;
+    //     }
+    // }
+
+    // __syncthreads();
+    // if (Hsh[0] == 1) {
+    //     __syncthreads();
+    //     printRegs1<uint_t, 2*Q>("left", Lrg, Lsh, M);
+    //     __syncthreads();
+    //     __syncthreads();
+    //     printRegs1<uint_t, 2*Q>("right", Hrg, Lsh, M);
+    //     __syncthreads();
+    // }
+    
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
 }
 

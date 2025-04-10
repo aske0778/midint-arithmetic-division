@@ -26,7 +26,7 @@ bsubRegs( volatile CT* Csh
             
             rs[i] = a - (D)b;
             c = (CT) ( (rs[i] > a) );
-            c = c | ((rs[i] == HIGHEST) << 1);
+            c = c | ((rs[i] == 0) << 1);
             //c = c | ( ((ind % m) == 0) << 2 );
             if( (ind % m) == 0 )
                 c = c | 4;
@@ -73,7 +73,7 @@ sub( uint32_t bpow
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
-        if (u[i] != Base::HIGHEST) {
+        if (u[i] != 0) {
             atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
         }
     }
