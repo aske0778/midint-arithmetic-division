@@ -1,3 +1,7 @@
+
+/**
+ * 
+ */
 template<class S, uint32_t Q>
 __device__ inline 
 void from4Reg2ShmQ( S lhcs[2][Q+2]
@@ -46,6 +50,9 @@ void from4Reg2ShmQ( S lhcs[2][Q+2]
     }
 }
 
+/**
+ * 
+ */
 template<class S, class D>
 __device__ inline
 void computeIter64( uint32_t i
@@ -66,6 +73,9 @@ void computeIter64( uint32_t i
     //if (accum < ck) carry++;
 }
 
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void combineQ( D accums[Q]
@@ -90,6 +100,9 @@ void combineQ( D accums[Q]
     lhcs[Q+1] = c_res;
 }
 
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void convolutionQ( uint32_t k1
@@ -127,7 +140,9 @@ void convolutionQ( uint32_t k1
     combineQ<S,D,Q>(accums, carrys, lhcs);
 }
 
-
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void wrapperConvQ( volatile S* Ash0
@@ -151,7 +166,9 @@ void wrapperConvQ( volatile S* Ash0
     }
 }
 
-
+/**
+ * 
+ */
 template<class Base, uint32_t IPB, uint32_t Q>
 __device__ 
 void bmulRegsQ( volatile typename Base::uint_t* Ash
@@ -194,11 +211,11 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
 }
 
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+/**
+ * 
+ */
 template<class S, class D>
 __device__ inline
 void computeIter641( uint32_t i
@@ -219,6 +236,9 @@ void computeIter641( uint32_t i
     //if (accum < ck) carry++;
 }
 
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void combineQ1( D accums[Q]
@@ -243,6 +263,9 @@ void combineQ1( D accums[Q]
     lhcs[Q+1] = c_res;
 }
 
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void convolutionQ1( uint32_t k1
@@ -281,11 +304,12 @@ void convolutionQ1( uint32_t k1
             }
         }
     }
-
     combineQ1<S,D,Q>(accums, carrys, lhcs);
 }
 
-
+/**
+ * 
+ */
 template<class S, class D, uint32_t Q>
 __device__ inline
 void wrapperConvQ1( volatile S* Ash0
@@ -307,7 +331,9 @@ void wrapperConvQ1( volatile S* Ash0
     }
 }
 
-
+/**
+ * 
+ */
 template<class S, uint32_t Q>
 __device__ inline 
 void from4Reg2ShmQ2( S lhcs[Q+2]
@@ -359,8 +385,9 @@ void from4Reg2ShmQ2( S lhcs[Q+2]
     }
 }
 
-
-
+/**
+ * 
+ */
 template<class Base, uint32_t IPB, uint32_t Q>
 __device__ 
 void bmulRegsQComplete( volatile typename Base::uint_t* Ash

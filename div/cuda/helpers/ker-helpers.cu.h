@@ -1,6 +1,10 @@
 #define WARP (32)
 #define lgWARP (5)
 
+/**
+ * Our own implementation for copying coalesced
+ * from global to shared to register memory
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 cpyGlb2Sh2Reg( uint_t* AGlb
@@ -21,6 +25,10 @@ cpyGlb2Sh2Reg( uint_t* AGlb
     }
 }
 
+/**
+ * Our own implementation for copying coalesced
+ * from register to shared to global memory
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 cpyReg2Sh2Glb( uint_t* AGlb
@@ -41,6 +49,10 @@ cpyReg2Sh2Glb( uint_t* AGlb
     }
 }
 
+/**
+ * Library implementation for copying coalesced
+ * from global to shared to register memory
+ */
 template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
 __device__ inline
 void cpGlb2Reg ( uint32_t ipb
@@ -70,6 +82,10 @@ void cpGlb2Reg ( uint32_t ipb
     }
 }
 
+/**
+ * Library implementation for copying coalesced
+ * from register to shared to global memory
+ */
 template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
 __device__ inline
 void cpReg2Glb ( uint32_t ipb
@@ -100,6 +116,9 @@ void cpReg2Glb ( uint32_t ipb
     }
 }
 
+/**
+ * Copy from register to shared memory
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 cpyReg2Shm ( uint_t Rrg[Q]
@@ -110,6 +129,9 @@ cpyReg2Shm ( uint_t Rrg[Q]
     }
 }
 
+/**
+ * Copy from shared to register memory
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 cpyShm2Reg ( volatile uint_t* shmem
@@ -120,6 +142,9 @@ cpyShm2Reg ( volatile uint_t* shmem
     }
 }
 
+/**
+ * Calculate the precision of a bigint in register memory
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline uint32_t 
 prec( uint_t u[Q]
@@ -138,6 +163,9 @@ prec( uint_t u[Q]
     return sh_mem[0];
 }
 
+/**
+ * Tests if a bigint is equal to a bpow
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 eq( uint_t u[Q]
@@ -157,6 +185,9 @@ eq( uint_t u[Q]
     return sh_mem[0];
 }
 
+/**
+ * Checks if a bigint is zero
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 ez( uint_t u[Q]
@@ -174,6 +205,9 @@ ez( uint_t u[Q]
     return sh_mem[0];
 }
 
+/**
+ * 
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 ez( uint_t u[Q]
@@ -185,6 +219,10 @@ ez( uint_t u[Q]
     return sh_mem[0];
 }
 
+/**
+ * Sets a specific index of a bigint to value d
+ * in register memory
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 set( uint_t u[Q]
@@ -196,6 +234,9 @@ set( uint_t u[Q]
     }
 }
 
+/**
+ * Zeros a bigint and sets index idx to value d
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 zeroAndSet( uint_t u[Q]
@@ -208,6 +249,9 @@ zeroAndSet( uint_t u[Q]
     set<uint_t, Q>(u, d, idx);
 }
 
+/**
+ * Performs the shift operation on a bigint
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 shift( int n
@@ -237,6 +281,9 @@ shift( int n
     }
 }
 
+/**
+ * Performs the shift operation on a bigint of size 2M
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 shiftDouble( int n
@@ -276,6 +323,9 @@ shiftDouble( int n
     }
 }
 
+/**
+ * Quotient calculation of a bpow and divisor d
+ */
 template<typename Base, uint32_t Q>
 __device__ inline void 
 quo( uint32_t bpow
@@ -283,7 +333,7 @@ quo( uint32_t bpow
    , typename Base::uint_t RReg[Q]
 ) {
     typename Base::ubig_t r = 1;
-    
+
     #pragma unroll
     for (int i = bpow - 1; i >= 0; i--) {
         r <<= Base::bits; 
@@ -296,6 +346,10 @@ quo( uint32_t bpow
     }
 }
 
+/**
+ * Warp-level implementation of less than operation
+ * between two bigints stored in register memory
+ */
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 lt( uint_t u[Q]
@@ -319,6 +373,9 @@ lt( uint_t u[Q]
     return reduceBlock<LessThan, uint_t>(RReg[Q-1], sh_mem) & 0b01;
 }
 
+/**
+ * Prints contents of register memory to stdout
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void
 printRegs( const char *str

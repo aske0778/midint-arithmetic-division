@@ -1,3 +1,7 @@
+
+/**
+ * Copy implementation where m is not statically known
+ */
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
 __device__ inline void
 baddRegs( volatile CT* Csh
@@ -54,6 +58,9 @@ baddRegs( volatile CT* Csh
     }
 }
 
+/**
+ * 
+ */
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
 __device__ inline bool
 baddRegsOverflow( volatile CT* Csh

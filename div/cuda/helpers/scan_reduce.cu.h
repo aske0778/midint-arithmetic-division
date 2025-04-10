@@ -1,3 +1,7 @@
+
+/**
+ * Operation invariant warp-level scan implementation
+ */
 template<class OP>
 __device__ inline int 
 scanIncWarp( int u
@@ -11,6 +15,9 @@ scanIncWarp( int u
     return u;
 }
 
+/**
+ * Efficient operation invariant block-level reduce implementation
+ */
 template<class OP, class uint_t>
 __device__ inline int 
 reduceBlock( uint_t u
@@ -36,6 +43,9 @@ reduceBlock( uint_t u
     return sh_mem[0];
 } 
 
+/**
+ * Operation invariant warp-level scan implementation
+ */
 template<class OP>
 __device__ inline typename OP::RedElTp
 scanIncWarp( volatile typename OP::RedElTp* ptr
@@ -51,6 +61,9 @@ scanIncWarp( volatile typename OP::RedElTp* ptr
     return OP::remVolatile(ptr[idx]);
 }
 
+/**
+ * Efficient operation invariant block-level reduce implementation
+ */
 template<class OP>
 __device__ inline typename OP::RedElTp
 scanIncBlock( volatile typename OP::RedElTp* ptr

@@ -1,3 +1,7 @@
+/**
+ * Subtraction implementation between two
+ * bigints stored in register memory
+ */
 template<class D, class S, class CT, uint32_t q, D HIGHEST>
 __device__ inline void
 bsubRegs( volatile CT* Csh
@@ -54,6 +58,9 @@ bsubRegs( volatile CT* Csh
     }
 }
 
+/**
+ * 
+ */
 template<typename Base, uint32_t Q>
 __device__ inline void 
 sub( uint32_t bpow
@@ -73,13 +80,13 @@ sub( uint32_t bpow
     __syncthreads();
 
     uint32_t min_index = sh_mem[0];
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         uint32_t idx = Q * threadIdx.x + i;
         if (idx < min_index) {
             u[i] = 0;
-        }
-        else if (idx < bpow) {
+        } else if (idx < bpow) {
             u[i] = ~u[i] + (idx == min_index);
         }
     }

@@ -1,5 +1,22 @@
 #include <gmp.h>
 
+#define GMP_ORDER   (-1)
+
+/**
+ * Print the last cuda device error
+ */
+int gpuAssert( cudaError_t code )
+{
+  if(code != cudaSuccess) {
+    printf("GPU Error: %s\n", cudaGetErrorString(code));
+    return -1;
+  }
+  return 0;
+}
+
+/**
+ * Prints a bigint to stdout
+ */
 template<class uint_t>
 void prnt( const char *str
          , uint_t *u
@@ -15,6 +32,10 @@ void prnt( const char *str
     printf("]\n");
 }
 
+/**
+ * Prints 3 indices of a bigint around
+ * the index i to stdout
+ */
 template<class uint_t>
 void printSlice( uint_t* u
                , char name
@@ -31,6 +52,9 @@ void printSlice( uint_t* u
     printf("]\n");
 }
 
+/**
+ * Zeros a bigint and sets the least significant index to d
+ */
 template<class uint_t>
 void set( uint_t* u
         , uint_t d
@@ -43,6 +67,9 @@ void set( uint_t* u
     u[0] = d;
 }
 
+/**
+ * A wrapper for the GMP implementation of division
+ */
 template<class uint_t>
 void div_gmp( uint_t* u
             , uint_t* v
@@ -76,7 +103,24 @@ void div_gmp( uint_t* u
     mpz_clear(d);
 }
 
+/**
+ * Returns a randomly generated bigint of precision prec
+ */
+template<class uint_t>
+uint_t* randBigInt( uint32_t prec, uint32_t m )
+{
+    uint_t* u = (uint_t*)calloc(m, sizeof(uint_t));
 
+    for (int i = 0; i < prec; i++)
+    {
+        u[i] = (uint_t)rand();
+    }
+    return u;
+}
+
+/**
+ * Returns multiple randomly generated bigint of precision prec
+ */
 template<class uint_t>
 uint_t* randBigInt( uint32_t prec
                   , uint32_t m
@@ -92,9 +136,9 @@ uint_t* randBigInt( uint32_t prec
     return u;
 }
 
-#define GMP_ORDER   (-1)
-
-
+/**
+ * A wrapper for the GMP quo operation
+ */
 template<class uint_t, uint32_t m>
 void gmpQuoOnce( uint_t* inst_as
                , uint_t* inst_bs
@@ -120,6 +164,9 @@ void gmpQuoOnce( uint_t* inst_as
     }
 }
 
+/**
+ * A wrapper for the GMP div operation
+ */
 template<class uint_t, uint32_t m>
 void gmpDivOnce( uint_t* inst_as
                , uint_t* inst_bs
@@ -153,6 +200,9 @@ void gmpDivOnce( uint_t* inst_as
     }
 }
 
+/**
+ * A wrapper to call GMP quo for a number of instances
+ */
 template<class uint_t, int m>
 void gmpQuo( int num_instances
            , uint_t* as
@@ -169,6 +219,9 @@ void gmpQuo( int num_instances
     }
 }
 
+/**
+ * A wrapper to call GMP div for a number of instances
+ */
 template<class uint_t, int m>
 void gmpDiv( int num_instances
            , uint_t* as
@@ -187,23 +240,3 @@ void gmpDiv( int num_instances
     }
 }
 
-int gpuAssert( cudaError_t code )
-{
-  if(code != cudaSuccess) {
-    printf("GPU Error: %s\n", cudaGetErrorString(code));
-    return -1;
-  }
-  return 0;
-}
-
-template<class uint_t>
-uint_t* randBigInt( uint32_t prec, uint32_t m )
-{
-    uint_t* u = (uint_t*)calloc(m, sizeof(uint_t));
-
-    for (int i = 0; i < prec; i++)
-    {
-        u[i] = (uint_t)rand();
-    }
-    return u;
-}
