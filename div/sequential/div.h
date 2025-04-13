@@ -183,10 +183,10 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
         printf("Division by zero\n");
         return;
     }
-    uint64_t r = 0;
+    bigDigit_t r = 0;
     for (int i = m - 1; i >= 0; i--)
     {
-        r = (r << 32) + n[i];
+        r = (r << bits) + n[i];
         if (r >= d)
         {
             q[i] = r / d;
@@ -205,16 +205,16 @@ void quo(bigint_t n, digit_t d, bigint_t q, prec_t m)
  */
 void multd(bigint_t a, digit_t b, bigint_t r, prec_t m)
 {
-    uint64_t buf[m];
+    bigDigit_t buf[m];
 
     for (int i = 0; i < m; i++)
     {
-        buf[i] = ((uint64_t)a[i]) * (uint64_t)b;
+        buf[i] = ((bigDigit_t)a[i]) * (bigDigit_t)b;
     }
 
     for (int i = 1; i < m - 1; i++)
     {
-        buf[i + 1] += buf[i] >> 32;
+        buf[i + 1] += buf[i] >> bits;
     }
 
     for (int i = 0; i < m; i++)
@@ -276,7 +276,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     //     int precv = prec(v, m);
 
     //     printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
-
+     //   prnt("res",B,m);
         if (lt(B, Bh, m)) {
             sub_gmp(Bh, B, B, m);
         }
@@ -284,29 +284,36 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         {
             sub_gmp(B, Bh, B, m);
             sign = 0;
-            printf("less");
+           // prnt("w",B,m);
+          //  prnt("res",B,m);
         }
         free(Bh);
     }
     else
     {
       //  printf("l:%u \n", l);
+        // prnt("v",v,m/2);
+        // prnt("w",w,m/2);
         multmod(v, w, L, B, m);
+      //  prnt("B",B,m/2);
         if (!ez(B, m))
         {
             if (B[L - 1] == 0)
             {
                 sign = 0;
+            //    printf("HERE");
             }
             else
             {
                 bigint_t Bl = bpow(L, m);
                 if (lt(B, Bl, m)) {
                     sub_gmp(Bl, B, B, m);
+                    
                 }
                 else
                 {
                     sub_gmp(B, Bl, B, m);
+                //    printf("HERE");
                     sign = 0;
                 }
                 free(Bl);
@@ -327,24 +334,26 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
  * @param g
  * @param m total number of digits in v
  */
-void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
+void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
 {
    // printf("h: %u, \n", h);
   //  printf("n: %u, \n", n);
     bigint_t tmp = init(m);
 
     prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
-
+  //  prnt("w",w,m);
    // int precv = prec(tmp, m);
     // printf("v: %u, \n", prec(v, m));
     // printf("m: %i, \n", m );
     // printf("w: %u, \n", prec(w, m));
     // printf("right: %u, \n", prec(tmp, m));
+    // prnt("1",w,m);
+    // prnt("1",tmp,m);
     mult_gmp(w, tmp, tmp, m);
+   // prnt("res",tmp,m);
    // int precr = prec(tmp, m);
     // if (precr >= m/2) printf("prec: %u\n", precr);
     // int precw = prec(w, m);
-
     // printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
     // printf("res: %u, \n", precr);
     // printf("test: %i, \n", 2 * n - h);
@@ -356,14 +365,14 @@ void step(int h, bigint_t v, bigint_t w, prec_t n, int l, int g, prec_t m)
   //  printf("left: %u, \n", prec(w, m));
     shift(n, w, w, m);
   //  printf("m: %u \n", n);
-   // prnt("w", w, m);
+   // prnt("w", tmp, m);
   //  printf("left: %u, \n", prec(w, m));
-
     if (sign) {
        // prnt("res",w,m);
         add_gmp(w, tmp, w, m);
     }
     else {
+     //   printf("HERE");
         sub_gmp(w, tmp, w, m);
     }
   //  prnt("res", w, m);
@@ -388,22 +397,27 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
     int g = 2; // på grund af 4x padding
     bigint_t v0 = init(m);
     shift(g, w, w, m);
-    while (h - k > l)
+   // while (h - k > l)
+    for (int i = 0; i < log2(h-k); i++)
     {
         // printf("1:%u \n", h - k + 1 - l);
         // printf("2:%u \n", l);
         int n = min(h - k + 1 - l, l);
         s = max(0, k - 2 * l + 1 - g);
         shift(-s, v, v0, m);
+     //   prnt("w",w,m);
         step(k + l + n - s + g, v0, w, n, l, g, m);
+    //    prnt("w",w,m);
      //   printf("res11: %u\n", prec(w, m));
         shift(-1, w, w, m);
        // prnt("w",w,m);
         l = l + n - 1;
-       // printf("n:%u \n", n);
-      //  printf("l:%u \n", l);
+    //    printf("h:%u \n", h);
+    //    printf("k:%u \n", k);
+    //    printf("n:%u \n", n);
+    //    printf("l:%u \n", l);
     }
-    prnt("w",w,m);
+  //  prnt("w",w,m);
     shift(-g, w, w, m);
     free(v0);
 }
@@ -462,20 +476,18 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     }
 
     int l = min(k, 2);
-    __uint128_t V = 0;
+    uquad_t V = 0;
+
     for (int i = 0; i <= l; i++)
     {
-        V += ((__uint128_t)v[k - l + i]) << (32 * i);
+        V += ((uquad_t)v[k - l + i]) << (bits * i);
     }
-    
-    __uint128_t b2l = (__uint128_t)1 << 32 * 2 * l;
-    __uint128_t tmp = (b2l - V) / V + 1;
+    uquad_t b2l = (uquad_t)1 << bits * 2 * l;
+    uquad_t tmp = (b2l - V) / V + 1;
 
     w[0] = (digit_t)(tmp);
-    w[1] = (digit_t)(tmp >> 32);
-    w[2] = (digit_t)(tmp >> 64);
-    w[3] = (digit_t)(tmp >> 96);
-    
+    w[1] = (digit_t)(tmp >> bits);
+
     if (h - k <= l)
     {
         shift(h - k - l, w, w, m);
@@ -514,8 +526,8 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
     mult_gmp(a, c, c, p);
     // int precr = prec(c, p);
     // if (precr >= m) printf("prec: %u\n", precr);
-
     shift(-h, c, c, p);
+  //  prnt("w",c,p);
     cpy(q, c, m);
 
     // Calculate remainder

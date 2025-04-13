@@ -1,6 +1,6 @@
 #include <time.h>
 #include "div.h"
-// #include "thorbjorn/div.c"
+//#include "thorbjorn/div.c"
 
 int main(int argc, char *argv[])
 {
@@ -10,25 +10,26 @@ int main(int argc, char *argv[])
         printf("Usage-rand: %s 1 <m>\n", argv[0]);
         exit(1);
     }
-    srand(time(NULL));
+    //srand(time(NULL));
 
     prec_t m = atoi(argv[1]);
-    uint32_t u_arr[16] = {4, 9, 6, 7, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-    uint32_t v_arr[16] = {6, 10, 9, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-   
-    for (int i = 0; i < 1; i++) {
-        bigint_t u = init_arr(m, u_arr); //init(m); 
-        bigint_t v = init_arr(m, v_arr); //init(m);
+    // digit_t u_arr[8] = {1, 1, 3, 3, 0, 0, 0, 0};
+    // digit_t v_arr[8] = {1, 1, 2, 0, 0, 0, 0, 0};
+    
+    for (int i = 0; i < 10000; i++) {
+    //    bigint_t u = init_arr(m, u_arr);
+    //    bigint_t v = init_arr(m, v_arr);
+        bigint_t u = init(m); 
+        bigint_t v = init(m);
         bigint_t q_own = init(m);
         bigint_t r_own = init(m);
         bigint_t q_gmp = init(m);
         bigint_t r_gmp = init(m);
 
-        // uint32_t uPrec = (rand() % m) + 1;
-        // uint32_t vPrec = (rand() % uPrec) + 3;
-        // randBigInt(u, uPrec);
-        // randBigInt(v, vPrec);
+        digit_t uPrec = (rand() % m) + 1;
+        digit_t vPrec = (rand() % uPrec) + 3;
+        randBigInt(u, uPrec);
+        randBigInt(v, vPrec);
 
         
         div_shinv(u, v, q_own, r_own, m);
@@ -48,11 +49,21 @@ int main(int argc, char *argv[])
         {
             if (q_own[i] != q_gmp[i] || r_own[i] != r_gmp[i])
             {
+                // printf("Inputs:\n");
+                // prnt("  u", u, m);
+                // prnt("  v", v, m);
+                // printf("Output:\n");
+                // prnt("  q", q_own, m);
+                // prnt("  r", r_own, m);
+                // printf("GMP:\n");
+                // prnt("  q", q_gmp, m);
+                // prnt("  r", r_gmp, m);
+
                 printf("[%d/%d] IS INVALID\n", i, m - 1);
                 break;
             }
         }
-      //  printf("IS VALID\n");
+     //   printf("IS VALID\n");
     
         free(u);
         free(v);

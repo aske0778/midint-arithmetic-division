@@ -48,6 +48,30 @@ __device__ inline void printRegs1(const char *str, uint32_t u[Q], uint32_t* sh_m
     __syncthreads();
 }
 
+template<class uint_t, uint32_t Q>
+__device__ inline void
+printRegs( const char *str
+         , uint_t u[Q]
+         , volatile uint_t* sh_mem
+         , uint32_t M
+) {
+    #pragma unroll
+    for (int i=0; i < Q; i++) {
+        sh_mem[Q * threadIdx.x + i] = u[i];
+    }
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        printf("%s: [", str);
+        for (int i = 0; i < M; i++) {
+            printf("%u", sh_mem[i]);
+            if (i < M - 1)
+                printf(", ");
+        }
+        printf("]\n");
+    }
+}
+
+
 
 template<uint32_t Q>
 __device__ inline void printRegs1(const char *str, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t M)
@@ -374,3 +398,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 
     baddRegs<uint_t, uint_t, carry_t, 4*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M*2 );
 }
+
+bigDigit_t tmp1 = (b2l - V) / V + 1;
+bigDigit_t tmp2 = ((double)(b2l - V*tmp1) / (double)V) * pow(2.0, bits);; //<< bits;
+tmp = tmp2 + (tmp1 << bits);

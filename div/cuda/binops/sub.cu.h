@@ -70,6 +70,7 @@ sub( uint32_t bpow
     using uint_t = typename Base::uint_t;
 
     sh_mem[0] = Base::HIGHEST;
+    __syncthreads();
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -88,6 +89,36 @@ sub( uint32_t bpow
             u[i] = 0;
         } else if (idx < bpow) {
             u[i] = ~u[i] + (idx == min_index);
+        }
+    }
+}
+
+template<typename Base, uint32_t Q>
+__device__ inline void 
+sub( typename Base::uint_t u[Q]
+   , uint32_t bpow
+   , volatile typename Base::uint_t* sh_mem
+) {
+    using uint_t = typename Base::uint_t;
+
+    sh_mem[0] = bpow;
+    __syncthreads();
+    
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        if (u[i] != 0 && i > bpow) {
+            atomicMin((uint32_t*)sh_mem, Q * threadIdx.x + i);
+        }
+    }
+    __syncthreads();
+
+    uint32_t ind = sh_mem[0];
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        uint32_t idx = Q * threadIdx.x + i;
+        if (idx >= bpow && idx <= ind) {
+            u[i] -= 1;
         }
     }
 }

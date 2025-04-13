@@ -21,8 +21,13 @@
 
 /** TYPES **/
 
-typedef uint32_t digit_t;
+//typedef uint32_t digit_t;
+//typedef uint64_t bigDigit_t;
+typedef uint16_t digit_t;
+typedef uint32_t bigDigit_t;
 typedef digit_t *bigint_t;
+const int32_t bits = 32;
+//const int32_t  bits = 16;
 typedef int prec_t;
 typedef int bool;
 
@@ -221,14 +226,14 @@ void quod(bigint_t u, digit_t d, bigint_t w, prec_t m)
     /* The Long Division algorithm is used here
        https://en.wikipedia.org/wiki/Division_algorithm#Long_division.
     */
-    uint64_t d0 = (uint64_t)d;
-    uint64_t r = 0;
+    bigDigit_t d0 = (bigDigit_t)d;
+    bigDigit_t r = 0;
     for (int i = m - 1; i >= 0; i--)
     {
-        r = (r << 32) + (uint64_t)u[i];
+        r = (r << bits) + (bigDigit_t)u[i];
         if (r >= d0)
         {
-            uint64_t q = r / d0;
+            bigDigit_t q = r / d0;
             r -= q * d0;
             w[i] = (digit_t)q;
         }
@@ -267,10 +272,10 @@ void mult(bigint_t u, bigint_t v, bigint_t w, prec_t m)
 // multiplies a big-int `u` with one digit `d` and write the result to `w`
 void multd(bigint_t u, digit_t d, bigint_t w, prec_t m)
 {
-    uint64_t buff[m];
+    bigDigit_t buff[m];
     for (int i = 0; i < m; i++)
     {
-        buff[i] = ((uint64_t)u[i]) * ((uint64_t)d);
+        buff[i] = ((bigDigit_t)u[i]) * ((bigDigit_t)d);
     }
     for (int i = 0; i < m - 1; i++)
     {
@@ -279,11 +284,11 @@ void multd(bigint_t u, digit_t d, bigint_t w, prec_t m)
         // so `buff[i] >> 32` becomes `(2^32)-2` and `buff[i+1]` becomes
         // `((2^32)-2) + 18446744065119617025 = 18446744069414584319`,
         // which is less than `((2^64)-1) = 18446744073709551616`
-        buff[i + 1] += buff[i] >> 32;
+        buff[i + 1] += buff[i] >> bits;
     }
     for (int i = 0; i < m; i++)
     {
-        w[i] = (uint32_t)buff[i];
+        w[i] = (digit_t)buff[i];
     }
 }
 
@@ -507,16 +512,16 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
         */
         __uint128_t V = 0;
         V += ((__uint128_t)v[k - 2]);
-        V += ((__uint128_t)v[k - 1]) << 32;
-        V += ((__uint128_t)v[k]) << 64;
+        V += ((__uint128_t)v[k - 1]) << bits;
+        V += ((__uint128_t)v[k]) << bits * 2;
 
         // compute `(B^4 - V) / (V+1)`
         __uint128_t r = (((__uint128_t)0) - V) / (V) + 1;
 
         w[0] = (digit_t)(r);
-        w[1] = (digit_t)(r >> 32);
-        w[2] = (digit_t)(r >> 64);
-        w[3] = (digit_t)(r >> 96);
+        w[1] = (digit_t)(r >> bits);
+        w[2] = (digit_t)(r >> bits * 2);
+        w[3] = (digit_t)(r >> bits * 3);
     }
 
     // 3. either return (if sufficient) or refine initial approximation
@@ -614,6 +619,16 @@ void randBigInt(bigint_t u, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
-        u[i] = (uint32_t)rand();
+        u[i] = (digit_t)rand();
     }
+}
+
+bigint_t init_arr(prec_t m, prec_t values[])
+{
+    bigint_t retval = (bigint_t)malloc(m * sizeof(digit_t));
+    for (int i = 0; i < m; i++)
+    {
+        retval[i] = values[i];
+    }
+    return retval;
 }

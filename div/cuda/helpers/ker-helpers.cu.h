@@ -214,7 +214,10 @@ ez( uint_t u[Q]
   , uint32_t idx
   , volatile uint_t* sh_mem
 ) {
-    sh_mem[0] = (threadIdx.x == idx / Q && u[idx % Q] == 0);
+    sh_mem[0] = false;
+    __syncthreads();   
+    if (threadIdx.x == idx / Q && u[idx % Q] == 0)
+        sh_mem[0] = true;
     __syncthreads();
     return sh_mem[0];
 }
@@ -344,6 +347,25 @@ quo( uint32_t bpow
             r %= d;
         }
     }
+}
+
+template<class uint_t, uint32_t Q>
+__device__ inline bool 
+lt( uint_t u[Q]
+  , uint32_t bpow
+  , volatile uint_t* sh_mem
+) {
+    sh_mem[0] = 0;
+    __syncthreads();   
+
+    #pragma unroll
+    for (int i = Q-1; i >= 0; i--) {
+        if (u[i] != 0) {
+            atomicMax((uint32_t*)sh_mem, Q * threadIdx.x + i);
+        }
+    }
+    __syncthreads();
+    return sh_mem[0] < bpow;
 }
 
 /**

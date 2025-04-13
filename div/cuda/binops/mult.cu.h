@@ -1,4 +1,3 @@
-
 /**
  * 
  */
@@ -227,7 +226,9 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     //     printRegs1<uint_t, 2*Q>("right", Hrg, Lsh, M);
     //     __syncthreads();
     // }
-    
+    // printRegs<uint_t, Q*2>("Lrg", Lrg, Hsh, M);
+    // __syncthreads();
+
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
 }
 

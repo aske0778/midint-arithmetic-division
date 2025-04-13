@@ -8,10 +8,33 @@
 #include <gmp.h>
 #include <string.h>
 
+//16BIT
+// typedef uint16_t digit_t;
+// typedef uint32_t bigDigit_t;
+// typedef uint64_t uquad_t;
+// typedef digit_t *bigint_t;
+// typedef uint32_t prec_t;
+// const int32_t  bits = 16;
+// typedef int bool;
+
+
+//32BIT
 typedef uint32_t digit_t;
+typedef uint64_t bigDigit_t;
+typedef __uint128_t uquad_t;
 typedef digit_t *bigint_t;
 typedef uint32_t prec_t;
+const int32_t bits = 32;
 typedef int bool;
+
+//64BIT
+// typedef uint64_t digit_t;
+// typedef __uint128_t bigDigit_t;
+// typedef __uint128_t uquad_t;
+// typedef digit_t *bigint_t;
+// typedef uint32_t prec_t;
+// const int32_t bits = 64;
+// typedef int bool;
 
 /**
  * @brief Returns the minimum of two integers
@@ -94,7 +117,7 @@ bigint_t init(prec_t m)
     return retval;
 }
 
-bigint_t init_arr(prec_t m, prec_t values[])
+bigint_t init_arr(prec_t m, digit_t values[])
 {
     bigint_t retval = (bigint_t)malloc(m * sizeof(digit_t));
     for (int i = 0; i < m; i++)
