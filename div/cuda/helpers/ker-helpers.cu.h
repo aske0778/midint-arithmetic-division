@@ -152,9 +152,10 @@ prec( uint_t u[Q]
 ) {
     uint32_t tmp = 0;
     sh_mem[0] = 0;
-    __syncthreads();   
+    __syncthreads();
 
-    for (int i = Q-1; i >= 0; i--) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
         if (u[i] != 0) {
             tmp = Q * threadIdx.x + i + 1;
         }
