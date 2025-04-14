@@ -69,14 +69,15 @@ sub( uint32_t bpow
 ) {
     using uint_t = typename Base::uint_t;
 
-    uint32_t tmp = 0;
+    uint32_t tmp = UINT32_MAX;
     sh_mem[0] = Base::HIGHEST;
     __syncthreads();
 
     #pragma unroll
-    for (int i = Q-1; i >= 0; i--) {
-        if (u[i] != 0) {
-            tmp = Q * threadIdx.x + i;
+    for (int i = 0; i < Q; i++) {
+        int rev_i = Q - i - 1;
+        if (u[rev_i] != 0) {
+            tmp = Q * threadIdx.x + rev_i;
         }
     }
     atomicMin((uint32_t*)sh_mem, tmp);
@@ -103,14 +104,15 @@ sub( typename Base::uint_t u[Q]
 ) {
     using uint_t = typename Base::uint_t;
 
-    uint32_t tmp = 0;
+    uint32_t tmp = UINT32_MAX;
     sh_mem[0] = bpow;
     __syncthreads();
     
     #pragma unroll
-    for (int i = Q-1; i >= 0; i--) {
-        if (u[i] != 0 && i > bpow) {
-            tmp = Q * threadIdx.x + i;
+    for (int i = 0; i < Q; i++) {
+        int rev_i = Q - i - 1;
+        if (u[rev_i] != 0 && rev_i > bpow) {
+            tmp = Q * threadIdx.x + rev_i;
         }
     }
     atomicMin((uint32_t*)sh_mem, tmp);
@@ -118,13 +120,11 @@ sub( typename Base::uint_t u[Q]
 
     uint32_t ind = sh_mem[0];
 
-    tmp = 0;
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         uint32_t idx = Q * threadIdx.x + i;
         if (idx >= bpow && idx <= ind) {
-            tmp++;
+            u[i] -= 1;
         }
-        u[i] -= tmp;
     }
 }

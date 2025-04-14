@@ -542,14 +542,14 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
         w[2] = (digit_t)(r >> bits * 2);
         w[3] = (digit_t)(r >> bits * 3);
     }
- //   prnt("w",w,m);
+   // prnt("w",w,m);
 
     // 3. either return (if sufficient) or refine initial approximation
     if (h - k <= l)
     {
-        printf("HERE");
+      //  printf("HERE");
         shift(h - k - l, w, w, m);
-        prnt("w",w,m);
+       // prnt("w",w,m);
     }
     else
     {
@@ -589,6 +589,8 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // 5. compute the quotient
     shinv(b, h, k, c, p); // `c = shinv_h b`
+   // prnt("c",c,p);
+
     mult(a, c, b, p);     // `b = a * c`
     shift(-h, b, b, p);   // `b = shift_(-h) b`
     cpy(q, b, m);         // `q = b`

@@ -52,7 +52,7 @@ powDiff( volatile typename Base::uint_t* USh
         __syncthreads();
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M);
         __syncthreads();
-        if (lt<uint_t, Q>(VReg, h, USh)) {
+        if (lt<uint_t, Q>(VReg, h, USh)) {  
             sub<Base, Q>(h, VReg, VSh);
         }
         else {
@@ -92,6 +92,10 @@ step( volatile typename Base::uint_t* USh
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
+    // printRegs<uint_t, M, Q>("RREG", RReg, USh);
+    // __syncthreads();
+    // printRegs<uint_t, M, Q>("VREG", VReg, USh);
+    // __syncthreads();
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
     __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
@@ -131,6 +135,8 @@ refine( volatile typename Base::uint_t* USh
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
         __syncthreads();
+        // printRegs<uint_t, M, Q>("res", RReg, USh);
+        // __syncthreads();
         shift<uint_t, M, Q>(-1, RReg, USh, RReg);
         l = l + n - 1;
     }
@@ -157,7 +163,7 @@ shinv( volatile typename Base::uint_t* USh
         quo<Base, Q>(h, VSh[0], RReg);
         return;
     }
-    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[4])) {
+    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[4])) { //remove this eq and it uses more registers?
         return;
     }
     if (k == h-1 && VSh[k] > Base::HIGHEST / 2 ) {
@@ -183,6 +189,7 @@ shinv( volatile typename Base::uint_t* USh
         }
     }
     __syncthreads();
+    
     if (h - k <= 2) {
         shift<uint_t, M, Q>(h-k-2, RReg, VSh, RReg);
     } else {
@@ -323,9 +330,7 @@ quoShinv( typename Base::uint_t* u
         __syncthreads(); 
         shift<uint_t, M, Q>(-1, RReg2, VSh, RReg2);
     }
-    
+
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
 }
-
-

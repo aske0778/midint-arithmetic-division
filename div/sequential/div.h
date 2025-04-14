@@ -270,7 +270,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     //     printf("l:%u \n", l);
     //     printf("L:%u \n", L);
     //     printf("h:%u \n", h);
-    //     int precr = prec(B, m);
+     //   int precr = prec(B, m);
     //   //  if (precr >= m/2) printf("prec: %u\n", precr);
     //     int precw = prec(w, m);
     //     int precv = prec(v, m);
@@ -278,14 +278,16 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     //     printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
      //   prnt("res",B,m);
         if (lt(B, Bh, m)) {
+            prnt("VREG",B,m);
             sub_gmp(Bh, B, B, m);
+            prnt("1",B,m);
         }
         else // else case nogensinde aktuelt?
         {
             sub_gmp(B, Bh, B, m);
             sign = 0;
            // prnt("w",B,m);
-          //  prnt("res",B,m);
+            prnt("2",B,m);
         }
         free(Bh);
     }
@@ -341,6 +343,9 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
     bigint_t tmp = init(m);
 
     prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
+    // prnt("w",w,m);
+    // prnt("v",v,m);
+  //  prnt("tmp",tmp,m);
   //  prnt("w",w,m);
    // int precv = prec(tmp, m);
     // printf("v: %u, \n", prec(v, m));
@@ -372,7 +377,7 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
         add_gmp(w, tmp, w, m);
     }
     else {
-     //   printf("HERE");
+       // printf("HERE");
         sub_gmp(w, tmp, w, m);
     }
   //  prnt("res", w, m);
@@ -407,7 +412,7 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         shift(-s, v, v0, m);
      //   prnt("w",w,m);
         step(k + l + n - s + g, v0, w, n, l, g, m);
-    //    prnt("w",w,m);
+      //  prnt("w",w,m);
      //   printf("res11: %u\n", prec(w, m));
         shift(-1, w, w, m);
        // prnt("w",w,m);
@@ -474,7 +479,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     {
         return;
     }
-    printf("HERE");
+   // printf("HERE");
     int l = min(k, 2);
     uquad_t V = 0;
 
@@ -487,6 +492,8 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 
     w[0] = (digit_t)(tmp);
     w[1] = (digit_t)(tmp >> bits);
+
+  //  prnt("res",w,m);
 
     if (h - k <= l)
     {
