@@ -10,8 +10,8 @@ int main()
     // using Base = U16bits;
     using uint_t = Base::uint_t;
 
-    const uint32_t Q = 32;
-    const uint32_t M = 8192;
+    const uint32_t Q = 4;
+    const uint32_t M = 4096;
     const uint32_t num_instances = 1;
     // const uint32_t total_work = M * num_instances;
     const uint32_t size = M * sizeof(uint_t);

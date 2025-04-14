@@ -12,8 +12,8 @@ int main() {
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t num_instances = 1;
-    const uint32_t Q = 8;
-    const uint32_t M = 2048;
+    const uint32_t Q = 4;
+    const uint32_t M = 4096;
     const uint32_t total_work = M * num_instances;
     const uint32_t total_work_size = total_work * sizeof(uint_t);
 

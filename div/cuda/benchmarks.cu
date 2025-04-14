@@ -369,7 +369,7 @@ int main (int argc, char * argv[]) {
         
     const int total_work = atoi(argv[1]);
 
-    cudaSetDevice(0);
+    // cudaSetDevice(1);
 
     runQuotients<U32bits>(total_work);
     runDivisions<U32bits>(total_work);
