@@ -517,3 +517,55 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
         add1<Base, Q*2>(&Rrg[Q*2], Hsh);
     }
 }
+
+/**
+ * 
+ */
+template<class Base, uint32_t IPB, uint32_t Q>
+__device__ 
+void naiveMult( volatile typename Base::uint_t* Ash
+              , volatile typename Base::uint_t* Bsh
+              , volatile typename Base::uint_t* Csh
+              , typename Base::uint_t Arg[2*Q]
+              , typename Base::uint_t Brg[2*Q]
+              , typename Base::uint_t Rrg[4*Q]
+              , uint32_t M
+) {
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+    
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < M) {
+            Ash[idx] = Arg[i];
+            Bsh[idx] = Brg[i];
+        }
+    }
+    __syncthreads();
+
+    if (threadIdx.x < M) {
+        uint32_t acc = 0;
+        for (int i = 0; i <= threadIdx.x; i++) {
+            int j = threadIdx.x - i;    
+            if (j < M) {
+                acc += Ash[i] * Bsh[j];
+            }
+        }
+        Csh[threadIdx.x] = acc;
+    }
+    __syncthreads();
+
+    if (threadIdx.x < M) {
+        Ash[2 * threadIdx.x]     = (uint_t) Csh[threadIdx.x];
+        Ash[2 * threadIdx.x + 1] = (uint_t) Csh[threadIdx.x] >> Base::bits;
+    }
+    __syncthreads();
+
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < 2*M) {
+            Rrg[i] = Ash[idx];
+        }
+    }
+}
