@@ -295,9 +295,10 @@ void testDivision( int num_instances
 
     gpuDiv<Base, m/x>(num_instances, u, v, our_quo, our_rem);
 
-    if(with_validation)  
+    if(with_validation) {
         validateExact(gmp_quo, our_quo, num_instances*m);
         validateExact(gmp_rem, our_rem, num_instances*m);
+    }
 }
 
 
