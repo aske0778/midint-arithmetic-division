@@ -54,8 +54,7 @@ powDiff( volatile typename Base::uint_t* USh
         __syncthreads();
         if (lt<uint_t, Q>(VReg, h, USh)) {
             sub<Base, Q>(h, VReg, VSh);
-        }
-        else {
+        } else {
             sub<Base, Q>(VReg, h, VSh);
             sign = 0;
         }
@@ -92,6 +91,10 @@ step( volatile typename Base::uint_t* USh
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
+    // if (lM < blockDim.x) {
+    //     // naiveMult<Base, 1, Q/2>(USh, VSh, &VSh[l], RReg, VReg, VReg, M); 
+    // } else {
+    // }
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
     __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
