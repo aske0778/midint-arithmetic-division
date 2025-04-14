@@ -150,15 +150,16 @@ __device__ inline uint32_t
 prec( uint_t u[Q]
     , volatile uint32_t* sh_mem
 ) {
+    uint32_t tmp = 0;
     sh_mem[0] = 0;
     __syncthreads();   
 
-    #pragma unroll
     for (int i = Q-1; i >= 0; i--) {
         if (u[i] != 0) {
-            atomicMax((uint32_t*)sh_mem, Q * threadIdx.x + i + 1);
+            tmp = Q * threadIdx.x + i + 1;
         }
     }
+    atomicMax((uint32_t*)sh_mem, tmp);
     __syncthreads();
     return sh_mem[0];
 }
@@ -379,6 +380,7 @@ lt( uint_t u[Q]
   , volatile uint_t* sh_mem
 ) {
     int RReg[Q] = {0};
+
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         if (u[i] < v[i]) {
