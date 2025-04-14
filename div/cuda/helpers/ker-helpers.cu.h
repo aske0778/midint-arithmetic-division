@@ -339,12 +339,11 @@ quo( uint32_t bpow
 ) {
     typename Base::ubig_t r = 1;
 
-    #pragma unroll
     for (int i = bpow - 1; i >= 0; i--) {
         r <<= Base::bits; 
         if (r >= d) {
             if (threadIdx.x == i / Q) {
-                RReg[i % Q] = r / d;
+                RReg[i % Q] = r / d;    // TODO: Rewrite to not write to register in loop
             }
             r %= d;
         }
@@ -357,15 +356,17 @@ lt( uint_t u[Q]
   , uint32_t bpow
   , volatile uint_t* sh_mem
 ) {
+    int tmp = 0;
     sh_mem[0] = 0;
     __syncthreads();   
 
     #pragma unroll
-    for (int i = Q-1; i >= 0; i--) {
+    for (int i = 0; i < Q; i++) {
         if (u[i] != 0) {
-            atomicMax((uint32_t*)sh_mem, Q * threadIdx.x + i);
+            tmp = Q * threadIdx.x + i;
         }
     }
+    atomicMax((uint32_t*)sh_mem, tmp);
     __syncthreads();
     return sh_mem[0] < bpow;
 }
