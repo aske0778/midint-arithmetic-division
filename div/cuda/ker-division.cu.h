@@ -17,7 +17,7 @@ multMod( volatile typename Base::uint_t* USh
        , int d
        , typename Base::uint_t RReg[Q]
 ) {
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M); 
+    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);  //VReg er maks d, RReg er maks d/2
 
     #pragma unroll
     for (int i=0; i < Q; i++) {
@@ -50,7 +50,7 @@ powDiff( volatile typename Base::uint_t* USh
         zeroAndSet<uint_t, Q>(VReg, 1, h);
     } else if (L >= h) {
         __syncthreads();
-        bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M);
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); //maks L for at være sikker?
         __syncthreads();
         if (lt<uint_t, Q>(VReg, h, USh)) {  
             sub<Base, Q>(h, VReg, VSh);
@@ -95,11 +95,7 @@ step( volatile typename Base::uint_t* USh
     //     // naiveMult<Base, 1, Q/2>(USh, VSh, &VSh[l], RReg, VReg, VReg, M); 
     // } else {
     // }
-    // printRegs<uint_t, M, Q>("RREG", RReg, USh);
-    // __syncthreads();
-    // printRegs<uint_t, M, Q>("VREG", VReg, USh);
-    // __syncthreads();
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M); 
+    bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);    //RREG er maks l+2, VReg er maks (l+2)*2
     __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
@@ -138,8 +134,6 @@ refine( volatile typename Base::uint_t* USh
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
         __syncthreads();
-        // printRegs<uint_t, M, Q>("res", RReg, USh);
-        // __syncthreads();
         shift<uint_t, M, Q>(-1, RReg, USh, RReg);
         l = l + n - 1;
     }
