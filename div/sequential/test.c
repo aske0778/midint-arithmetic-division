@@ -1,6 +1,6 @@
 #include <time.h>
-#include "div.h"
-//#include "thorbjorn/div.c"
+//#include "div.h"
+#include "thorbjorn/div.c"
 
 int main(int argc, char *argv[])
 {
@@ -13,23 +13,23 @@ int main(int argc, char *argv[])
     //srand(time(NULL));
 
     prec_t m = atoi(argv[1]);
-    // digit_t u_arr[8] = {1, 1, 3, 3, 0, 0, 0, 0};
-    // digit_t v_arr[8] = {1, 1, 2, 0, 0, 0, 0, 0};
+    digit_t u_arr[16] = {1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    digit_t v_arr[16] = {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
-    for (int i = 0; i < 10000; i++) {
-    //    bigint_t u = init_arr(m, u_arr);
-    //    bigint_t v = init_arr(m, v_arr);
-        bigint_t u = init(m); 
-        bigint_t v = init(m);
+    for (int i = 0; i < 1; i++) {
+       bigint_t u = init_arr(m, u_arr);
+       bigint_t v = init_arr(m, v_arr);
+        // bigint_t u = init(m); 
+        // bigint_t v = init(m);
         bigint_t q_own = init(m);
         bigint_t r_own = init(m);
         bigint_t q_gmp = init(m);
         bigint_t r_gmp = init(m);
 
-        digit_t uPrec = (rand() % m) + 1;
-        digit_t vPrec = (rand() % uPrec) + 3;
-        randBigInt(u, uPrec);
-        randBigInt(v, vPrec);
+        // digit_t uPrec = (rand() % m) + 1;
+        // digit_t vPrec = (rand() % uPrec) + 3;
+        // randBigInt(u, uPrec);
+        // randBigInt(v, vPrec);
 
         
         div_shinv(u, v, q_own, r_own, m);

@@ -474,7 +474,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     {
         return;
     }
-
+    printf("HERE");
     int l = min(k, 2);
     uquad_t V = 0;
 

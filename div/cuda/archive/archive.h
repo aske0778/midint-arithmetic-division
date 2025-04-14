@@ -402,3 +402,8 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 bigDigit_t tmp1 = (b2l - V) / V + 1;
 bigDigit_t tmp2 = ((double)(b2l - V*tmp1) / (double)V) * pow(2.0, bits);; //<< bits;
 tmp = tmp2 + (tmp1 << bits);
+
+// uint64_t V_low  = (uint64_t)(tmp);
+// uint64_t V_high = (uint64_t)(tmp >> 64);
+
+// printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);

@@ -21,10 +21,10 @@
 
 /** TYPES **/
 
-//typedef uint32_t digit_t;
-//typedef uint64_t bigDigit_t;
-typedef uint16_t digit_t;
-typedef uint32_t bigDigit_t;
+typedef uint32_t digit_t;
+typedef uint64_t bigDigit_t;
+// typedef uint16_t digit_t;
+// typedef uint32_t bigDigit_t;
 typedef digit_t *bigint_t;
 const int32_t bits = 32;
 //const int32_t  bits = 16;
@@ -510,10 +510,29 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
            In turn, we can represent everything as unsigned 128-bit integers,
            which C supports, meaning we can efficiently divide.
         */
+       // prnt("v",v,m);
         __uint128_t V = 0;
         V += ((__uint128_t)v[k - 2]);
         V += ((__uint128_t)v[k - 1]) << bits;
         V += ((__uint128_t)v[k]) << bits * 2;
+        // printf("V:%u \n", v[k - 2]);
+        // printf("V:%u \n", v[k-1]);
+        // printf("V:%u \n", v[k]);
+
+        // uint64_t V_low  = (uint64_t)(((__uint128_t)v[k - 2]));
+        // uint64_t V_high = (uint64_t)(((__uint128_t)v[k - 2]) >> 64);
+
+        // printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);
+
+        // V_low  = (uint64_t)(((__uint128_t)v[k - 1]) << bits);
+        // V_high = (uint64_t)((((__uint128_t)v[k - 1]) << bits) >> 64);
+
+        // printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);
+
+        // V_low  = (uint64_t)(((__uint128_t)v[k]) << bits * 2);
+        // V_high = (uint64_t)((((__uint128_t)v[k]) << bits * 2) >> 64);
+
+        // printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);
 
         // compute `(B^4 - V) / (V+1)`
         __uint128_t r = (((__uint128_t)0) - V) / (V) + 1;
@@ -523,11 +542,14 @@ void shinv(bigint_t v, int h, int k, bigint_t w, prec_t m)
         w[2] = (digit_t)(r >> bits * 2);
         w[3] = (digit_t)(r >> bits * 3);
     }
+ //   prnt("w",w,m);
 
     // 3. either return (if sufficient) or refine initial approximation
     if (h - k <= l)
     {
+        printf("HERE");
         shift(h - k - l, w, w, m);
+        prnt("w",w,m);
     }
     else
     {
@@ -556,6 +578,7 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 
     // 4. if `k == 1`, we shift `u` and `v` by one to avoid the infinite loop
     //    for `l = 1` inside the `shinv` algorithm
+   // prnt("v",v,m);
     if (k == 1)
     {
         h++;                   // `h = h + 1`
@@ -623,7 +646,7 @@ void randBigInt(bigint_t u, prec_t m)
     }
 }
 
-bigint_t init_arr(prec_t m, prec_t values[])
+bigint_t init_arr(prec_t m, digit_t values[])
 {
     bigint_t retval = (bigint_t)malloc(m * sizeof(digit_t));
     for (int i = 0; i < m; i++)

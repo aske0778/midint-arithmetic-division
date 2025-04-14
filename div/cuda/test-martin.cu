@@ -23,9 +23,9 @@ int main() {
     // const uint32_t Q = 4;
     // const uint32_t M = 2048;
     const uint32_t Q = 4;
-    const uint32_t M = 256;
+    const uint32_t M = 4096;
 
-    for (int i = 0; i < 100000 && !stop; i++) {
+    for (int i = 0; i < 1000 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint_t uPrec = min((rand() % M)+1, M-Q);
         uint_t vPrec = (rand() % uPrec) + 1;
@@ -65,16 +65,16 @@ int main() {
         for (int i = 0; i < M; i++) {
             if (quo[i] != quo_gmp[i] || rem[i] != rem_gmp[i]) {
                 stop = true;
-                printf("Inputs:\n");
-                prnt("  u", u, M);
-                prnt("  v", v, M);
-                printf("Output:\n");
-                prnt("  q", quo, M);
-                prnt("  r", rem, M);
-                printf("GMP:\n");
-                prnt("  q", quo_gmp, M);
-                prnt("  r", rem_gmp, M);
-               printf("Iteration: %u \n", i);
+                // printf("Inputs:\n");
+                // prnt("  u", u, M);
+                // prnt("  v", v, M);
+                // printf("Output:\n");
+                // prnt("  q", quo, M);
+                // prnt("  r", rem, M);
+                // printf("GMP:\n");
+                // prnt("  q", quo_gmp, M);
+                // prnt("  r", rem_gmp, M);
+                // printf("Iteration: %u \n", i);
                 printf("INVALID \n");
                 break;
             }
