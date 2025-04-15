@@ -86,14 +86,16 @@ step( volatile typename Base::uint_t* USh
     , int n
     , int l
 ) {
-    using uint_t = typename Base::uint_t;
+    using uint_t  = typename Base::uint_t;
+    using ubig_t  = typename Base::ubig_t;
     using carry_t = typename Base::carry_t;
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
     __syncthreads();
-    // if (lM < blockDim.x) {
-    //     // naiveMult<Base, 1, Q/2>(USh, VSh, &VSh[l], RReg, VReg, VReg, M); 
+    // if (l < 1024) {
+    //     naiveMult<Base>(USh, VSh, (ubig_t*) &VSh[l], RReg, VReg, VReg, l); 
     // } else {
+    //     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
     // }
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);    //RREG er maks l+2, VReg er maks (l+2)*2
     __syncthreads();

@@ -526,7 +526,7 @@ template<class Base>
 __device__ 
 void naiveMult( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
-              , volatile typename Base::uint_t* Csh
+              , volatile typename Base::ubig_t* Csh
               , typename Base::uint_t Arg[]
               , typename Base::uint_t Brg[]
               , typename Base::uint_t Rrg[]
@@ -550,7 +550,7 @@ void naiveMult( volatile typename Base::uint_t* Ash
 
     // Not using Q offset
     if (threadIdx.x < M) {
-        uint32_t acc = 0;
+        ubig_t acc = 0;
         for (int i = 0; i <= threadIdx.x; i++) {
             int j = threadIdx.x - i;    
             if (j < M) {
@@ -567,7 +567,7 @@ void naiveMult( volatile typename Base::uint_t* Ash
         int idx = Q * threadIdx.x + i;
         if (idx < M) {
             Ash[2 * idx]     = (uint_t) Csh[idx];
-            Ash[2 * idx + 1] = (uint_t) Csh[idx] >> Base::bits;
+            Ash[2 * idx + 1] = (uint_t) (Csh[idx] >> Base::bits);
         }
     }
     __syncthreads();
