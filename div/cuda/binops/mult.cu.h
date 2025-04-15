@@ -519,22 +519,26 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 }
 
 /**
- * 
+ * An inefficient multiplication implementation
+ * utilizing shared memory, but allows dangling threads.
  */
-template<class Base, uint32_t IPB, uint32_t Q>
+template<class Base>
 __device__ 
 void naiveMult( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
               , volatile typename Base::uint_t* Csh
-              , typename Base::uint_t Arg[2*Q]
-              , typename Base::uint_t Brg[2*Q]
-              , typename Base::uint_t Rrg[4*Q]
+              , typename Base::uint_t Arg[]
+              , typename Base::uint_t Brg[]
+              , typename Base::uint_t Rrg[]
               , uint32_t M
 ) {
     using uint_t = typename Base::uint_t;
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
     
+    int Q = (M + blockDim.x - 1) / blockDim.x;
+
+    #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         if (idx < M) {
@@ -544,6 +548,7 @@ void naiveMult( volatile typename Base::uint_t* Ash
     }
     __syncthreads();
 
+    // Not using Q offset
     if (threadIdx.x < M) {
         uint32_t acc = 0;
         for (int i = 0; i <= threadIdx.x; i++) {
@@ -555,13 +560,19 @@ void naiveMult( volatile typename Base::uint_t* Ash
         Csh[threadIdx.x] = acc;
     }
     __syncthreads();
+    //
 
-    if (threadIdx.x < M) {
-        Ash[2 * threadIdx.x]     = (uint_t) Csh[threadIdx.x];
-        Ash[2 * threadIdx.x + 1] = (uint_t) Csh[threadIdx.x] >> Base::bits;
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < M) {
+            Ash[2 * idx]     = (uint_t) Csh[idx];
+            Ash[2 * idx + 1] = (uint_t) Csh[idx] >> Base::bits;
+        }
     }
     __syncthreads();
 
+    #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         if (idx < 2*M) {
