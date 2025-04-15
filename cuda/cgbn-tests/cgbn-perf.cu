@@ -72,6 +72,22 @@ void verifyResults(bool is_add, uint32_t num_instances, instance_t  *instances) 
     printf("VALID!\n");
 }
 
+void verifyResults(uint32_t num_instances, instance_t  *instances) {
+    uint32_t buffer[BITS/32];
+    for(uint32_t i=0; i<num_instances; i++) {
+        gmpQuoOnce<uint32_t, BITS/32>(&instances[i].a._limbs[0], &instances[i].b._limbs[0], &buffer[0]);
+        for(uint32_t j=0; j<BITS/32; j++) {
+             if ( buffer[j] != instances[i].sum._limbs[j] ) {
+                printf( "INVALID RESULT at instance: %u, local index %u: %u vs %u\n"
+                      , i, j, buffer[j], instances[i].sum._limbs[j]
+                      );
+                return;
+            }
+        }
+    }
+    printf("VALID!\n");
+}
+
 void runAdd ( const uint32_t num_instances, const uint32_t cuda_block
             , cgbn_error_report_t *report,  instance_t  *gpuInstances
             , instance_t  *instances
@@ -164,7 +180,7 @@ void runMul ( const uint32_t num_instances, const uint32_t cuda_block
 ) {
     //printf("Running GPU kernel ...\n");
 
-    const uint32_t ipb = cuda_block/TPI;
+  const uint32_t ipb = cuda_block/TPI;
 
 	// start timer
 	unsigned long int elapsed = 0;
@@ -265,39 +281,39 @@ void runquo ( const uint32_t num_instances, const uint32_t cuda_block
   , cgbn_error_report_t *report,  instance_t  *gpuInstances
   , instance_t  *instances
 ) {
-//printf("Running GPU kernel ...\n");
+  //printf("Running GPU kernel ...\n");
 
-const uint32_t ipb = cuda_block/TPI;
+  const uint32_t ipb = cuda_block/TPI;
 
-// start timer
-unsigned long int elapsed = 0;
-struct timeval t_start, t_end, t_diff;
-gettimeofday(&t_start, NULL);
+  // start timer
+  unsigned long int elapsed = 0;
+  struct timeval t_start, t_end, t_diff;
+  gettimeofday(&t_start, NULL);
 
-// launch with 32 threads per instance, 128 threads (4 instances) per block
-for(int i = 0; i < GPU_RUNS_CMUL; i++)
-kernel_quo<<<(num_instances+ipb-1)/ipb, cuda_block>>>(report, gpuInstances, num_instances);
-cudaDeviceSynchronize();
+  // launch with 32 threads per instance, 128 threads (4 instances) per block
+  for(int i = 0; i < GPU_RUNS_CMUL; i++)
+    kernel_quo<<<(num_instances+ipb-1)/ipb, cuda_block>>>(report, gpuInstances, num_instances);
+  cudaDeviceSynchronize();
 
-//end timer
-gettimeofday(&t_end, NULL);
-timeval_subtract(&t_diff, &t_end, &t_start);
-elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_CMUL;
+  //end timer
+  gettimeofday(&t_end, NULL);
+  timeval_subtract(&t_diff, &t_end, &t_start);
+  elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_CMUL;
 
-//printf("Average of %d runs: %ld\n", GPU_RUNS_CMUL, elapsed);
+  //printf("Average of %d runs: %ld\n", GPU_RUNS_CMUL, elapsed);
 
-gpuAssert( cudaPeekAtLastError() );
+  gpuAssert( cudaPeekAtLastError() );
 
-const uint32_t m = BITS / 32;
-double runtime_microsecs = elapsed;
-//double num_u32_ops = 4.0 * num_instances * m * m; 
-double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
-double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
+  const uint32_t m = BITS / 32;
+  double runtime_microsecs = elapsed;
+  //double num_u32_ops = 4.0 * num_instances * m * m; 
+  double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
+  double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
-printf( "CGBN quo (num-instances = %d, num-word-len = %d, total-size: %d), \
-averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f\n"
-, num_instances, m, num_instances * m, GPU_RUNS_CMUL
-, elapsed, gigaopsu32, num_instances / runtime_microsecs
+  printf( "CGBN quo (num-instances = %d, num-word-len = %d, total-size: %d), \
+  averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f\n"
+  , num_instances, m, num_instances * m, GPU_RUNS_CMUL
+  , elapsed, gigaopsu32, num_instances / runtime_microsecs
 );
 
 // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
@@ -310,7 +326,7 @@ CUDA_CHECK(cudaMemcpy(instances, gpuInstances, sizeof(instance_t)*num_instances,
 
 //printf("Verifying the results ...\n");
 //verify_results(instances, num_instances);
-verifyResults(false, num_instances, instances);
+verifyResults(num_instances, instances);
 }
 
 
@@ -337,9 +353,9 @@ int main(int argc, char * argv[]) {
 	CUDA_CHECK(cgbn_error_report_alloc(&report)); 
 
     
-    runAdd (num_instances, 128, report, gpuInstances, instances);
+    // runAdd (num_instances, 128, report, gpuInstances, instances);
     runMul (num_instances, 128, report, gpuInstances, instances);
-    runPoly(num_instances, 128, report, gpuInstances, instances);
+    // runPoly(num_instances, 128, report, gpuInstances, instances);
     runquo(num_instances, 128, report, gpuInstances, instances);
     
 	// clean up

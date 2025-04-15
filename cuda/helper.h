@@ -169,6 +169,31 @@ void gmpAddMulOnce(bool is_add, uint32_t* inst_as, uint32_t* inst_bs, uint32_t* 
     }
 }
 
+template<class uint_t, uint32_t m>
+void gmpQuoOnce( uint_t* inst_as
+               , uint_t* inst_bs
+               , uint_t* inst_rs
+) {
+    uint_t buff[4*m];
+    mpz_t a; mpz_t b; mpz_t r;        
+    mpz_init(a); mpz_init(b); mpz_init(r);
+
+    mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
+
+    mpz_fdiv_q(r, a, b);
+        
+    size_t countp = 0;
+    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint_t), 0, 0, r);
+        
+    for(int j=0; j<m; j++) {
+        inst_rs[j] = buff[j];
+    }      
+    for(int j=countp; j < m; j++) {
+        inst_rs[j] = 0;
+    }
+}
+
 /****************************/
 /***  support routines    ***/
 /****************************/
