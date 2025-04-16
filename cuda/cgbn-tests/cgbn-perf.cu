@@ -3,8 +3,8 @@
 #include "CGBN/cgbn.h"
 
 // IMPORTANT:  DO NOT DEFINE TPI OR BITS BEFORE INCLUDING CGBN
-#define TPI  THD_PER_INST // at least 8 words per thread 
-#define BITS (NUM_BITS)//2048 //3200
+#define TPI  32 // at least 8 words per thread 
+#define BITS (1024*32)//2048 //3200
 
 #include "cgbn-kers.cu.h"
 
@@ -277,7 +277,7 @@ averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f
 	//verify_results(instances, num_instances);
 }
 
-void runquo ( const uint32_t num_instances, const uint32_t cuda_block
+void rundiv ( const uint32_t num_instances, const uint32_t cuda_block
   , cgbn_error_report_t *report,  instance_t  *gpuInstances
   , instance_t  *instances
 ) {
@@ -290,10 +290,11 @@ void runquo ( const uint32_t num_instances, const uint32_t cuda_block
   struct timeval t_start, t_end, t_diff;
   gettimeofday(&t_start, NULL);
 
-  // launch with 32 threads per instance, 128 threads (4 instances) per block
-  for(int i = 0; i < GPU_RUNS_CMUL; i++)
-    kernel_quo<<<(num_instances+ipb-1)/ipb, cuda_block>>>(report, gpuInstances, num_instances);
-  cudaDeviceSynchronize();
+// launch with 32 threads per instance, 128 threads (4 instances) per block
+for(int i = 0; i < GPU_RUNS_CMUL; i++){
+  kernel_quo<<<(num_instances+ipb-1)/ipb, cuda_block>>>(report, gpuInstances, num_instances);
+}
+cudaDeviceSynchronize();
 
   //end timer
   gettimeofday(&t_end, NULL);
@@ -310,10 +311,10 @@ void runquo ( const uint32_t num_instances, const uint32_t cuda_block
   double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
   double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
-  printf( "CGBN quo (num-instances = %d, num-word-len = %d, total-size: %d), \
-  averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f\n"
-  , num_instances, m, num_instances * m, GPU_RUNS_CMUL
-  , elapsed, gigaopsu32, num_instances / runtime_microsecs
+printf( "CGBN division (num-instances = %d, num-word-len = %d, total-size: %d), \
+averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f\n"
+, num_instances, m, num_instances * m, GPU_RUNS_CMUL
+, elapsed, gigaopsu32, num_instances / runtime_microsecs
 );
 
 // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
@@ -355,8 +356,8 @@ int main(int argc, char * argv[]) {
     
     // runAdd (num_instances, 128, report, gpuInstances, instances);
     runMul (num_instances, 128, report, gpuInstances, instances);
-    // runPoly(num_instances, 128, report, gpuInstances, instances);
-    runquo(num_instances, 128, report, gpuInstances, instances);
+    runPoly(num_instances, 128, report, gpuInstances, instances);
+    rundiv(num_instances, 128, report, gpuInstances, instances);
     
 	// clean up
 	free(instances);

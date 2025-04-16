@@ -104,3 +104,29 @@ wrapperConvQ1 disengaged = 1468388
     23 % of runtime 
 
 
+
+
+kernel comment 10/4
+
+maybe its possible if the compiler can figure this out. 
+
+we are casting a register 
+
+can i write this with out indexing.
+
+
+
+remove pragma unroll, with bound is not staticcally known. example quo
+
+the register assigment is bad, because it cannot allow scalerication.
+
+
+dont we need a barrier after prec.
+
+change prec to only use one atomic max
+
+set is also using non-linear indexing.
+
+inside refine h is staticcily unknown. so no unrolling.  
+
+most important thing, if we use register array they have to be scalarisable. 

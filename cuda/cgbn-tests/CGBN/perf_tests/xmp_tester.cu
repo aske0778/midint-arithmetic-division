@@ -29,7 +29,7 @@ IN THE SOFTWARE.
 #include <stdbool.h>
 #include <cuda.h>
 #include <gmp.h>
-#include "cgbn/cgbn.h"
+#include "../cgbn.h"
 #include "gpu_support.h"
 #include "tests.cc"
 #include "stats.cc"
