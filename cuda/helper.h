@@ -194,6 +194,37 @@ void gmpQuoOnce( uint_t* inst_as
     }
 }
 
+template<class uint_t, uint32_t m>
+void gmpDivOnce( uint_t* inst_as
+               , uint_t* inst_bs
+               , uint_t* inst_qs
+               , uint_t* inst_rs
+) {
+    uint_t buff[4*m];
+    uint_t buff2[4*m];
+    mpz_t a; mpz_t b; mpz_t q; mpz_t r;        
+    mpz_init(a); mpz_init(b); mpz_init(r);
+
+    printf("here?");
+    mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
+
+    __gmpz_fdiv_qr(r, q, a, b);
+        
+    size_t countp = 0;
+    mpz_export (buff, &countp, GMP_ORDER, sizeof(uint_t), 0, 0, q);
+    mpz_export (buff2, &countp, GMP_ORDER, sizeof(uint_t), 0, 0, r);
+
+        
+    for(int j=0; j<m; j++) {
+        inst_qs[j] = buff[j];
+        inst_rs[j] = buff2[j];
+    }      
+    for(int j=countp; j < m; j++) {
+        inst_rs[j] = 0;
+    }
+}
+
 /****************************/
 /***  support routines    ***/
 /****************************/
