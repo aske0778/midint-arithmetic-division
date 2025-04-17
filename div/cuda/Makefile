@@ -5,12 +5,13 @@ SRC_TEST = test
 SRC_BENCH = benchmarks
 SRC_time = timing
 
-BATCH_SIZE = 134217728
+BATCH_SIZE = 33554432
+# BATCH_SIZE = 134217728
 
 default: main
 
 main:
-	$(CXX) $(SRC_MAIN).cu -lgmp -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe
+	$(CXX) $(SRC_MAIN).cu -lgmp -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe $(BATCH_SIZE)
 
 test:
 	$(CXX) $(SRC_TEST).cu -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
@@ -23,9 +24,6 @@ main-martin:
 
 time:
 	$(CXX) $(SRC_time).cu -lgmp -o $(SRC_time).exe && ./$(SRC_time).exe
-
-bench:
-	$(CXX) $(SRC_BENCH).cu -lgmp -o $(SRC_BENCH).exe && ./$(SRC_BENCH).exe $(BATCH_SIZE)
 
 .PHONY: clean
 clean:
