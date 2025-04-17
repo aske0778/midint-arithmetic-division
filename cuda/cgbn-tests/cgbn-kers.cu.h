@@ -113,10 +113,29 @@ __global__ void kernel_poly(cgbn_error_report_t *report, instance_t *instances, 
 }
 
 /***********************/
-/*** quo Kernel ***/
+/*** Division Kernels ***/
 /***********************/
 
 __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, uint32_t count) {
+  int32_t instance;
+  
+  // decode an instance number from the blockIdx and threadIdx
+  instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
+  if(instance>=count)
+    return;
+
+  context_t      bn_context(cgbn_no_checks, NULL, instance);
+  env_t          bn_env(bn_context.env<env_t>());                     // construct an environment for 1024-bit math
+  env_t::cgbn_t  a, b, r;                                             // define a, b, r as 1024-bit bignums
+
+  cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
+  cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
+  cgbn_div(bn_env, r, a, b);                           // r=a+b
+  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
+}
+
+
+__global__ void kernel_div(cgbn_error_report_t *report, instance_t *instances, uint32_t count) {
   int32_t instance;
   
   // decode an instance number from the blockIdx and threadIdx
@@ -134,7 +153,6 @@ __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, u
   cgbn_div_rem(bn_env, q, r, a, b);                           // r=a+b
   cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
 }
-
 
 
 #endif // CGBN_KERNELS
