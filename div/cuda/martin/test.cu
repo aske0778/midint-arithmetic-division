@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <cuda_runtime.h>
-#include "ker-division.cu.h"
-#include "helpers/helper.h"
+#include "../ker-division.cu.h"
+#include "../helpers/helper.h"
 
 
 int main() {
@@ -14,14 +14,6 @@ int main() {
 
   //  srand(time(NULL));
     bool stop = false;
-  //  const uint32_t M = 3192;
-    // const uint32_t Q = 16;
-    // const uint32_t M = 512;
-    // const uint32_t Q = 32;
-    // const uint32_t M = 8192;
-    // const uint32_t Q = 32;
-    // const uint32_t Q = 4;
-    // const uint32_t M = 2048;
     const uint32_t Q = 4;
     const uint32_t M = 64;
 

@@ -1,27 +1,21 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <cuda_runtime.h>
-#include "ker-division.cu.h"
-#include "helpers/helper.h"
+#include "../ker-division.cu.h"
+#include "../helpers/helper.h"
 
 int main()
 {
     using Base = U32bits;
-  //  using Base = U64bits;
-   // using Base = U16bits;
     using uint_t = Base::uint_t;
-    const uint32_t M = 64;
+    const uint32_t M = 4096;
     const uint32_t Q = 4;
 
-    uint_t u[64] = {1216906066, 3449326646, 3367751494, 2389022031, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    uint_t v[64] = {3736684344, 1807307856, 2906943005, 615414998, 36070698, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t uPrec = M-Q;
+    uint_t vPrec = 3;
 
-
-    // uint_t u[16] = {0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    // uint_t v[16] = {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-    // uint_t u[16] = {37826, 28157, 12125, 41481, 25946, 5930, 13477, 2530, 9635, 36859, 16311, 28179, 0, 0, 0, 0};
-    // uint_t v[16] = {32071, 19796, 21146, 45873, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t* u = randBigInt<uint_t>(uPrec, M);
+    uint_t* v = randBigInt<uint_t>(vPrec, M);
 
     uint_t quo[M] = {0};
     uint_t rem[M] = {0};
