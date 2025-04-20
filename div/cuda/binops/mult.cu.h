@@ -516,3 +516,38 @@ void naiveMult( volatile typename Base::uint_t* Ash
         }
     }
 }
+
+/**
+ * Assumption: Q evenly divides M
+ */
+template<typename Base, uint32_t IPB, uint32_t M, uint32_t Q>
+__global__ void bmulKerQ( uint32_t num_instances
+                        , typename Base::uint_t* ass
+                        , typename Base::uint_t* bss
+                        , typename Base::uint_t* rss
+                        )
+{
+    using uint_t = typename Base::uint_t;
+    const uint32_t M_lft = LIFT_LEN(M, Q);
+    const uint32_t shmem_len = IPB*M_lft;
+
+    __shared__ uint_t Ash[shmem_len];
+    __shared__ uint_t Bsh[shmem_len];
+
+    uint_t Arg[Q];
+    uint_t Brg[Q];
+    { // read from global memory
+        const uint32_t ipb = min(num_instances - IPB*blockIdx.x, IPB);
+        cpGlb2Reg<uint_t,IPB,M,Q>(ipb, Ash, ass, Arg);
+        cpGlb2Reg<uint_t,IPB,M,Q>(ipb, Bsh, bss, Brg);
+    }
+    __syncthreads();
+
+    uint_t Rrg[Q];
+    bmulRegsQ<Base, IPB, Q/2>(Ash, Bsh, Arg, Brg, Rrg, M);
+
+    { // write to global memory
+        const uint32_t ipb = min(num_instances - IPB*blockIdx.x, IPB);
+        cpReg2Glb<uint_t,IPB,M,Q>(ipb, Ash, Rrg, rss);
+    }
+}

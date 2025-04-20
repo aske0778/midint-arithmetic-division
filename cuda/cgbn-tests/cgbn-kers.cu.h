@@ -8,6 +8,15 @@ typedef struct {
   cgbn_mem_t<BITS> sum;
 } instance_t;
 
+// Declare the division instance type
+typedef struct {
+  cgbn_mem_t<BITS> a;
+  cgbn_mem_t<BITS> b;
+  cgbn_mem_t<BITS> quo;
+  cgbn_mem_t<BITS> rem;
+} instance_t_div;
+
+
 // helpful typedefs for the kernel
 typedef cgbn_context_t<TPI>         context_t;
 typedef cgbn_env_t<context_t, BITS> env_t;
@@ -113,10 +122,32 @@ __global__ void kernel_poly(cgbn_error_report_t *report, instance_t *instances, 
 }
 
 /***********************/
-/*** quo Kernel ***/
+/*** Division Kernels ***/
 /***********************/
 
 __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, uint32_t count) {
+  int32_t instance;
+  
+  // decode an instance number from the blockIdx and threadIdx
+  instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
+  //if (threadIdx.x == 1) {
+  //  printf("instance = %d, count = %d \n", instance, count);
+  //}
+  if(instance>=count)
+    return;
+
+  context_t      bn_context(cgbn_no_checks, NULL, instance);
+  env_t          bn_env(bn_context.env<env_t>());                     // construct an environment for 1024-bit math
+  env_t::cgbn_t  a, b, r;                                             // define a, b, r as 1024-bit bignums
+
+  cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
+  cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
+  cgbn_div(bn_env, r, a, b);                           // r=a+b
+  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
+}
+
+
+__global__ void kernel_div(cgbn_error_report_t *report, instance_t_div *instances, uint32_t count) {
   int32_t instance;
   
   // decode an instance number from the blockIdx and threadIdx
@@ -132,9 +163,9 @@ __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, u
   cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
   cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
   cgbn_div_rem(bn_env, q, r, a, b);                           // r=a+b
-  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
+  cgbn_store(bn_env, &(instances[instance].quo), q);
+  //cgbn_store(bn_env, &(instances[instance].rem), r);   // store r into sum
 }
-
 
 
 #endif // CGBN_KERNELS
