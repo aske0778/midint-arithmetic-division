@@ -17,12 +17,16 @@ multMod( volatile typename Base::uint_t* USh
        , int d
        , typename Base::uint_t RReg[Q]
 ) {
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);  //VReg er maks d, RReg er maks d/2
+    if (d < blockDim.x) {
+        naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
+    } else {
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
 
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        if (Q * threadIdx.x + i >= d) {
-            RReg[i] = 0;
+        #pragma unroll
+        for (int i=0; i < Q; i++) {
+            if (Q * threadIdx.x + i >= d) {
+                RReg[i] = 0;
+            }
         }
     }
 }
@@ -41,16 +45,21 @@ powDiff( volatile typename Base::uint_t* USh
 ) {
     using uint_t = typename Base::uint_t;
 
-    int vPrec = prec<uint_t, Q>(VReg, (uint32_t*)USh);
-    int rPrec = prec<uint_t, Q>(RReg, (uint32_t*)VSh);
-    int L = vPrec + rPrec - l + 1;
-    bool sign = 1;
-    
+    int vPrec = prec<uint_t, Q>(VReg, (uint32_t*)USh);      //uint16 is enough 
+    int rPrec = prec<uint_t, Q>(RReg, (uint32_t*)VSh);      //uint16 is enough 
+    int L = vPrec + rPrec - l + 1;                          //uint16 is enough 
+    bool sign = 1;                                          //1 bit is enough
+
     if (vPrec == 0 || rPrec == 0) {
         zeroAndSet<uint_t, Q>(VReg, 1, h);
     } else if (L >= h) {
         __syncthreads();
-        bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); //maks L for at være sikker?
+        int maxMul = vPrec + rPrec;                         //uint16 is enough 
+        if (maxMul < blockDim.x) {
+            naiveMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
+        } else {
+            bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
+        }
         __syncthreads();
         if (lt<uint_t, Q>(VReg, h, USh)) {  
             sub<Base, Q>(h, VReg, VSh);
@@ -80,7 +89,7 @@ template<typename Base, uint32_t M, uint32_t Q>
 __device__ inline void
 step( volatile typename Base::uint_t* USh
     , volatile typename Base::uint_t* VSh
-    , int h
+    , int h                                                                 //uint16 is enough 
     , typename Base::uint_t VReg[Q]
     , typename Base::uint_t RReg[Q]
     , int n
@@ -90,14 +99,14 @@ step( volatile typename Base::uint_t* USh
     using ubig_t  = typename Base::ubig_t;
     using carry_t = typename Base::carry_t;
 
-    bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
+    bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);  //1 bit is enough
     __syncthreads();
-    // if (l < 1024) {
-    //     naiveMult<Base>(USh, VSh, (ubig_t*) &VSh[l], RReg, VReg, VReg, l); 
-    // } else {
-    //     bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
-    // }
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);    //RREG er maks l+2, VReg er maks (l+2)*2
+    int maxMul = (l+2)*3;                                                 //uint16 is enough 
+    if (maxMul < blockDim.x) {
+        naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
+    } else {
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
+    }
     __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
@@ -121,7 +130,7 @@ refine( volatile typename Base::uint_t* USh
       , typename Base::uint_t TReg[Q]
       , int h
       , int k
-      , int l
+      , int l                                       //uint16 is enough
       , typename Base::uint_t RReg[Q]
 ) {
     using uint_t = typename Base::uint_t;
@@ -130,8 +139,8 @@ refine( volatile typename Base::uint_t* USh
 
   //  while (h - k > l) {
     for (int i = 0; i < log2f(h-k); i++) {
-        int n = min(h - k + 1 - l, l);
-        int s = max(0, k - 2 * l + 1 - 2);
+        int n = min(h - k + 1 - l, l);              //uint16 is enough
+        int s = max(0, k - 2 * l + 1 - 2);          //uint16 is enough
         shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
@@ -159,7 +168,7 @@ shinv( volatile typename Base::uint_t* USh
     using uquad_t = typename Base::uquad_t;
     
     if (k == 0) {
-        quo<Base, Q>(h, VSh[0], RReg);
+        quo<Base, Q>(h, VSh[0], USh, RReg);
         return;
     }
     if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[4])) { //remove this eq and it uses more registers?
@@ -217,14 +226,16 @@ divShinv( typename Base::uint_t* u
     uint_t UReg[Q];
     uint_t RReg1[2*Q] = {0};
     uint_t* RReg2 = &RReg1[Q];
+    
 
     cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<uint_t, M, Q>(u, USh, UReg);
     __syncthreads();
 
-    int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[2]) - 1;
-    bool kIsOne = false;
+    int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);          //uint16 is enough
+    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[2]) - 1;  //uint16 is enough
+
+    bool kIsOne = false;                                    //1 bit is enough
 
     if (k == 1) {
         kIsOne = true;
@@ -236,8 +247,8 @@ divShinv( typename Base::uint_t* u
         __syncthreads();
     }
 
-    shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
-    __syncthreads();
+    // shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
+    // __syncthreads();
 
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
@@ -294,7 +305,6 @@ quoShinv( typename Base::uint_t* u
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);
     int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[2]) - 1;
     bool kIsOne = false;
-
 
     if (k == 1) {
         kIsOne = true;

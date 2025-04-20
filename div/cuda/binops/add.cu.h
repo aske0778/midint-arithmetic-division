@@ -126,6 +126,42 @@ baddRegsOverflow( volatile CT* Csh
     return Dsh[0];
 }
 
+
+/**
+ */
+template<class D, class S, class CT, D HIGHEST>
+__device__ inline D
+baddRegsNaive( volatile CT* Csh
+        , D Arg
+        , S Brg
+) {
+    D rs;
+    {
+        D a = Arg;
+        S b = Brg;
+        CT c;
+        
+        rs = a + (D)b;
+
+        c = (CT) ( (rs < a) );
+        c = c | ((rs == HIGHEST) << 1);
+
+        Csh[threadIdx.x] = c;
+    }
+    __syncthreads();
+   
+    scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
+
+    {
+        CT carry = CarrySegBop<CT>::identity();
+        if(threadIdx.x > 0) {
+            carry = Csh[threadIdx.x - 1];
+        }
+        rs += (carry & 1);
+    }
+    return rs;
+}
+
 template<class Base, uint32_t Q>
 __device__ inline void 
 add1( typename Base::uint_t u[Q]

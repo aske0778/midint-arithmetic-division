@@ -407,3 +407,68 @@ tmp = tmp2 + (tmp1 << bits);
 // uint64_t V_high = (uint64_t)(tmp >> 64);
 
 // printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);
+
+
+/**
+ * An inefficient multiplication implementation
+ * utilizing shared memory, but allows dangling threads.
+ */
+template<class Base>
+__device__ 
+void naiveMult( volatile typename Base::uint_t* Ash
+              , volatile typename Base::uint_t* Bsh
+              , volatile typename Base::ubig_t* Csh
+              , typename Base::uint_t Arg[]
+              , typename Base::uint_t Brg[]
+              , typename Base::uint_t Rrg[]
+              , uint32_t M
+) {
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+    
+    int Q = (M + blockDim.x - 1) / blockDim.x;
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < M) {
+            Ash[idx] = Arg[i];
+            Bsh[idx] = Brg[i];
+        }
+    }
+    __syncthreads();
+
+    // Not using Q offset
+    if (threadIdx.x < M) {
+        ubig_t acc = 0;
+        for (int i = 0; i <= threadIdx.x; i++) {
+            int j = threadIdx.x - i;    
+            if (j < M) {
+                acc += Ash[i] * Bsh[j];
+            }
+        }
+        Csh[threadIdx.x] = acc;
+    }
+    __syncthreads();
+    //
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < M) {
+            Ash[2 * idx]     = (uint_t) Csh[idx];
+            Ash[2 * idx + 1] = (uint_t) (Csh[idx] >> Base::bits);
+        }
+    }
+    __syncthreads();
+
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        int idx = Q * threadIdx.x + i;
+        if (idx < 2*M) {
+            Rrg[i] = Ash[idx];
+        }
+    }
+}
+

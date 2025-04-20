@@ -8,7 +8,7 @@ template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 cpyGlb2Sh2Reg( uint_t* AGlb
              , volatile uint_t* ASh
-             , volatile uint_t AReg[Q]
+             , uint_t AReg[Q]
 ) {
     const int glb_offs = blockIdx.x * M;
 
@@ -31,7 +31,7 @@ template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 cpyReg2Sh2Glb( uint_t* AGlb
              , volatile uint_t* ASh
-             , volatile uint_t AReg[Q]
+             , uint_t AReg[Q]
 ) {
     const int glb_offs = blockIdx.x * M;
 
@@ -53,7 +53,7 @@ cpyReg2Sh2Glb( uint_t* AGlb
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 cpyReg2Shm ( uint_t Rrg[Q]
-           , volatile uint_t* shmem
+           , volatile uint_t* shmem         //remove volatile?
 ) { 
     #pragma unroll
     for(int i=0; i<Q; i++) {
@@ -66,7 +66,7 @@ cpyReg2Shm ( uint_t Rrg[Q]
  */
 template<class uint_t, uint32_t Q>
 __device__ inline void 
-cpyShm2Reg ( volatile uint_t* shmem
+cpyShm2Reg ( volatile uint_t* shmem         //remove volatile?
            , uint_t Rrg[Q]
 ) { 
     #pragma unroll
@@ -151,6 +151,19 @@ ez( uint_t u[Q]
 /**
  * 
  */
+// template<class uint_t, uint32_t Q>
+// __device__ inline bool 
+// ez( uint_t u[Q]
+//   , uint32_t idx
+//   , volatile uint_t* sh_mem
+// ) {
+//     sh_mem[0] = false;
+//     __syncthreads();
+//     if (threadIdx.x == idx / Q && u[idx % Q] == 0)
+//         sh_mem[0] = true;
+//     __syncthreads();
+//     return sh_mem[0];
+// }
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 ez( uint_t u[Q]
@@ -159,9 +172,15 @@ ez( uint_t u[Q]
 ) {
     sh_mem[0] = false;
     __syncthreads();
-    if (threadIdx.x == idx / Q && u[idx % Q] == 0)
-        sh_mem[0] = true;
+
+    #pragma unroll
+    for (int i = 0; i < Q; ++i) {
+        if (threadIdx.x == idx / Q && i == idx % Q ) {
+            sh_mem[0] = u[i] == 0;
+        }
+    }
     __syncthreads();
+
     return sh_mem[0];
 }
 
@@ -169,14 +188,27 @@ ez( uint_t u[Q]
  * Sets a specific index of a bigint to value d
  * in register memory
  */
+// template<class uint_t, uint32_t Q>
+// __device__ inline void 
+// set( uint_t u[Q]
+//    , uint_t d
+//    , uint32_t idx
+// ) {
+//     if (threadIdx.x == idx / Q) {
+//         u[idx % Q] = d;
+//     }
+// }
 template<class uint_t, uint32_t Q>
 __device__ inline void 
 set( uint_t u[Q]
    , uint_t d
    , uint32_t idx
 ) {
-    if (threadIdx.x == idx / Q) {
-        u[idx % Q] = d;
+    #pragma unroll
+    for (int i = 0; i < Q; ++i) {
+        if (threadIdx.x == idx / Q && i == idx % Q) {
+            u[i] = d;
+        }
     }
 }
 
@@ -189,7 +221,8 @@ zeroAndSet( uint_t u[Q]
           , uint_t d
           , uint32_t idx
 ) {
-    for (uint32_t i = 0; i < Q; i++) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
         u[i] = 0;
     }
     set<uint_t, Q>(u, d, idx);
@@ -198,23 +231,49 @@ zeroAndSet( uint_t u[Q]
 /**
  * Performs the shift operation on a bigint
  */
+// template<class uint_t, uint32_t M, uint32_t Q>
+// __device__ inline void 
+// shift( int n
+//      , uint_t u[Q]
+//      , volatile uint_t* sh_mem
+//      , volatile uint_t RReg[Q]
+// ) {
+//     #pragma unroll
+//     for (int i = 0; i < Q; i++) {
+//         int idx = Q * threadIdx.x + i;
+//         int offset = idx + n;
+
+//         if (offset >= 0 && offset < M) {
+//             sh_mem[offset] = u[i];
+//         } else {
+//             sh_mem[M-idx-1] = 0;
+//         }
+//     }
+//     __syncthreads();
+
+//     #pragma unroll
+//     for (int i = 0; i < Q; i++) {
+//         RReg[i] = sh_mem[Q * threadIdx.x + i];
+//     }
+// }
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 shift( int n
      , uint_t u[Q]
      , volatile uint_t* sh_mem
-     , uint_t RReg[Q]
+     , volatile uint_t RReg[Q]
 ) {
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
-
+        int val = 0;
         if (offset >= 0 && offset < M) {
-            sh_mem[offset] = u[i];
+            val = u[i];
         } else {
-            sh_mem[M-idx-1] = 0;
+            offset = M-idx-1;
         }
+        sh_mem[offset] = val;
     }
     __syncthreads();
 
@@ -227,6 +286,42 @@ shift( int n
 /**
  * Performs the shift operation on a bigint of size 2M
  */
+// template<class uint_t, uint32_t M, uint32_t Q>
+// __device__ inline void 
+// shiftDouble( int n
+//            , uint_t u[Q*2]
+//            , volatile uint_t* sh_mem
+//            , uint_t RReg[Q]
+// ) {
+//     #pragma unroll
+//     for (int i = 0; i < Q; i++) {
+//         int idx = Q * threadIdx.x + i;
+//         int offset = idx + n;
+
+//         if (offset >= 0 && offset < M) {
+//             sh_mem[offset] = u[i];
+//         } else {
+//             sh_mem[M-idx-1] = 0;
+//         }
+//     }
+//     __syncthreads();
+
+//     #pragma unroll
+//     for (int i = 0; i < Q; i++) {
+//         int idx = M + Q * threadIdx.x + i;
+//         int offset = idx + n;
+
+//         if (offset >= 0 && offset < M) {
+//             sh_mem[offset] = u[Q+i];
+//         }
+//     }
+//     __syncthreads();
+
+//     #pragma unroll
+//     for (int i = 0; i < Q; i++) {
+//         RReg[i] = sh_mem[Q * threadIdx.x + i];
+//     }
+// }
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 shiftDouble( int n
@@ -238,12 +333,14 @@ shiftDouble( int n
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
+        int val = 0;
 
         if (offset >= 0 && offset < M) {
-            sh_mem[offset] = u[i];
+            val = u[i];
         } else {
-            sh_mem[M-idx-1] = 0;
+            offset = M-idx-1;
         }
+        sh_mem[offset] = val;
     }
     __syncthreads();
 
@@ -264,24 +361,51 @@ shiftDouble( int n
     }
 }
 
+
 /**
  * Quotient calculation of a bpow and divisor d
  */
+// template<typename Base, uint32_t Q>
+// __device__ inline void 
+// quo( uint32_t bpow
+//    , typename Base::uint_t d
+//    , typename Base::uint_t RReg[Q]
+// ) {
+//     typename Base::ubig_t r = 1;
+
+//     for (int i = bpow - 1; i >= 0; i--) {
+//         r <<= Base::bits; 
+//         if (r >= d) {
+//             if (threadIdx.x == i / Q) {
+//                 RReg[i % Q] = r / d;
+//             }
+//             r %= d;
+//         }
+//     }
+// }
 template<typename Base, uint32_t Q>
 __device__ inline void 
 quo( uint32_t bpow
    , typename Base::uint_t d
+   , volatile typename Base::uint_t* sh_mem
    , typename Base::uint_t RReg[Q]
 ) {
     typename Base::ubig_t r = 1;
-
-    for (int i = bpow - 1; i >= 0; i--) {
-        r <<= Base::bits; 
-        if (r >= d) {
-            if (threadIdx.x == i / Q) {
-                RReg[i % Q] = r / d;    // TODO: Rewrite to not write to register in loop
+    if (threadIdx.x == 0) {
+        for (int i = bpow - 1; i >= 0; i--) {
+            r <<= Base::bits; 
+            if (r >= d) {
+                sh_mem[i] = r / d;
+                r %= d;
             }
-            r %= d;
+        }
+    }
+    __syncthreads();
+
+    #pragma unroll
+    for(int i=0; i<Q; i++) {
+        if (i < bpow) {
+            RReg[i] = sh_mem[Q*threadIdx.x + i];
         }
     }
 }

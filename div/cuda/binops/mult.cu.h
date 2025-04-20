@@ -72,6 +72,7 @@ void computeIter64( uint32_t i
     //if (accum < ck) carry++;
 }
 
+
 /**
  * 
  */
@@ -208,95 +209,22 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
-    // Hsh[0] = 0;
-    // __syncthreads();
-    // for (int i=0; i < Q*2; i++) {
-    //     int idx = Q*2 * threadIdx.x + i;
-    //     if (idx == M/2 && (Lrg[i] != 0 || Rrg[i] != 0)) {
-    //         Hsh[0] = 1;
-    //     }
-    // }
-
-    // __syncthreads();
-    // if (Hsh[0] == 1) {
-    //     __syncthreads();
-    //     printRegs1<uint_t, 2*Q>("left", Lrg, Lsh, M);
-    //     __syncthreads();
-    //     __syncthreads();
-    //     printRegs1<uint_t, 2*Q>("right", Hrg, Lsh, M);
-    //     __syncthreads();
-    // }
-    // printRegs<uint_t, Q*2>("Lrg", Lrg, Hsh, M);
-    // __syncthreads();
-
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * 
- */
-template<class S, class D>
-__device__ inline
-void computeIter641( uint32_t i
-                   , uint32_t j
-                   , volatile S* Ash
-                   , volatile S* Bsh
-                   , D& accum
-                   , D& carry
-) {
-    const uint32_t SHFT = 8*sizeof(S);
-    S ai = Ash[i];
-    S bj = Bsh[j];
-    D ck = ((D)ai) * ((D)bj);
-
-    S accum_prev = (S) (accum>>SHFT);
-    accum += ck;
-    carry += (  ((S)(accum>>SHFT)) < accum_prev );
-    //if (accum < ck) carry++;
-}
-
 /**
  * 
  */
 template<class S, class D, uint32_t Q>
 __device__ inline
-void combineQ1( D accums[Q]
-              , D carrys[Q]
-              , S lhcs[Q+2]
-) {
-    uint32_t SHFT = 8 * sizeof(S);
-    
-    lhcs[0] = (S) accums[0];
-    S h_res = (S) (accums[0] >> SHFT);
-    S c_res = carrys[0];
-
-    #pragma unroll
-    for(int q=1; q<Q; q++) {
-        S l = (S) accums[q];
-        S h = (S) (accums[q] >> SHFT);
-        lhcs[q] = l + h_res;
-        h_res = h + (c_res + (lhcs[q] < l));
-        c_res = carrys[q] + (h_res < h);
-    }
-    lhcs[Q]   = h_res;
-    lhcs[Q+1] = c_res;
-}
-
-/**
- * 
- */
-template<class S, class D, uint32_t Q>
-__device__ inline
-void convolutionQ1( uint32_t k1
+void convolutionQComplete( uint32_t k1
                   , volatile S* Ash
                   , volatile S* Bsh
                   , S lhcs[Q+2]
                   , uint32_t M
 ) {
     D accums[Q]; 
-    D carrys[Q];
+    uint32_t carrys[Q];
     
     #pragma unroll
     for(int q=0; q<Q; q++) { 
@@ -311,7 +239,7 @@ void convolutionQ1( uint32_t k1
         #pragma unroll
         for(int q=0; q<Q; q++) {
             if (i < M && j+q < M) {
-                computeIter641<S,D>(i, j+q, Ash, Bsh, accums[q], carrys[q]);
+                computeIter64<S,D>(i, j+q, Ash, Bsh, accums[q], carrys[q]);
             }
         }
     }
@@ -321,11 +249,11 @@ void convolutionQ1( uint32_t k1
         #pragma unroll
         for(int i=0; i<Q-q; i++) {
             if (k1+q < M && i < M) {
-                computeIter641<S,D>(k1+q, i, Ash, Bsh, accums[i+q], carrys[i+q]);
+                computeIter64<S,D>(k1+q, i, Ash, Bsh, accums[i+q], carrys[i+q]);
             }
         }
     }
-    combineQ1<S,D,Q>(accums, carrys, lhcs);
+    combineQ<S,D,Q>(accums, carrys, lhcs);
 }
 
 /**
@@ -333,7 +261,7 @@ void convolutionQ1( uint32_t k1
  */
 template<class S, class D, uint32_t Q>
 __device__ inline
-void wrapperConvQ1( volatile S* Ash0
+void wrapperConvQComplete( volatile S* Ash0
                   , volatile S* Bsh0
                   , S lhcs[2][Q+2]
                   , uint32_t M
@@ -343,12 +271,12 @@ void wrapperConvQ1( volatile S* Ash0
 
     { // first half
         uint32_t k1 = Q*threadIdx.x;
-        convolutionQ1<S,D,Q>(k1, Ash, Bsh, lhcs[0], M);
+        convolutionQComplete<S,D,Q>(k1, Ash, Bsh, lhcs[0], M);
     }
 
     { // second half
         uint32_t k2 = 2*M - Q*threadIdx.x - Q;
-        convolutionQ1<S,D,Q>(k2, Ash, Bsh, lhcs[1], M);
+        convolutionQComplete<S,D,Q>(k2, Ash, Bsh, lhcs[1], M);
     }
 }
 
@@ -357,7 +285,7 @@ void wrapperConvQ1( volatile S* Ash0
  */
 template<class S, uint32_t Q>
 __device__ inline 
-void from4Reg2ShmQ2( S lhcs[Q+2]
+void from4Reg2ShmQHalf( S lhcs[Q+2]
                    , volatile S* Lsh
                    , volatile S* Hsh
                    , S highCarry[2]
@@ -409,55 +337,55 @@ void from4Reg2ShmQ2( S lhcs[Q+2]
 /**
  * Branchless version of from4Reg2ShmQ2
  */
-template<class S, uint32_t Q>
-__device__ inline 
-void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
-                            , volatile S* Lsh
-                            , volatile S* Hsh
-                            , S highCarry[2]
-                            , bool isFirst
-                            , uint32_t n
-) {
-    const uint32_t Q2 = 2*Q;
-    uint32_t tid_mod_m = threadIdx.x % (n/Q2);
-    int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
+// template<class S, uint32_t Q>
+// __device__ inline 
+// void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
+//                             , volatile S* Lsh
+//                             , volatile S* Hsh
+//                             , S highCarry[2]
+//                             , bool isFirst
+//                             , uint32_t n
+// ) {
+//     const uint32_t Q2 = 2*Q;
+//     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
+//     int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
 
-    #pragma unroll
-    for(int q=0; q<Q; q++) {
-        Lsh[twoltid+q] = lhcs[q];
-    }
+//     #pragma unroll
+//     for(int q=0; q<Q; q++) {
+//         Lsh[twoltid+q] = lhcs[q];
+//     }
     
-    #pragma unroll
-    for(int q=2; q<Q; q++) {
-        Hsh[twoltid+q] = 0;
-    }
-    // __syncthreads(); // Can maybe be omitted
+//     #pragma unroll
+//     for(int q=2; q<Q; q++) {
+//         Hsh[twoltid+q] = 0;
+//     }
+//     // __syncthreads(); // Can maybe be omitted
 
-    int condition = (threadIdx.x != n/Q2 - 1);
-    Hsh[twoltid+Q]   = lhcs[Q]   * condition + Hsh[twoltid+Q]   * (1 - condition);
-    Hsh[twoltid+Q+1] = lhcs[Q+1] * condition + Hsh[twoltid+Q+1] * (1 - condition);
-    __syncthreads();
+//     int condition = (threadIdx.x != n/Q2 - 1);
+//     Hsh[twoltid+Q]   = lhcs[Q]   * condition + Hsh[twoltid+Q]   * (1 - condition);
+//     Hsh[twoltid+Q+1] = lhcs[Q+1] * condition + Hsh[twoltid+Q+1] * (1 - condition);
+//     __syncthreads();
 
-    int condition1 = (isFirst && threadIdx.x == n/Q2 - 1);
-    int condition2 = (!isFirst && threadIdx.x == n/Q2 - 1);
+//     int condition1 = (isFirst && threadIdx.x == n/Q2 - 1);
+//     int condition2 = (!isFirst && threadIdx.x == n/Q2 - 1);
 
-    highCarry[0] = lhcs[Q]   * condition1 + highCarry[0] * (1 - condition1);
-    highCarry[1] = lhcs[Q+1] * condition1 + highCarry[1] * (1 - condition1);
-    Hsh[0]       = 0         * condition1 + Hsh[0]       * (1 - condition1);
-    Hsh[1]       = 0         * condition1 + Hsh[1]       * (1 - condition1);
+//     highCarry[0] = lhcs[Q]   * condition1 + highCarry[0] * (1 - condition1);
+//     highCarry[1] = lhcs[Q+1] * condition1 + highCarry[1] * (1 - condition1);
+//     Hsh[0]       = 0         * condition1 + Hsh[0]       * (1 - condition1);
+//     Hsh[1]       = 0         * condition1 + Hsh[1]       * (1 - condition1);
 
-    Hsh[Q]       = lhcs[Q]   * condition2 + Hsh[Q]       * (1 - condition2);
-    Hsh[Q+1]     = lhcs[Q+1] * condition2 + Hsh[Q+1]     * (1 - condition2);
-    Lsh[0]       = lhcs[0]   * condition2 + Lsh[0]       * (1 - condition2);
-    Lsh[1]       = lhcs[1]   * condition2 + Lsh[1]       * (1 - condition2);
-    Hsh[0]       = highCarry[0] * condition2 + Hsh[0]       * (1 - condition2);
-    Hsh[1]       = highCarry[1] * condition2 + Hsh[1]       * (1 - condition2);
-    __syncthreads();
+//     Hsh[Q]       = lhcs[Q]   * condition2 + Hsh[Q]       * (1 - condition2);
+//     Hsh[Q+1]     = lhcs[Q+1] * condition2 + Hsh[Q+1]     * (1 - condition2);
+//     Lsh[0]       = lhcs[0]   * condition2 + Lsh[0]       * (1 - condition2);
+//     Lsh[1]       = lhcs[1]   * condition2 + Lsh[1]       * (1 - condition2);
+//     Hsh[0]       = highCarry[0] * condition2 + Hsh[0]       * (1 - condition2);
+//     Hsh[1]       = highCarry[1] * condition2 + Hsh[1]       * (1 - condition2);
+//     __syncthreads();
 
-    condition = isFirst && threadIdx.x == 0;
-    Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
-    Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
-}
+//     condition = isFirst && threadIdx.x == 0;
+//     Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
+//     Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
+// }
 
 /**
  * 
@@ -483,7 +411,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     // 2. perform the convolution
     uint_t lhcs[2][2*Q+2];
 
-    wrapperConvQ1<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
+    wrapperConvQComplete<uint_t, ubig_t, 2*Q>( Ash, Bsh, lhcs, M );
     __syncthreads();
 
     volatile uint_t* Lsh = Ash;
@@ -492,7 +420,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     // 3. publish the low parts normally, and the high and carry shifted by one.
     uint_t highCarry[2];
 
-    from4Reg2ShmQ2<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
+    from4Reg2ShmQHalf<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
     __syncthreads();
 
     // 4. load back to register and perform the addition of the carries.
@@ -504,7 +432,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 
     bool overflow = baddRegsOverflow<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, (carry_t*)Hsh, Lrg, Hrg, Rrg, M );
 
-    from4Reg2ShmQ2<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, false, M*2 );
+    from4Reg2ShmQHalf<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, false, M*2 );
     __syncthreads();
 
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
@@ -513,69 +441,77 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2], M );
 
-    if (overflow) {
+    if (false) {
         add1<Base, Q*2>(&Rrg[Q*2], Hsh);
     }
 }
 
+
 /**
- * An inefficient multiplication implementation
- * utilizing shared memory, but allows dangling threads.
  */
-template<class Base>
+template<class Base, uint32_t Q >
 __device__ 
 void naiveMult( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
-              , volatile typename Base::ubig_t* Csh
-              , typename Base::uint_t Arg[]
-              , typename Base::uint_t Brg[]
-              , typename Base::uint_t Rrg[]
+              , typename Base::uint_t Arg[Q]
+              , typename Base::uint_t Brg[Q]
+              , typename Base::uint_t Rrg[Q]
               , uint32_t M
 ) {
     using uint_t = typename Base::uint_t;
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
     
-    int Q = (M + blockDim.x - 1) / blockDim.x;
-
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        int idx = Q * threadIdx.x + i;
-        if (idx < M) {
-            Ash[idx] = Arg[i];
-            Bsh[idx] = Brg[i];
+    if (threadIdx.x < (M+Q-1)/Q)
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            Ash[Q*threadIdx.x + i] = Arg[i];
+            Bsh[Q*threadIdx.x + i] = Brg[i];
         }
-    }
     __syncthreads();
 
-    // Not using Q offset
+    ubig_t accum = 0;
+    carry_t carry = 0;
     if (threadIdx.x < M) {
-        ubig_t acc = 0;
+        #pragma unroll
         for (int i = 0; i <= threadIdx.x; i++) {
-            int j = threadIdx.x - i;    
-            if (j < M) {
-                acc += Ash[i] * Bsh[j];
-            }
+            ubig_t ck = (ubig_t)Ash[i] * (ubig_t)Bsh[threadIdx.x - i];
+            uint_t accum_prev = (uint_t) (accum >> Base::bits);
+            accum += ck;
+            carry += (  ((uint_t)(accum >> Base::bits)) < accum_prev );
         }
-        Csh[threadIdx.x] = acc;
+    }
+    if (threadIdx.x == 0) {
+        Bsh[M] = 0;
+        Ash[2*M] = 0;
+        Ash[2*M + 1] = 0;
+    }
+    if (threadIdx.x < M) {
+        Ash[M + threadIdx.x] = (uint_t)accum;
+        Bsh[M + threadIdx.x + 1] = (uint_t) (accum >> Base::bits);
+        Ash[2*M + threadIdx.x + 2] = carry;
     }
     __syncthreads();
-    //
+
+    uint_t arg;
+    uint_t brg;
+    uint_t crg;
+    if (threadIdx.x < M) {
+        arg = Ash[M + threadIdx.x];
+        brg = Bsh[M + threadIdx.x];
+        crg = Ash[2*M + threadIdx.x];
+    }
+
+    uint_t res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)&Bsh[2*blockDim.x], arg, brg );
+    res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)Bsh, res, crg );
+
+    Ash[threadIdx.x] = res;
+    __syncthreads();
 
     #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        int idx = Q * threadIdx.x + i;
+    for(int i=0; i<Q; i++) {
+        int idx = Q*threadIdx.x + i;
         if (idx < M) {
-            Ash[2 * idx]     = (uint_t) Csh[idx];
-            Ash[2 * idx + 1] = (uint_t) (Csh[idx] >> Base::bits);
-        }
-    }
-    __syncthreads();
-
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        int idx = Q * threadIdx.x + i;
-        if (idx < 2*M) {
             Rrg[i] = Ash[idx];
         }
     }
