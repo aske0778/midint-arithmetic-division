@@ -113,9 +113,9 @@ step( volatile typename Base::uint_t* USh
     __syncthreads();
 
     if (sign) {
-        baddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg, M);
+        baddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg);
     } else {
-        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg, M);
+        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg);
     }
 }
 
@@ -259,12 +259,12 @@ divShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
 
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2, M);
+    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2);
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Base, Q>(RReg1, USh);
-        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg2, VReg, RReg2, M);
+        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg2, VReg, RReg2);
     }
 
     if (kIsOne) {
@@ -328,7 +328,7 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M);
     __syncthreads();
     
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2, M);
+    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2);
     
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();

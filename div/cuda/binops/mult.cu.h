@@ -209,7 +209,7 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
-    baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M );
+    baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg );
 }
 
 /**
@@ -335,59 +335,6 @@ void from4Reg2ShmQHalf( S lhcs[Q+2]
 }
 
 /**
- * Branchless version of from4Reg2ShmQ2
- */
-// template<class S, uint32_t Q>
-// __device__ inline 
-// void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
-//                             , volatile S* Lsh
-//                             , volatile S* Hsh
-//                             , S highCarry[2]
-//                             , bool isFirst
-//                             , uint32_t n
-// ) {
-//     const uint32_t Q2 = 2*Q;
-//     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
-//     int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
-
-//     #pragma unroll
-//     for(int q=0; q<Q; q++) {
-//         Lsh[twoltid+q] = lhcs[q];
-//     }
-    
-//     #pragma unroll
-//     for(int q=2; q<Q; q++) {
-//         Hsh[twoltid+q] = 0;
-//     }
-//     // __syncthreads(); // Can maybe be omitted
-
-//     int condition = (threadIdx.x != n/Q2 - 1);
-//     Hsh[twoltid+Q]   = lhcs[Q]   * condition + Hsh[twoltid+Q]   * (1 - condition);
-//     Hsh[twoltid+Q+1] = lhcs[Q+1] * condition + Hsh[twoltid+Q+1] * (1 - condition);
-//     __syncthreads();
-
-//     int condition1 = (isFirst && threadIdx.x == n/Q2 - 1);
-//     int condition2 = (!isFirst && threadIdx.x == n/Q2 - 1);
-
-//     highCarry[0] = lhcs[Q]   * condition1 + highCarry[0] * (1 - condition1);
-//     highCarry[1] = lhcs[Q+1] * condition1 + highCarry[1] * (1 - condition1);
-//     Hsh[0]       = 0         * condition1 + Hsh[0]       * (1 - condition1);
-//     Hsh[1]       = 0         * condition1 + Hsh[1]       * (1 - condition1);
-
-//     Hsh[Q]       = lhcs[Q]   * condition2 + Hsh[Q]       * (1 - condition2);
-//     Hsh[Q+1]     = lhcs[Q+1] * condition2 + Hsh[Q+1]     * (1 - condition2);
-//     Lsh[0]       = lhcs[0]   * condition2 + Lsh[0]       * (1 - condition2);
-//     Lsh[1]       = lhcs[1]   * condition2 + Lsh[1]       * (1 - condition2);
-//     Hsh[0]       = highCarry[0] * condition2 + Hsh[0]       * (1 - condition2);
-//     Hsh[1]       = highCarry[1] * condition2 + Hsh[1]       * (1 - condition2);
-//     __syncthreads();
-
-//     condition = isFirst && threadIdx.x == 0;
-//     Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
-//     Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
-// }
-
-/**
  * 
  */
 template<class Base, uint32_t IPB, uint32_t Q>
@@ -439,9 +386,9 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     cpyShm2Reg<uint_t,2*Q>( Hsh, Hrg );
     __syncthreads();
 
-    baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2], M );
+    baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2] );
 
-    if (false) {
+    if (overflow) {
         add1<Base, Q*2>(&Rrg[Q*2], Hsh);
     }
 }

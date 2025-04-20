@@ -23,7 +23,7 @@ int main() {
     // const uint32_t Q = 4;
     // const uint32_t M = 2048;
     const uint32_t Q = 4;
-    const uint32_t M = 4096;
+    const uint32_t M = 64;
 
     for (int i = 0; i < 100000 && !stop; i++) {
         printf("\rIteration: %u", i);

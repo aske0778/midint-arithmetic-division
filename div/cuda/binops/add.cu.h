@@ -1,25 +1,17 @@
 
 /**
- * Copy implementation where m is not statically known
  */
-template<class D, class S, class CT, uint32_t q, D HIGHEST>
+template<class D, class S, class CT, uint32_t Q, D HIGHEST>
 __device__ inline void
 baddRegs( volatile CT* Csh
-        , D Arg[q]
-        , S Brg[q]
-        , D rs[q]
-        , uint32_t m
+        , D Arg[Q]
+        , S Brg[Q]
+        , D rs[Q]
 ) {
-    //D  rs[q];
-    CT cs[q];
-    
-    // 1. map: add the digits pairwise, build the 
-    //         partial results and the carries, and
-    //         print carries to shmem
+    CT cs[Q];
     {
         CT accum = CarrySegBop<CT>::identity();
-        for(int i=0; i<q; i++) {
-            uint32_t ind = threadIdx.x * q + i;
+        for(int i=0; i<Q; i++) {
             D a = Arg[i];
             S b = Brg[i];
             CT c;
@@ -27,32 +19,23 @@ baddRegs( volatile CT* Csh
             rs[i] = a + (D)b;
             c = (CT) ( (rs[i] < a) );
             c = c | ((rs[i] == HIGHEST) << 1);
-            //c = c | ( ((ind % m) == 0) << 2 );
-            if( (ind % m) == 0 )
-                c = c | 4;
             
             accum = CarrySegBop<CT>::apply(accum, c);
             cs[i] = c;
         }
         Csh[threadIdx.x] = accum;
     }
-    
     __syncthreads();
    
-    // 2. scan the carries
     scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
-        
-    // 3. compute the final result by adding the carry from the previous element
+
     {
         CT carry = CarrySegBop<CT>::identity();
         if(threadIdx.x > 0) {
             carry = Csh[threadIdx.x - 1];
         }
-        //CT carry = prefix;
-        for(int i=0; i<q; i++) {
-            // uint32_t c = ( (carry & 1) == 1 );
-            if( (cs[i] & 4) == 0 )
-                rs[i] += (carry & 1);
+        for(int i=0; i<Q; i++) {
+            rs[i] += (carry & 1);
             carry = CarrySegBop<CT>::apply(carry, cs[i]);         
         }
     }
@@ -61,27 +44,23 @@ baddRegs( volatile CT* Csh
 /**
  * 
  */
-template<class D, class S, class CT, uint32_t q, D HIGHEST>
+template<class D, class S, class CT, uint32_t Q, D HIGHEST>
 __device__ inline bool
 baddRegsOverflow( volatile CT* Csh
                 , volatile CT* Dsh
-                , D Arg[q]
-                , S Brg[q]
-                , D rs[q]
+                , D Arg[Q]
+                , S Brg[Q]
+                , D rs[Q]
                 , uint32_t m
 ) {
-    //D  rs[q];
     Dsh[0] = false;
     __syncthreads();
-    CT cs[q];
+    CT cs[Q];
     
-    // 1. map: add the digits pairwise, build the 
-    //         partial results and the carries, and
-    //         print carries to shmem
     {
         CT accum = CarrySegBop<CT>::identity();
-        for(int i=0; i<q; i++) {
-            uint32_t ind = threadIdx.x * q + i;
+        for(int i=0; i<Q; i++) {
+            uint32_t ind = threadIdx.x * Q + i;
             D a = Arg[i];
             S b = Brg[i];
             CT c;
@@ -91,10 +70,7 @@ baddRegsOverflow( volatile CT* Csh
             rs[i] = a + (D)b;
             c = (CT) ( (rs[i] < a) );
             c = c | ((rs[i] == HIGHEST) << 1);
-            //c = c | ( ((ind % m) == 0) << 2 );
-            if( (ind % m) == 0 )
-                c = c | 4;
-            
+
             accum = CarrySegBop<CT>::apply(accum, c);
             cs[i] = c;
         }
@@ -102,23 +78,18 @@ baddRegsOverflow( volatile CT* Csh
     }
     
     __syncthreads();
-   
-    // 2. scan the carries
+
     scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
         
-    // 3. compute the final result by adding the carry from the previous element
     {
         CT carry = CarrySegBop<CT>::identity();
         if(threadIdx.x > 0) {
             carry = Csh[threadIdx.x - 1];
         }
-        //CT carry = prefix;
-        for(int i=0; i<q; i++) {
-            uint32_t ind = threadIdx.x * q + i;
+        for(int i=0; i<Q; i++) {
+            uint32_t ind = threadIdx.x * Q + i;
             if( (ind % m) == m-1 && cs[i] + 1 == 0 && (carry & 1) ) Dsh[0] = true;
-            // uint32_t c = ( (carry & 1) == 1 );
-            if( (cs[i] & 4) == 0 )
-                rs[i] += (carry & 1);
+            rs[i] += (carry & 1);
             carry = CarrySegBop<CT>::apply(carry, cs[i]);         
         }
     }
