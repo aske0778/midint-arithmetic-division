@@ -3,8 +3,8 @@
 #include "CGBN/cgbn.h"
 
 // IMPORTANT:  DO NOT DEFINE TPI OR BITS BEFORE INCLUDING CGBN
-#define TPI  32 // at least 8 words per thread 
-#define BITS (128*32)//2048 //3200
+#define TPI  THD_PER_INST //THD_per_inst // at least 8 words per thread 
+#define BITS (NUM_BITS) //(NUM_BITS)//2048 //3200
 
 #include "cgbn-kers.cu.h"
 
