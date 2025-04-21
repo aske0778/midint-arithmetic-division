@@ -49,7 +49,7 @@ int main()
 
         gettimeofday(&t_end, NULL);
         timeval_subtract(&t_diff, &t_end, &t_start);
-        mul_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_DIV;
+        mul_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_MUL;
 
         gpuAssert( cudaPeekAtLastError() );
         printf( "Multiplcation took %lu microsecs \n", mul_elapsed);

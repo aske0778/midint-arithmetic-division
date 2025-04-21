@@ -12,7 +12,7 @@ int main()
 {
     using Base = U32bits;
     using uint_t = Base::uint_t;
-    const uint64_t num_instances = 10000;
+    const uint64_t num_instances = 100000;
     const uint32_t M = 4096;
     const uint32_t Q = 4;
     uint64_t mem_size = num_instances * M * sizeof(uint_t);
@@ -49,7 +49,7 @@ int main()
 
         gettimeofday(&t_end, NULL);
         timeval_subtract(&t_diff, &t_end, &t_start);
-        mul_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_DIV;
+        mul_elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_MUL;
 
         gpuAssert( cudaPeekAtLastError() );
         printf( "Multiplcation took %lu microsecs \n", mul_elapsed);
