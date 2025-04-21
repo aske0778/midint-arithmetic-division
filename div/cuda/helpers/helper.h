@@ -131,7 +131,7 @@ uint_t* randBigInt( uint32_t prec
     for (int j = 0; j < num_instances; j++){
         for (int i = 0; i < prec; i++)
         {
-            u[i + (j * m)] = (uint_t)rand();
+            u[j*m + i] = (uint_t)rand();
         }
     }
     return u;
@@ -311,3 +311,30 @@ void gmpDiv( int num_instances
     }
 }
 
+int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
+{
+    unsigned int resolution=1000000;
+    long int diff = (t2->tv_usec + resolution * t2->tv_sec) - (t1->tv_usec + resolution * t1->tv_sec);
+    result->tv_sec = diff / resolution;
+    result->tv_usec = diff % resolution;
+    return (diff<0);
+}
+
+/**
+ * Validates exactly A == B for quo and rem
+ */
+template<class T>
+bool validateExact(T* Q1, T* Q2, T* R1, T* R2, uint64_t sizeAB){
+    for(uint64_t i = 0; i < sizeAB; i++) {
+        if ( Q1[i] != Q2[i] ) {
+            printf("INVALID RESULT at quotient index %lu: %u vs %u\n", i, Q1[i], Q2[i]);
+            return false;
+        }
+        if ( R1[i] != R2[i] ) {
+            printf("INVALID RESULT at remainder index %lu: %u vs %u\n", i, R1[i], R2[i]);
+            return false;
+        }
+    }
+    printf("VALID RESULT!\n");
+    return true;
+}

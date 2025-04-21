@@ -34,15 +34,6 @@ void mkRandArrays ( int num_instances
     ourMkRandom<m, nz>(num_instances, (uint32_t*)*h_bs);
 }
 
-int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
-{
-    unsigned int resolution=1000000;
-    long int diff = (t2->tv_usec + resolution * t2->tv_sec) - (t1->tv_usec + resolution * t1->tv_sec);
-    result->tv_sec = diff / resolution;
-    result->tv_usec = diff % resolution;
-    return (diff<0);
-}
-
 /**
  * Number of giga-u32-bit unit operations.
  */
@@ -68,25 +59,6 @@ bool validate(T* A, T* B, const uint64_t sizeAB, const T err){
         T curr_err = fabs( (A[i] - B[i]) / max(A[i], B[i]) ); 
         if (curr_err >= err) {
             printf("INVALID RESULT at flat index %llu: %f vs %f\n", i, A[i], B[i]);
-            return false;
-        }
-    }
-    printf("VALID RESULT!\n");
-    return true;
-}
-
-/**
- * Validates exactly A == B for quo and rem
- */
-template<class T>
-bool validateExact(T* Q1, T* Q2, T* R1, T* R2, uint64_t sizeAB){
-    for(uint64_t i = 0; i < sizeAB; i++) {
-        if ( Q1[i] != Q2[i] ) {
-            printf("INVALID RESULT at quotient index %lu: %u vs %u\n", i, Q1[i], Q2[i]);
-            return false;
-        }
-        if ( R1[i] != R2[i] ) {
-            printf("INVALID RESULT at remainder index %lu: %u vs %u\n", i, R1[i], R2[i]);
             return false;
         }
     }

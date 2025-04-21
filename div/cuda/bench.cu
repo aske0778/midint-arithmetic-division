@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <cuda_runtime.h>
-#include "../ker-division.cu.h"
-#include "../helpers/helper.h"
+#include "ker-division.cu.h"
+#include "helpers/helper.h"
 
 #define GPU_RUNS_DIV   3
 #define GPU_RUNS_MUL   3
