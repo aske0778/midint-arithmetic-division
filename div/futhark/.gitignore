@@ -1,0 +1,10 @@
+
+
+# Ignore binaries
+*
+!*.*
+!Makefile
+
+# C outputs
+*.c
+
