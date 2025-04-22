@@ -19,12 +19,12 @@ def powDiff [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) : (u32, []u32) =
     let L = precV + prevU - l + 1
     let sign = 1
 
-    if (precU == 0 || precV == 0) then
+    in if (precU == 0 || precV == 0) then
         let retval = zeroAndSet vs 1 h
         in (sign, retval)
     else if (L >= h) then
         let res = bmul us vs
-        if (ltBpow vs h) then
+        in if (ltBpow vs h) then
             (1, iota m) -- TODO: fix
             -- (1, sub)
         else
@@ -32,19 +32,46 @@ def powDiff [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) : (u32, []u32) =
             -- (0, sub)
     else 
         let mlt = multmod us vs L
-        if (!ez vs) then
-            (0, iota m)
+        in if (!ez vs) then
+            if (ez vs[L-1]) then
+                (0, vs)
+            else
+                (sign, mlt) -- TODO: implement sub
+        else
+            (sign, mlt)
         
-
 
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (n : u32) : ([n]u32) =
-    undefined
+def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : ([n]u32) =
+    let (sign, vs) = powDiff us vs h l
+    let vs = bmul us vs
+    let vs = shift (2 * n - h) vs
+    let us = shift n us
 
+    in if sign then
+        badd us vs
+    else
+        bsub us vs
+
+--
+-- Refine the approximation of the quotient
+--
 def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (k : u32) : ([n]u32) =
-    undefined
+    let us = shift 2 us
+    
+    let (us, vs, l) = loop (us, vs, l) = (us, vs, l) while h - k > l do
+        let n = min (h - k + 1 - l) l
+        let s = max 0 (k - 2 * l + 1 - 2)
+        let vs = shift (-s) vs
+        let us = step us vs (k + l + n - s + 2) n l
+        let us = shift (-1) us
+        let l = l + n - 1
+        in (us, vs, l)
+        
+    in shift (-2) vs
+
 
 def shinV [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : ([n]u32) =
     undefined
