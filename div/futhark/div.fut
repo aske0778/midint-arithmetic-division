@@ -3,10 +3,12 @@ import "sqr-mul"
 -- import "big-add"
 
 
+
+
 --
 -- Calculates (a * b) rem B^d
 --
-def multmod [n] (us : [n]u32) (vs : [n]u32) (d : u32) : ([n]u32) = 
+def multmod [n] (us : [n]u32) (vs : [n]u32) (d : u32) : [n]u32 = 
     let res = bmul us vs
     in tabulate n (\i -> if i >= d then 0 else res[i])
 
@@ -44,7 +46,7 @@ def powDiff [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) : (u32, []u32) =
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : ([n]u32) =
+def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : [n]u32 =
     let (sign, vs) = powDiff us vs h l
     let vs = bmul us vs
     let vs = shift (2 * n - h) vs
@@ -58,7 +60,7 @@ def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : ([n]u32
 --
 -- Refine the approximation of the quotient
 --
-def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (k : u32) : ([n]u32) =
+def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) (l : u32) : [n]u32 =
     let us = shift 2 us
     
     let (us, vs, l) = loop (us, vs, l) = (us, vs, l) while h - k > l do
@@ -69,15 +71,44 @@ def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (k : u32) : ([n]u
         let us = shift (-1) us
         let l = l + n - 1
         in (us, vs, l)
-        
+
     in shift (-2) vs
 
+--
+-- Calculates the shifted inverse
+--
+def shinv [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : [n]u32 =
+    if k == 0 then
+        [] -- TODO: implement quo
+    else if k >= h && !(eqBpow vs h) then
+        vs
+    else if k == h - 1 && vs[k] > u32.highest / 2 then
+        zeroAndSet 1 0 m
+    else if eqBpow vs k then
+        zeroAndSet 1 (h - k) m
+    else 
+        let V = 0u64
 
-def shinV [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : ([n]u32) =
+        -- TODO: figure out this shit
+
+        in if h - k <= 2 then
+            shift (h-k-2) vs
+        else
+            refine us vs h k 2
+        
+
+
+
+--
+-- Implementation of multi-precision integer division using
+-- the shifted inverse and classical multiplication
+--
+def divShinv [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
     undefined
 
-def divShinV [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
-    undefined
-
-def quoShinV [n] (us : [n]u32) (vs : [n]u32) : ([n]u32) =
+--
+-- Implementation of multi-precision integer quotient using
+-- the shifted inverse and classical multiplication
+--
+def quoShinv [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
     undefined
