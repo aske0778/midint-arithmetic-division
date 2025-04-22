@@ -1,312 +1,3 @@
-
-template<uint32_t Q>
-__device__ inline void printLhcs(const char *str, uint32_t lhcs[2][Q+2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = lhcs[0][i];
-    }
-    __syncthreads();
-    
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[M/2 - 1 + (Q * threadIdx.x + i)] = lhcs[1][i];
-    }
-
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-template<uint32_t Q>
-__device__ inline void printRegs1(const char *str, uint32_t u[Q], uint32_t* sh_mem, uint32_t M)
-{
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-template<class uint_t, uint32_t Q>
-__device__ inline void
-printRegs( const char *str
-         , uint_t u[Q]
-         , volatile uint_t* sh_mem
-         , uint32_t M
-) {
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++) {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-}
-
-
-
-template<uint32_t Q>
-__device__ inline void printRegs1(const char *str, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
-    }
-    __syncthreads();
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[M/2 + Q * threadIdx.x + i] = u[Q+i];
-    }
-    __syncthreads();
-
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-__device__ inline void printShMem(const char *str, volatile uint32_t* sh_mem, uint32_t M)
-{
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-
-template<uint32_t Q>
-__device__ inline void printLhcs(const char *str, uint32_t lhcs[2][Q+2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = lhcs[0][i];
-    }
-    __syncthreads();
-    
-    for (int i=0; i < Q; i++) {
-        sh_mem[M/2 + (Q * threadIdx.x + i)] = lhcs[1][i];
-    }
-
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-
-template<uint32_t Q>
-__device__ inline void printLhcs12(const char *str, uint32_t lhcs[2][Q+2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    for (int i=0; i < M/Q*2; i++) {
-        if (threadIdx.x == i) {
-            printf("%s: [", str);
-            for (int i = 0; i < Q+2; i++)
-            {
-                printf("%u", lhcs[0][i]);
-                if (i < Q+2 - 1)
-                    printf(", ");
-            }
-            printf("]\n");
-        }
-    }
-    for (int i = (M / Q) * 2 - 1; i >= 0; i--) {
-        if (threadIdx.x == i) {
-            printf("%s: [", str);
-            for (int i = 0; i < Q+2; i++)
-            {
-                printf("%u", lhcs[1][i]);
-                if (i < Q+2 - 1)
-                    printf(", ");
-            }
-            printf("]\n");
-        }
-    }
-    
-    __syncthreads();
-}
-
-template<uint32_t Q>
-__device__ inline void printRegs1(const char *str, uint32_t u[Q*2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
-    }
-    __syncthreads();
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[M/2 + Q * threadIdx.x + i] = u[Q+i];
-    }
-    __syncthreads();
-
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-__device__ inline void printShMem(const char *str, volatile uint32_t* sh_mem, uint32_t M)
-{
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-
-template<uint32_t Q>
-__device__ inline void printLhcs(const char *str, uint32_t lhcs[2][Q+2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = lhcs[0][i];
-    }
-    __syncthreads();
-    
-    for (int i=0; i < Q; i++) {
-        sh_mem[M/2 + (Q * threadIdx.x + i)] = lhcs[1][i];
-    }
-
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++)
-        {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
-        }
-        printf("]\n");
-    }
-    __syncthreads();
-}
-
-
-
-template<uint32_t Q>
-__device__ inline void printLhcs12(const char *str, uint32_t lhcs[2][Q+2], volatile uint32_t* sh_mem, uint32_t M)
-{
-    for (int i=0; i < M/Q*2; i++) {
-        if (threadIdx.x == i) {
-            printf("%s: [", str);
-            for (int i = 0; i < Q+2; i++)
-            {
-                printf("%u", lhcs[0][i]);
-                if (i < Q+2 - 1)
-                    printf(", ");
-            }
-            printf("]\n");
-        }
-    }
-    for (int i = (M / Q) * 2 - 1; i >= 0; i--) {
-        if (threadIdx.x == i) {
-            printf("%s: [", str);
-            for (int i = 0; i < Q+2; i++)
-            {
-                printf("%u", lhcs[1][i]);
-                if (i < Q+2 - 1)
-                    printf(", ");
-            }
-            printf("]\n");
-        }
-    }
-    
-    __syncthreads();
-}
-
-
-
-template<class uint_t, uint32_t M, uint32_t Q>
-__device__ inline void shiftDouble(int n, uint_t u[Q*2], volatile uint_t* sh_mem, uint_t RReg[Q]) {
-    #pragma unroll
-    for (int i = 0; i < Q*2; i++) {
-        int idx = Q*2 * threadIdx.x + i;
-        int offset = idx + n;
-
-        if (offset >= 0 && offset < M) {
-            sh_mem[offset] = u[i];
-        }
-        else {
-            sh_mem[M-idx-1] = 0;
-        }
-    }
-    __syncthreads();
-
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        RReg[i] = sh_mem[Q * threadIdx.x + i];
-    }
-    __syncthreads();
-}
-
-
 template<class S, uint32_t Q>
 __device__ inline 
 void from4Reg2ShmQ1( S lhcs[2][Q+2], S Lrg[2*Q], S Hrg[2*Q], volatile S* Lsh, volatile S* Hsh, uint32_t n ) {
@@ -399,15 +90,6 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     baddRegs<uint_t, uint_t, carry_t, 4*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, Rrg, M*2 );
 }
 
-bigDigit_t tmp1 = (b2l - V) / V + 1;
-bigDigit_t tmp2 = ((double)(b2l - V*tmp1) / (double)V) * pow(2.0, bits);; //<< bits;
-tmp = tmp2 + (tmp1 << bits);
-
-// uint64_t V_low  = (uint64_t)(tmp);
-// uint64_t V_high = (uint64_t)(tmp >> 64);
-
-// printf("Full V (uint128): high = %llu, low = %llu\n", (unsigned long long)V_high, (unsigned long long)V_low);
-
 
 /**
  * An inefficient multiplication implementation
@@ -451,7 +133,6 @@ void naiveMult( volatile typename Base::uint_t* Ash
         Csh[threadIdx.x] = acc;
     }
     __syncthreads();
-    //
 
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -476,52 +157,52 @@ void naiveMult( volatile typename Base::uint_t* Ash
 /**
  * Branchless version of from4Reg2ShmQ2
  */
-// template<class S, uint32_t Q>
-// __device__ inline 
-// void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
-//                             , volatile S* Lsh
-//                             , volatile S* Hsh
-//                             , S highCarry[2]
-//                             , bool isFirst
-//                             , uint32_t n
-// ) {
-//     const uint32_t Q2 = 2*Q;
-//     uint32_t tid_mod_m = threadIdx.x % (n/Q2);
-//     int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
+template<class S, uint32_t Q>
+__device__ inline 
+void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
+                            , volatile S* Lsh
+                            , volatile S* Hsh
+                            , S highCarry[2]
+                            , bool isFirst
+                            , uint32_t n
+) {
+    const uint32_t Q2 = 2*Q;
+    uint32_t tid_mod_m = threadIdx.x % (n/Q2);
+    int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
 
-//     #pragma unroll
-//     for(int q=0; q<Q; q++) {
-//         Lsh[twoltid+q] = lhcs[q];
-//     }
+    #pragma unroll
+    for(int q=0; q<Q; q++) {
+        Lsh[twoltid+q] = lhcs[q];
+    }
     
-//     #pragma unroll
-//     for(int q=2; q<Q; q++) {
-//         Hsh[twoltid+q] = 0;
-//     }
-//     // __syncthreads(); // Can maybe be omitted
+    #pragma unroll
+    for(int q=2; q<Q; q++) {
+        Hsh[twoltid+q] = 0;
+    }
+    // __syncthreads(); // Can maybe be omitted
 
-//     int condition = (threadIdx.x != n/Q2 - 1);
-//     Hsh[twoltid+Q]   = lhcs[Q]   * condition + Hsh[twoltid+Q]   * (1 - condition);
-//     Hsh[twoltid+Q+1] = lhcs[Q+1] * condition + Hsh[twoltid+Q+1] * (1 - condition);
-//     __syncthreads();
+    int condition = (threadIdx.x != n/Q2 - 1);
+    Hsh[twoltid+Q]   = lhcs[Q]   * condition + Hsh[twoltid+Q]   * (1 - condition);
+    Hsh[twoltid+Q+1] = lhcs[Q+1] * condition + Hsh[twoltid+Q+1] * (1 - condition);
+    __syncthreads();
 
-//     int condition1 = (isFirst && threadIdx.x == n/Q2 - 1);
-//     int condition2 = (!isFirst && threadIdx.x == n/Q2 - 1);
+    int condition1 = (isFirst && threadIdx.x == n/Q2 - 1);
+    int condition2 = (!isFirst && threadIdx.x == n/Q2 - 1);
 
-//     highCarry[0] = lhcs[Q]   * condition1 + highCarry[0] * (1 - condition1);
-//     highCarry[1] = lhcs[Q+1] * condition1 + highCarry[1] * (1 - condition1);
-//     Hsh[0]       = 0         * condition1 + Hsh[0]       * (1 - condition1);
-//     Hsh[1]       = 0         * condition1 + Hsh[1]       * (1 - condition1);
+    highCarry[0] = lhcs[Q]   * condition1 + highCarry[0] * (1 - condition1);
+    highCarry[1] = lhcs[Q+1] * condition1 + highCarry[1] * (1 - condition1);
+    Hsh[0]       = 0         * condition1 + Hsh[0]       * (1 - condition1);
+    Hsh[1]       = 0         * condition1 + Hsh[1]       * (1 - condition1);
 
-//     Hsh[Q]       = lhcs[Q]   * condition2 + Hsh[Q]       * (1 - condition2);
-//     Hsh[Q+1]     = lhcs[Q+1] * condition2 + Hsh[Q+1]     * (1 - condition2);
-//     Lsh[0]       = lhcs[0]   * condition2 + Lsh[0]       * (1 - condition2);
-//     Lsh[1]       = lhcs[1]   * condition2 + Lsh[1]       * (1 - condition2);
-//     Hsh[0]       = highCarry[0] * condition2 + Hsh[0]       * (1 - condition2);
-//     Hsh[1]       = highCarry[1] * condition2 + Hsh[1]       * (1 - condition2);
-//     __syncthreads();
+    Hsh[Q]       = lhcs[Q]   * condition2 + Hsh[Q]       * (1 - condition2);
+    Hsh[Q+1]     = lhcs[Q+1] * condition2 + Hsh[Q+1]     * (1 - condition2);
+    Lsh[0]       = lhcs[0]   * condition2 + Lsh[0]       * (1 - condition2);
+    Lsh[1]       = lhcs[1]   * condition2 + Lsh[1]       * (1 - condition2);
+    Hsh[0]       = highCarry[0] * condition2 + Hsh[0]       * (1 - condition2);
+    Hsh[1]       = highCarry[1] * condition2 + Hsh[1]       * (1 - condition2);
+    __syncthreads();
 
-//     condition = isFirst && threadIdx.x == 0;
-//     Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
-//     Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
-// }
+    condition = isFirst && threadIdx.x == 0;
+    Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
+    Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
+}

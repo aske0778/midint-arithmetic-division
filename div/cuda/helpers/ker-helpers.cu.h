@@ -309,73 +309,9 @@ shift( int n
     }
 }
 
-// template<class uint_t, uint32_t M, uint32_t Q>
-// __device__ inline void 
-// shift( int n
-//      , uint_t u[Q]
-//      , volatile uint_t* sh_mem
-//      , volatile uint_t RReg[Q]
-// ) {
-//     #pragma unroll
-//     for (int i = 0; i < Q; i++) {
-//         int idx = Q * threadIdx.x + i;
-//         int offset = idx + n;
-
-
-//         if (offset >= 0 && offset < M) {
-//             sh_mem[offset] = u[i];
-//         } else {
-//             sh_mem[M-idx-1] = 0;
-//         }
-//     }
-//     __syncthreads();
-
-//     #pragma unroll
-//     for (int i = 0; i < Q; i++) {
-//         RReg[i] = sh_mem[Q * threadIdx.x + i];
-//     }
-// }
-
-
 /**
  * Performs the shift operation on a bigint of size 2M
  */
-// template<class uint_t, uint32_t M, uint32_t Q>
-// __device__ inline void 
-// shiftDouble( int n
-//            , uint_t u[Q*2]
-//            , volatile uint_t* sh_mem
-//            , uint_t RReg[Q]
-// ) {
-//     #pragma unroll
-//     for (int i = 0; i < Q; i++) {
-//         int idx = Q * threadIdx.x + i;
-//         int offset = idx + n;
-
-//         if (offset >= 0 && offset < M) {
-//             sh_mem[offset] = u[i];
-//         } else {
-//             sh_mem[M-idx-1] = 0;
-//         }
-//     }
-//     __syncthreads();
-
-//     #pragma unroll
-//     for (int i = 0; i < Q; i++) {
-//         int idx = M + Q * threadIdx.x + i;
-//         int offset = idx + n;
-
-//         if (offset >= 0 && offset < M) {
-//             sh_mem[offset] = u[Q+i];
-//         }
-//     }
-//     __syncthreads();
-
-//     #pragma unroll
-//     for (int i = 0; i < Q; i++) {
-//         RReg[i] = sh_mem[Q * threadIdx.x + i];
-//     }
-// }
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void 
 shiftDouble( int n
