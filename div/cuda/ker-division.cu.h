@@ -17,18 +17,18 @@ multMod( volatile typename Base::uint_t* USh
        , int d
        , typename Base::uint_t RReg[Q]
 ) {
-    // if (d < blockDim.x) {
-    //     naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
-    // } else {
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
+    if (d < blockDim.x) {
+        naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
+    } else {
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
 
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        if (Q * threadIdx.x + i >= d) {
-            RReg[i] = 0;
+        #pragma unroll
+        for (int i=0; i < Q; i++) {
+            if (Q * threadIdx.x + i >= d) {
+                RReg[i] = 0;
+            }
         }
     }
-    // }
 }
 
 /**
@@ -54,12 +54,12 @@ powDiff( volatile typename Base::uint_t* USh
         zeroAndSet<uint_t, Q>(VReg, 1, h);
     } else if (L >= h) {
         __syncthreads();
-        // int maxMul = vPrec + rPrec;
-        // if (maxMul < blockDim.x) {
-        //     naiveMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
-        // } else {
-        bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
-        // }
+        int maxMul = vPrec + rPrec;
+        if (maxMul < blockDim.x) {
+            naiveMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
+        } else {
+            bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
+        }
         __syncthreads();
         if (lt<uint_t, Q>(VReg, h, USh)) {  
             sub<Base, Q>(h, VReg, VSh);
@@ -101,12 +101,12 @@ step( volatile typename Base::uint_t* USh
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2); 
     __syncthreads();
-    // int maxMul = (l+2)*3;                                  
-    // if (maxMul < blockDim.x) {
-    //     naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
-    // } else {
-    bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
-    // }
+    int maxMul = (l+2)*3;                                  
+    if (maxMul < blockDim.x) {
+        naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
+    } else {
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
+    }
     __syncthreads();
     shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
