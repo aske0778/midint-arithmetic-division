@@ -293,12 +293,13 @@ shift( int n
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
-
+        int val = 0;
         if (offset >= 0 && offset < M) {
-            sh_mem[offset] = u[i];
+            val = u[i];
         } else {
-            sh_mem[M-idx-1] = 0;
+            offset = M-idx-1;
         }
+        sh_mem[offset] = val;
     }
     __syncthreads();
 
@@ -307,6 +308,7 @@ shift( int n
         RReg[i] = sh_mem[Q * threadIdx.x + i];
     }
 }
+
 // template<class uint_t, uint32_t M, uint32_t Q>
 // __device__ inline void 
 // shift( int n
@@ -318,13 +320,13 @@ shift( int n
 //     for (int i = 0; i < Q; i++) {
 //         int idx = Q * threadIdx.x + i;
 //         int offset = idx + n;
-//         int val = 0;
+
+
 //         if (offset >= 0 && offset < M) {
-//             val = u[i];
+//             sh_mem[offset] = u[i];
 //         } else {
-//             offset = M-idx-1;
+//             sh_mem[M-idx-1] = 0;
 //         }
-//         sh_mem[offset] = val;
 //     }
 //     __syncthreads();
 
@@ -333,6 +335,7 @@ shift( int n
 //         RReg[i] = sh_mem[Q * threadIdx.x + i];
 //     }
 // }
+
 
 /**
  * Performs the shift operation on a bigint of size 2M
