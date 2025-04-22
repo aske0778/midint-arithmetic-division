@@ -12,9 +12,9 @@ using namespace std;
 #define GPU_RUNS_DIV    15
 #define ERR         0.000005
 
-#define WITH_VALIDATION 0
+#define WITH_VALIDATION 1
 
-#define Q 4
+#define Q 8
 
 
 template<int m, int nz>
