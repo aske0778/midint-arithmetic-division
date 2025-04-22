@@ -8,9 +8,9 @@ import "sqr-mul"
 --
 -- Calculates (a * b) rem B^d
 --
-def multmod [n] (us : [n]u32) (vs : [n]u32) (d : u32) : [n]u32 = 
-    let res = bmul us vs
-    in tabulate n (\i -> if i >= d then 0 else res[i])
+def multmod [ipb][m] (us : [ipb*(4*m)]u32) (vs : [ipb*(4*m)]u32) (d : u32) : [ipb*(4*m)]u32 = 
+    let res = bmul (map u64.u32 us) (map u64.u32 vs)
+    in tabulate (ipb*(4*m)) (\i -> if i >= d then 0 else res[i])
 
 --
 -- Calculates B^h-v*w
@@ -87,28 +87,64 @@ def shinv [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : [n]u32 =
     else if eqBpow vs k then
         zeroAndSet 1 (h - k) m
     else 
-        let V = 0u64
 
-        -- TODO: figure out this shit
+        -- TODO: Fix this shit
+        let V = (u64.u64 v[k-2]) + (u64.u64 v[k-1] << (i64u64.u64 bits))
+               + (u64.u64 v[k] << (i64(u64.u64 (2*bits))))
+        let V = ((0 - V) / V) + 1
+        let vs = tabulate m (\i -> if i <= 1 then
+                                        W >> (i64(u64.u64 (bits * i)))
+                                   else 0)
 
         in if h - k <= 2 then
             shift (h-k-2) vs
         else
             refine us vs h k 2
-        
-
 
 
 --
 -- Implementation of multi-precision integer division using
 -- the shifted inverse and classical multiplication
 --
-def divShinv [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
-    undefined
+def div [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
+    let h = prec us
+    let k = (prec vs) - 1
+
+    let (us, vs, h, k) =
+        if k == 1 then
+            let h = h + 1
+            let k = k + 1
+            let us = shift 1 us
+            let vs = shift 1 vs
+            in (us, vs, h, k)
+        else
+            (us, vs, h, k)
+
+
+    -- let tmp = shinv us vs h k
+    -- let tmp = bmul us tmp
+    -- let tmp = shift (-h) tmp
+    -- let tmp = bmul us tmp
+
+    -- TODO: implement sub
+
+    -- in if lt tmp vs then
+        -- TODO: implement add1
+        -- TODO: implement sub
+        -- if 
+
+    -- in if k == 1 then
+    --     shift (-1) tmp
+    -- else 
+    --     tmp
+
+    in ([], [])
+
+
 
 --
 -- Implementation of multi-precision integer quotient using
 -- the shifted inverse and classical multiplication
 --
-def quoShinv [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
+def quo [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
     undefined
