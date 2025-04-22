@@ -189,7 +189,7 @@ shinv( volatile typename Base::uint_t* USh
         for (int i = 0; i <= 2; i++) {
             V += ((uquad_t)VSh[k - 2 + i]) << (Base::bits * i);
         }
-        uquad_t tmp = (((__uint128_t)0) - V) / V + 1;
+        uquad_t tmp = (((uquad_t)0) - V) / V + 1;
 
         #pragma unroll
         for (int i = 0; i < 2; i++) {
