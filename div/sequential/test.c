@@ -13,12 +13,13 @@ int main(int argc, char *argv[])
     //srand(time(NULL));
 
     prec_t m = atoi(argv[1]);
-    digit_t u_arr[16] = {9, 2, 4, 7, 5, 1, 4, 6, 9, 6, 1, 10, 10, 9, 0, 0};
-    digit_t v_arr[16] = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    digit_t u_arr[16] = {22, 227, 165, 17, 65, 43, 133, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    digit_t v_arr[16] = {234, 170, 223, 240, 128, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
     for (int i = 0; i < 1; i++) {
-       bigint_t u = init_arr(m, u_arr);
-       bigint_t v = init_arr(m, v_arr);
+        printf("\rIteration: %u", i);
+        bigint_t u = init_arr(m, u_arr);
+        bigint_t v = init_arr(m, v_arr);
         // bigint_t u = init(m); 
         // bigint_t v = init(m);
         bigint_t q_own = init(m);

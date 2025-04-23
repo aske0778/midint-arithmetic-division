@@ -8,6 +8,16 @@
 #include <gmp.h>
 #include <string.h>
 
+//8BIT
+typedef uint8_t digit_t;
+typedef uint16_t bigDigit_t;
+typedef uint32_t uquad_t;
+typedef digit_t *bigint_t;
+typedef uint32_t prec_t;
+const int32_t  bits = 8;
+typedef int bool;
+
+
 //16BIT
 // typedef uint16_t digit_t;
 // typedef uint32_t bigDigit_t;
@@ -19,13 +29,13 @@
 
 
 //32BIT
-typedef uint32_t digit_t;
-typedef uint64_t bigDigit_t;
-typedef __uint128_t uquad_t;
-typedef digit_t *bigint_t;
-typedef uint32_t prec_t;
-const int32_t bits = 32;
-typedef int bool;
+// typedef uint32_t digit_t;
+// typedef uint64_t bigDigit_t;
+// typedef __uint128_t uquad_t;
+// typedef digit_t *bigint_t;
+// typedef uint32_t prec_t;
+// const int32_t bits = 32;
+// typedef int bool;
 
 //64BIT
 // typedef uint64_t digit_t;
@@ -183,7 +193,7 @@ void randBigInt(bigint_t u, prec_t m)
 {
     for (int i = 0; i < m; i++)
     {
-        u[i] = (uint32_t)rand();
+        u[i] = (digit_t)rand();
     }
 }
 

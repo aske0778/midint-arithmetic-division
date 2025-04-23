@@ -61,7 +61,7 @@ powDiff( volatile typename Base::uint_t* USh
             bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
         }
         __syncthreads();
-        if (lt<uint_t, Q>(VReg, h, USh)) {  
+        if (lt<uint_t, Q>(VReg, h, (uint32_t*)USh)) {  
             sub<Base, Q>(h, VReg, VSh);
         } else {
             sub<Base, Q>(VReg, h, VSh);
@@ -75,7 +75,7 @@ powDiff( volatile typename Base::uint_t* USh
             if (ez<uint_t, Q>(VReg, L-1, VSh)) {
                 sign = 0;
             } else {
-                sub<Base, Q>(L, VReg, &VSh[2]);
+                sub<Base, Q>(L, VReg, &VSh[4]);
             }
         }
     }
@@ -101,7 +101,7 @@ step( volatile typename Base::uint_t* USh
 
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2); 
     __syncthreads();
-    int maxMul = (l+2)*3;                                  
+    int maxMul = (l+2)*3;                            
     if (maxMul < blockDim.x) {
         naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
     } else {
@@ -171,14 +171,14 @@ shinv( volatile typename Base::uint_t* USh
         quo<Base, Q>(h, VSh[0], VSh, RReg);
         return;
     }
-    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[4])) {
+    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[8])) {
         return;
     }
     if (k == h-1 && VSh[k] > Base::HIGHEST / 2 ) {
         set<uint_t, Q>(RReg, 1, 0);
         return;
     }
-    if (eq<uint_t, Q>(VReg, k, &USh[6])) {
+    if (eq<uint_t, Q>(VReg, k,&USh[12])) {
         set<uint_t, Q>(RReg, 1, h - k);
         return;
     }
@@ -233,7 +233,7 @@ divShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[2]) - 1; 
+    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
 
     bool kIsOne = false;                                 
 
@@ -303,7 +303,7 @@ quoShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[2]) - 1;
+    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1;
     bool kIsOne = false;
 
     if (k == 1) {

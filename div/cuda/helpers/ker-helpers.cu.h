@@ -95,6 +95,7 @@ prec( uint_t u[Q]
     }
     atomicMax((uint32_t*)sh_mem, tmp);
     __syncthreads();
+    
     return sh_mem[0];
 }
 
@@ -365,7 +366,7 @@ template<class uint_t, uint32_t Q>
 __device__ inline bool 
 lt( uint_t u[Q]
   , uint32_t bpow
-  , volatile uint_t* sh_mem
+  , volatile uint32_t* sh_mem
 ) {
     uint32_t tmp = 0;
     sh_mem[0] = 0;
@@ -414,27 +415,27 @@ lt( uint_t u[Q]
 // /**
 //  * Prints contents of register memory to stdout
 //  */
-// template<class uint_t, uint32_t M, uint32_t Q>
-// __device__ inline void
-// printRegs( const char *str
-//          , uint_t u[Q]
-//          , volatile uint_t* sh_mem
-// ) {
-//     #pragma unroll
-//     for (int i=0; i < Q; i++) {
-//         sh_mem[Q * threadIdx.x + i] = u[i];
-//     }
-//     __syncthreads();
-//     if (threadIdx.x == 0) {
-//         printf("%s: [", str);
-//         for (int i = 0; i < M; i++) {
-//             printf("%u", sh_mem[i]);
-//             if (i < M - 1)
-//                 printf(", ");
-//         }
-//         printf("]\n");
-//     }
-// }
+template<class uint_t, uint32_t M, uint32_t Q>
+__device__ inline void
+printRegs( const char *str
+         , uint_t u[Q]
+         , volatile uint_t* sh_mem
+) {
+    #pragma unroll
+    for (int i=0; i < Q; i++) {
+        sh_mem[Q * threadIdx.x + i] = u[i];
+    }
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        printf("%s: [", str);
+        for (int i = 0; i < M; i++) {
+            printf("%u", sh_mem[i]);
+            if (i < M - 1)
+                printf(", ");
+        }
+        printf("]\n");
+    }
+}
 
 template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
 __device__ inline

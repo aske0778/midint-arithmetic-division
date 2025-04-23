@@ -36,6 +36,16 @@ struct U16bits {
     static const uint_t HIGHEST = 0xFFFF;
 };
 
+struct U8bits {
+    using uint_t = uint8_t;
+    using sint_t = int8_t;
+    using ubig_t = uint16_t;
+    using uquad_t = uint32_t;
+    using carry_t = uint16_t;
+    static const int8_t bits = 8;
+    static const uint_t HIGHEST = 0xFF;
+};
+
 #define LIFT_LEN(m,q) (((m + q - 1) / q) * q)
 
 template<class CT>

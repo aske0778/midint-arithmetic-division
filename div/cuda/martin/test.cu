@@ -9,13 +9,14 @@ int main() {
 
   //  using Base = U32bits;
   //  using Base = U64bits;
-    using Base = U16bits;
+  //  using Base = U16bits;
+    using Base = U8bits;
     using uint_t = Base::uint_t;
 
-  //  srand(time(NULL));
+    srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
-    const uint32_t M = 64;
+    const uint32_t M = 16;
 
     for (int i = 0; i < 1000000 && !stop; i++) {
         printf("\rIteration: %u", i);
@@ -24,6 +25,7 @@ int main() {
 
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
+      //  v[vPrec-1] = 1;
         // prnt<uint_t>("u", u, M);
         // prnt<uint_t>("v", v, M);
         uint_t* quo = (uint_t*)calloc(M, sizeof(uint_t));
@@ -57,16 +59,16 @@ int main() {
         for (int i = 0; i < M; i++) {
             if (quo[i] != quo_gmp[i] || rem[i] != rem_gmp[i]) {
                 stop = true;
-                // printf("Inputs:\n");
-                // prnt("  u", u, M);
-                // prnt("  v", v, M);
-                // printf("Output:\n");
-                // prnt("  q", quo, M);
-                // prnt("  r", rem, M);
-                // printf("GMP:\n");
-                // prnt("  q", quo_gmp, M);
-                // prnt("  r", rem_gmp, M);
-                // printf("Iteration: %u \n", i);
+                printf("Inputs:\n");
+                prnt("  u", u, M);
+                prnt("  v", v, M);
+                printf("Output:\n");
+                prnt("  q", quo, M);
+                prnt("  r", rem, M);
+                printf("GMP:\n");
+                prnt("  q", quo_gmp, M);
+                prnt("  r", rem_gmp, M);
+                printf("Iteration: %u \n", i);
                 printf("INVALID \n");
                 break;
             }
