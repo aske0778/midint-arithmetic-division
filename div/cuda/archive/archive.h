@@ -206,3 +206,24 @@ void from4Reg2ShmQ2Brnchless( S lhcs[Q+2]
     Hsh[0] = 0 * condition + Hsh[0] * (1 - condition);
     Hsh[1] = 0 * condition + Hsh[1] * (1 - condition);
 }
+
+
+template<class uint_t, uint32_t Q>
+ __device__ inline bool
+ eq( uint_t u[Q]
+   , uint32_t bpow
+   , volatile uint_t* sh_mem
+ ) {
+     sh_mem[0] = true;
+     __syncthreads(); 
+
+     #pragma unroll
+     for (int i = 0; i < Q; i++) {
+         if (u[i] != (bpow == (i * blockDim.x + threadIdx.x))) {
+            sh_mem[0] = false;
+            break;
+         }
+     }
+     __syncthreads();    
+     return sh_mem[0];  
+ }

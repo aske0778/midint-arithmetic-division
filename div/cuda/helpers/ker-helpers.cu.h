@@ -1,57 +1,6 @@
 #define WARP (32)
 #define lgWARP (5)
 
-template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
-__device__ inline
-void cpGlb2Reg ( uint32_t ipb, volatile S* shmem, S* ass, S Arg[Q] ) {
-    const uint32_t M_lft = LIFT_LEN(M, Q); 
-    // 1. read from global to shared memory
-    const uint64_t glb_offs = blockIdx.x * (IPB * M);
-    
-    for(int i=0; i<Q; i++) {
-        uint32_t loc_pos_sh = i*(IPB*M_lft/Q) + threadIdx.x;
-        uint32_t r = loc_pos_sh % M_lft;
-
-        uint32_t loc_pos_glb= (loc_pos_sh / M_lft) * M + r;
-        S el = 0;
-        if( (r < M) && (loc_pos_sh / M_lft < ipb) ) {
-            el = ass[glb_offs + loc_pos_glb];
-        }
-        shmem[loc_pos_sh] = el;       
-    }
-    __syncthreads();
-    // 2. read from shmem to regs
-    for(int i=0; i<Q; i++) {
-        Arg[i] = shmem[Q*threadIdx.x + i];
-    }
-}
-
-template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
-__device__ inline
-void cpReg2Glb ( uint32_t ipb, volatile S* shmem , S Rrg[Q], S* rss ) { 
-    const uint32_t M_lft = LIFT_LEN(M, Q);
-    
-    // 1. write from regs to shared memory
-    uint32_t ind_ipb = threadIdx.x / (M_lft/Q);
-    for(int i=0; i<Q; i++) {
-        uint32_t r = (Q*threadIdx.x + i) % M_lft;
-        uint32_t loc_ind = ind_ipb*M + r;
-        if(r < M)
-            shmem[loc_ind] = Rrg[i];
-    }
-
-    __syncthreads();
-
-    // 2. write from shmem to global
-    const uint64_t glb_offs = blockIdx.x * (IPB * M);
-    for(int i=0; i<Q; i++) {
-        uint32_t loc_pos = i*(IPB*M_lft/Q) + threadIdx.x;
-        if(loc_pos < ipb * M) {
-            rss[glb_offs + loc_pos] = shmem[loc_pos];
-        }
-    }
-}
-
 /**
  * Coalesced copy from global to shared to register memory
  */
@@ -361,6 +310,13 @@ shiftDouble( int n
 //    , typename Base::uint_t d
 //    , typename Base::uint_t RReg[Q]
 // ) {
+//     if (d==1) {
+//         if (threadIdx.x == bpow / Q) {
+//             RReg[bpow % Q] = 1;
+//         }
+//         return;
+//     }
+
 //     typename Base::ubig_t r = 1;
 
 //     for (int i = bpow - 1; i >= 0; i--) {
@@ -380,8 +336,13 @@ quo( uint32_t bpow
    , volatile typename Base::uint_t* sh_mem
    , typename Base::uint_t RReg[Q]
 ) {
-    typename Base::ubig_t r = 1;
+    if (d == 1) {
+        set<Base::uint_t, Q>(RReg, 1, bpow);
+        return;
+    }
     if (threadIdx.x == 0) {
+        sh_mem[0] = 0;
+        typename Base::ubig_t r = 1;
         for (int i = bpow - 1; i >= 0; i--) {
             r <<= Base::bits; 
             if (r >= d) {
@@ -450,27 +411,78 @@ lt( uint_t u[Q]
     return reduceBlock<LessThan, uint_t>(RReg[Q-1], sh_mem) & 0b01;
 }
 
-/**
- * Prints contents of register memory to stdout
- */
-template<class uint_t, uint32_t M, uint32_t Q>
-__device__ inline void
-printRegs( const char *str
-         , uint_t u[Q]
-         , volatile uint_t* sh_mem
-) {
-    #pragma unroll
-    for (int i=0; i < Q; i++) {
-        sh_mem[Q * threadIdx.x + i] = u[i];
+// /**
+//  * Prints contents of register memory to stdout
+//  */
+// template<class uint_t, uint32_t M, uint32_t Q>
+// __device__ inline void
+// printRegs( const char *str
+//          , uint_t u[Q]
+//          , volatile uint_t* sh_mem
+// ) {
+//     #pragma unroll
+//     for (int i=0; i < Q; i++) {
+//         sh_mem[Q * threadIdx.x + i] = u[i];
+//     }
+//     __syncthreads();
+//     if (threadIdx.x == 0) {
+//         printf("%s: [", str);
+//         for (int i = 0; i < M; i++) {
+//             printf("%u", sh_mem[i]);
+//             if (i < M - 1)
+//                 printf(", ");
+//         }
+//         printf("]\n");
+//     }
+// }
+
+template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
+__device__ inline
+void cpGlb2Reg ( uint32_t ipb, volatile S* shmem, S* ass, S Arg[Q] ) {
+    const uint32_t M_lft = LIFT_LEN(M, Q); 
+    // 1. read from global to shared memory
+    const uint64_t glb_offs = blockIdx.x * (IPB * M);
+    
+    for(int i=0; i<Q; i++) {
+        uint32_t loc_pos_sh = i*(IPB*M_lft/Q) + threadIdx.x;
+        uint32_t r = loc_pos_sh % M_lft;
+
+        uint32_t loc_pos_glb= (loc_pos_sh / M_lft) * M + r;
+        S el = 0;
+        if( (r < M) && (loc_pos_sh / M_lft < ipb) ) {
+            el = ass[glb_offs + loc_pos_glb];
+        }
+        shmem[loc_pos_sh] = el;       
     }
     __syncthreads();
-    if (threadIdx.x == 0) {
-        printf("%s: [", str);
-        for (int i = 0; i < M; i++) {
-            printf("%u", sh_mem[i]);
-            if (i < M - 1)
-                printf(", ");
+    // 2. read from shmem to regs
+    for(int i=0; i<Q; i++) {
+        Arg[i] = shmem[Q*threadIdx.x + i];
+    }
+}
+
+template<class S, uint32_t IPB, uint32_t M, uint32_t Q>
+__device__ inline
+void cpReg2Glb ( uint32_t ipb, volatile S* shmem , S Rrg[Q], S* rss ) { 
+    const uint32_t M_lft = LIFT_LEN(M, Q);
+    
+    // 1. write from regs to shared memory
+    uint32_t ind_ipb = threadIdx.x / (M_lft/Q);
+    for(int i=0; i<Q; i++) {
+        uint32_t r = (Q*threadIdx.x + i) % M_lft;
+        uint32_t loc_ind = ind_ipb*M + r;
+        if(r < M)
+            shmem[loc_ind] = Rrg[i];
+    }
+
+    __syncthreads();
+
+    // 2. write from shmem to global
+    const uint64_t glb_offs = blockIdx.x * (IPB * M);
+    for(int i=0; i<Q; i++) {
+        uint32_t loc_pos = i*(IPB*M_lft/Q) + threadIdx.x;
+        if(loc_pos < ipb * M) {
+            rss[glb_offs + loc_pos] = shmem[loc_pos];
         }
-        printf("]\n");
     }
 }

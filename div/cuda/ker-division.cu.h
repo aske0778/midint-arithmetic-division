@@ -168,7 +168,7 @@ shinv( volatile typename Base::uint_t* USh
     using uquad_t = typename Base::uquad_t;
     
     if (k == 0) {
-        quo<Base, Q>(h, VSh[0], USh, RReg);
+        quo<Base, Q>(h, VSh[0], VSh, RReg);
         return;
     }
     if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[4])) {
@@ -225,7 +225,7 @@ divShinv( typename Base::uint_t* u
     uint_t VReg[Q];
     uint_t UReg[Q];
     uint_t RReg1[2*Q] = {0};
-    uint_t* RReg2 = &RReg1[Q];
+    uint_t* RReg2 = &RReg1[Q]; //uint_t RReg2[Q];
     
 
     cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, VReg);

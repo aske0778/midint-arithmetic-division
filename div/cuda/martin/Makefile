@@ -13,7 +13,7 @@ test:
 	$(CXX) $(SRC_TEST).cu -Xptxas -v -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
 
 bench:
-	$(CXX) $(SRC_BENCH).cu -lgmp -o $(SRC_BENCH).exe && ./$(SRC_BENCH).exe
+	$(CXX) $(SRC_BENCH).cu -Xptxas -v -lgmp -o $(SRC_BENCH).exe && ./$(SRC_BENCH).exe
 
 .PHONY: clean
 clean:
