@@ -285,52 +285,62 @@ void wrapperConvQComplete( volatile S* Ash0
  */
 template<class S, uint32_t Q>
 __device__ inline 
-void from4Reg2ShmQHalf( S lhcs[Q+2]
+void from4Reg2ShmQFirstHalf( S lhcs[Q+2]
                    , volatile S* Lsh
                    , volatile S* Hsh
                    , S highCarry[2]
-                   , bool isFirst
                    , uint32_t n
 ) {
-    const uint32_t Q2 = 2*Q;
-    uint32_t tid_mod_m = threadIdx.x % (n/Q2);
-    //Refactoring in progress
-    {    
-        int32_t twoltid = isFirst ? Q*tid_mod_m : n/2 - Q*tid_mod_m - Q;
-        #pragma unroll
-        for(int q=0; q<Q; q++) {
-            Lsh[twoltid+q] = lhcs[q];
-        }
-        __syncthreads();
-        #pragma unroll
-        for(int q=2; q<Q; q++) {
-            Hsh[twoltid+q] = 0;
-        }
-        __syncthreads();
-        if( threadIdx.x != n/Q2 - 1) {
-            Hsh[twoltid+Q]   = lhcs[Q];
-            Hsh[twoltid+Q+1] = lhcs[Q+1];
-        }
-        __syncthreads();
-        if (isFirst && threadIdx.x == n/Q2 - 1){
-            highCarry[0] = lhcs[Q];
-            highCarry[1] = lhcs[Q+1];
-            Hsh[0] = 0;
-            Hsh[1] = 0;
-        }
-        else if (threadIdx.x == n/Q2 - 1){
-            Hsh[Q]   = lhcs[Q];
-            Hsh[Q+1] = lhcs[Q+1];
-            Lsh[0] = lhcs[0];
-            Lsh[1] = lhcs[1];
-            Hsh[0] = highCarry[0];
-            Hsh[1] = highCarry[1];
-        }
-        __syncthreads();
-        if (isFirst && threadIdx.x == 0) {
-            Hsh[0] = 0;
-            Hsh[1] = 0;
-        }
+    int32_t twoltid = Q*threadIdx.x;
+    #pragma unroll
+    for(int q=0; q<Q; q++) {
+        Lsh[twoltid+q] = lhcs[q];
+    }
+    #pragma unroll
+    for(int q=2; q<Q; q++) {
+        Hsh[twoltid+q] = 0;
+    }
+    S high = lhcs[Q];
+    uint32_t carry= lhcs[Q+1];
+    uint32_t ind = twoltid+Q;
+    if (threadIdx.x == n/Q - 1) {
+        highCarry[0] = lhcs[Q];
+        highCarry[1] = lhcs[Q+1];
+        high  = 0;
+        carry = 0;
+        ind = 0;
+    }
+    Hsh[ind]   = high;
+    Hsh[ind+1] = carry;
+}
+
+/**
+ * 
+ */
+template<class S, uint32_t Q>
+__device__ inline 
+void from4Reg2ShmQSecondHalf( S lhcs[Q+2]
+                   , volatile S* Lsh
+                   , volatile S* Hsh
+                   , S highCarry[2]
+                   , uint32_t n
+) {
+    int32_t twoltid = n - Q*threadIdx.x - Q;
+    #pragma unroll
+    for(int q=0; q<Q; q++) {
+        Lsh[twoltid+q] = lhcs[q];
+    }
+    #pragma unroll
+    for(int q=2; q<Q; q++) {
+        Hsh[twoltid+q] = 0;
+    }
+    if (threadIdx.x == n/Q - 1) {
+        Hsh[0] = highCarry[0];
+        Hsh[1] = highCarry[1];
+    }
+    if (threadIdx.x != 0){
+        Hsh[twoltid+Q]   = lhcs[Q];
+        Hsh[twoltid+Q+1] = lhcs[Q+1];
     }
 }
 
@@ -367,7 +377,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     // 3. publish the low parts normally, and the high and carry shifted by one.
     uint_t highCarry[2];
 
-    from4Reg2ShmQHalf<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, true, M*2 );
+    from4Reg2ShmQFirstHalf<uint_t, Q*2>( lhcs[0], Lsh, Hsh, highCarry, M );
     __syncthreads();
 
     // 4. load back to register and perform the addition of the carries.
@@ -378,8 +388,9 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     __syncthreads();
 
     bool overflow = baddRegsOverflow<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, (carry_t*)Hsh, Lrg, Hrg, Rrg, M );
-
-    from4Reg2ShmQHalf<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, false, M*2 );
+    __syncthreads();
+    
+    from4Reg2ShmQSecondHalf<uint_t, Q*2>( lhcs[1], Lsh, Hsh, highCarry, M );
     __syncthreads();
 
     cpyShm2Reg<uint_t,2*Q>( Lsh, Lrg );
@@ -387,7 +398,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     __syncthreads();
 
     baddRegs<uint_t, uint_t, carry_t, 2*Q, Base::HIGHEST>( (carry_t*)Lsh, Lrg, Hrg, &Rrg[Q*2] );
-
+    
     if (overflow) {
         add1<Base, Q*2>(&Rrg[Q*2], Hsh);
     }
