@@ -7,17 +7,17 @@
 
 int main() {
 
-    using Base = U32bits;
+  //  using Base = U32bits;
   //  using Base = U64bits;
-  //  using Base = U16bits;
+    using Base = U16bits;
     using uint_t = Base::uint_t;
 
   //  srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
-    const uint32_t M = 2048;
+    const uint32_t M = 64;
 
-    for (int i = 0; i < 10000 && !stop; i++) {
+    for (int i = 0; i < 1000000 && !stop; i++) {
         printf("\rIteration: %u", i);
         uint_t uPrec = min((rand() % M)+1, M-Q);
         uint_t vPrec = (rand() % uPrec) + 1;

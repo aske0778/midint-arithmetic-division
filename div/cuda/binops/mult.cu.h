@@ -407,7 +407,7 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
 
 /**
  */
-template<class Base, uint32_t Q >
+template<class Base, uint32_t Q>
 __device__ 
 void naiveMult( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
