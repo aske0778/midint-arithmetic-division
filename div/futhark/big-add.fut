@@ -83,6 +83,67 @@ let badd0 (ipb: i64) (n:i64) (ash : []u64) (bsh : []u64) : [ipb*(4*n)]u64 =
   let rs = (rs :> [ipb*(4*n)]u64) |> opaque
   in  rs
 
+
+
+
+
+
+
+let addPairwiseU16 (m: i32) (ash: []u16) (bsh: []u16) (tid: i32) (i: i32) : (u16, cT)=
+  let ind = tid * 4 + i
+  let (a,b) = ( #[unsafe] ash[ind], #[unsafe] bsh[ind] )
+  let r = a + b
+  let c = cTfromBool (r < a)
+  let c = c | ( (cTfromBool (r == u16.highest)) << 1 )
+  let c = c | ( (cTfromBool ( (ind % m) == 0 )) << 2 )
+  in  (r, c)
+
+
+
+let badd0U16 (ipb: i64) (n:i64) (ash : []u16) (bsh : []u16) : [ipb*(4*n)]u16 =
+  let nn = i32.i64 n
+  let g = ipb * n
+  let seqred4 (tid: i32) =
+    loop (accum) = (carryOpNE) for i < 4 do
+        let (_, c) = addPairwiseU16 (4 * nn) ash bsh tid i
+        in  carrySegOp accum c
+  
+  let seqscan1 (tid: i32) (i: i32) (carry: cT) =
+    let (r0, c0) = addPairwiseU16 (4 * nn) ash bsh tid i
+    let r0 = r0 + u16.bool ( ( (c0 & 4) == 0 ) && ( (carry & 1) == 1 ) ) 
+    in  (r0, carrySegOp carry c0)
+
+  let seqscan4 (carries: [g]cT) (tid: i32) =
+    let carry = if tid == 0 then carryOpNE else #[unsafe] carries[tid-1] 
+    let (r0, carry) = seqscan1 tid 0 carry
+    let (r1, carry) = seqscan1 tid 1 carry
+    let (r2, carry) = seqscan1 tid 2 carry
+    let (r3, _)     = seqscan1 tid 3 carry
+    in  (r0,r1,r2,r3)  
+
+  let carries = iota g
+             |> map i32.i64
+             |> map seqred4
+             |> scan carrySegOp carryOpNE 
+
+  let (rs0, rs1, rs2, rs3) = iota g |> map i32.i64 
+                          |> map (seqscan4 carries)
+                          |> unzip4
+  let rs = rs0 ++ rs1 ++ rs2 ++ rs3 
+  let rs = (rs :> [ipb*(4*n)]u16) |> opaque
+  in  rs
+
+
+
+
+
+
+
+
+
+
+
+
 let badd [ipb][n] (as : [ipb*(4*n)]u64) (bs : [ipb*(4*n)]u64) : [ipb*(4*n)]u64 =
   let g = ipb * n
 

@@ -6,17 +6,25 @@ let imap3 as bs cs f = map3 f as bs cs
 let imap2Intra as bs f = #[incremental_flattening(only_intra)] map2 f as bs
 
 type D = u64
+type L = u16 -- L for little :) tinie tiny integer
 let D_mul_hi = u64.mul_hi
+let L_mul_hi = u16.mul_hi
 let D_bool = u64.bool
+let L_bool = u16.bool
 let zeroD = 0u64
+let zeroL = 0u16
 type S = u32
 let zeroS = 0u32
 let lenS = 32u64
+let lenL = 16u16
 let S_bool = u32.bool
 let S_D = u32.u64
 let D_S = u64.u32
+let L_S = u16.u32
+let S_L = u32.u16
 
 type Dx4   = (D,D,D,D)
+type Lx4   = (L,L,L,L)
 type i64x4 = (i64,i64,i64,i64)
 
 let combine2 (l0:D, h1:D, c2:S) (l1:D, h2:D, c3:S) : Dx4 =
@@ -119,6 +127,134 @@ let bmul [ipb][n] (as: [ipb*(4*n)]D) (bs : [ipb*(4*n)]D) : [ipb*(4*n)]D =
   let hsh = scatter hsh (ih_0++ih_1++ih_nm2++ih_nm1)
                         (h_0 ++ h_1++ h_nm2++ h_nm1)
   let rsh = badd0 ipb n lsh hsh
+  in  rsh
+
+
+
+
+
+
+
+
+
+
+let combine2U16 (l0:L, h1:L, c2:S) (l1:L, h2:L, c3:S) : Lx4 =
+  let l1' = l1 + h1
+  let c2' = c2 + S_bool (l1' < l1) -- we assume carry is big enough to not overflow
+  let h2' = h2 + L_S c2'
+  let c3' = c3 + S_bool (h2' < h2)
+  in  (l0, l1', h2', L_S c3')
+
+let convolution4U16 (n: i32) 
+                 (ash: []L) 
+                 (bsh: []L)
+                 (tid: i32) 
+               : ( Lx4, i64x4, Lx4) =
+ 
+  let instance = tid / n
+  let vtid     = tid % n
+  let offset = instance * (4*n)
+
+  let computeIterU16 (i: i32) (j: i32) (l: L, h: L, c: S) : (L, L, S) =
+        let ai = #[unsafe] ash[offset+i]
+        let bj = #[unsafe] bsh[offset+j]
+        let ck_l = ai * bj
+        let n_l = l + ck_l
+        let c_l = L_bool ( (S_L (n_l >> lenL)) < (S_L (ck_l >> lenL)) )
+        let n_h = h + c_l
+        let ck_h = L_mul_hi ai bj
+        let n_h = n_h + ck_h
+        let c_h = S_bool ( (S_L (n_h >> lenL)) < (S_L (h >> lenL)) )
+        let n_c = c + c_h
+        in  (n_l, n_h, n_c)
+
+  -- first half:
+  let k1 = 2*vtid
+  let (lhc0, lhc1) =
+    loop (lhc0, lhc1) = ((zeroL,zeroL,zeroS), (zeroL,zeroL,zeroS))
+    for kk < k1 do
+        let i = kk
+        let j = k1 - i
+        let lhc0 = computeIterU16 i j lhc0
+        let lhc1 = computeIterU16 i (j+1) lhc1
+        in  (lhc0, lhc1)
+  let lhc1 = computeIterU16 (k1+1) 0 lhc1
+  let (l0, l1, h2, c3) = combine2U16 lhc0 lhc1
+  let i0 = i64.i32 (offset + k1)
+  
+  -- second half
+  let k2 = 4*n - k1 - 2
+  let (lhc2, lhc3) =
+    loop (lhc2, lhc3) = ((zeroL,zeroL,zeroS), (zeroL,zeroL,zeroS))
+    for kk < k2+1 do
+        let i = kk
+        let j = k2 - i
+        let lhc2 = computeIterU16 i j lhc2
+        let lhc3 = computeIterU16 i (j+1) lhc3
+        in  (lhc2, lhc3)
+  let lhc3 = computeIterU16 (k2+1) 0 lhc3
+  let (l_nm2, l_nm1, h_n, c_np1) = combine2U16 lhc2 lhc3
+  let i_nm2 = i64.i32 (offset + k2 - 1)
+  in  ( (l0,     l1, l_nm2,   l_nm1  )
+      , (i0,   i0+1, i_nm2,   i_nm2+1)
+      , (h2,     c3, h_n,     c_np1  )
+      )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let bmulU16 [ipb][n] (as: [ipb*(4*n)]L) (bs : [ipb*(4*n)]L) : [ipb*(4*n)]L =
+  #[unsafe]
+  let nn = i32.i64 n
+  let g = ipb * n  -- i64.i32 ((i32.i64 ipb) * nn)
+
+  let cp2sh (i : i32) = #[unsafe]
+        let g = i32.i64 g in
+        ( ( as[i], as[g + i], as[2*g + i], as[3*g + i] )
+        , ( bs[i], bs[g + i], bs[2*g + i], bs[3*g + i] ) )
+
+  let ( ass, bss ) = iota g |> map i32.i64
+                  |> map cp2sh  |> unzip
+  let (a1s, a2s, a3s, a4s) = unzip4 ass
+  let (b1s, b2s, b3s, b4s) = unzip4 bss
+  let ash = a1s ++ a2s ++ a3s ++ a4s
+  let bsh = b1s ++ b2s ++ b3s ++ b4s
+  let ash = (ash :> [ipb*(4*n)]u16) |> opaque
+  let bsh = (bsh :> [ipb*(4*n)]u16) |> opaque
+
+  -- convolution
+  let lsh = replicate (ipb*(4*n)) zeroL
+  let hsh = replicate (ipb*(4*n)) zeroL
+  let (ls, ils, hs) = iota g 
+          |> map i32.i64
+          |> map (convolution4U16 nn ash bsh)
+          |> unzip3
+  let ( l_0,  l_1, l_nm2, l_nm1) = unzip4 ls
+  let (il_0, il_1,il_nm2,il_nm1) = unzip4 ils
+  let ( h_0,  h_1, h_nm2, h_nm1) = unzip4 hs
+  let lsh = scatter lsh (il_0++il_1++il_nm2++il_nm1)
+                        (l_0 ++ l_1++ l_nm2++ l_nm1)
+  let add2 (x: i64) = 2 + i32.i64 x |> i64.i32 
+  let (ih_0, ih_1, ih_nm2, ih_nm1) =
+        map (\ (a,b,c,d) -> (add2 a, add2 b, add2 c, add2 d) ) ils |> unzip4 
+  let hsh = scatter hsh (ih_0++ih_1++ih_nm2++ih_nm1)
+                        (h_0 ++ h_1++ h_nm2++ h_nm1)
+  let rsh = badd0U16 ipb n lsh hsh
   in  rsh
   
   -- fake computation
