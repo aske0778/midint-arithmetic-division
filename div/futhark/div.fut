@@ -8,15 +8,9 @@ import "sqr-mul"
 --
 -- Calculates (a * b) rem B^d
 --
-<<<<<<< Updated upstream
 def multmod [ipb][m] (us : [ipb*(4*m)]u32) (vs : [ipb*(4*m)]u32) (d : u32) : [ipb*(4*m)]u32 = 
     let res = bmul (map u64.u32 us) (map u64.u32 vs)
     in tabulate (ipb*(4*m)) (\i -> if i >= d then 0 else res[i])
-=======
-def multmod [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (d : i64) : ([]u32) = 
-    let res = bmul us vs
-    in tabulate (ipb * (4 * n)) (\i -> if i >= d then 0u64 else res[i])
->>>>>>> Stashed changes
 
 --
 -- Calculates B^h-v*w
@@ -78,7 +72,6 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u
     --            (0, iota m)
     --        --(--0, iota m)
     --in sign
-<<<<<<< Updated upstream
 def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u32) (l : u32) : (u32, []u32) =
     let precU = prec us
     let precV = prec vs
@@ -136,15 +129,12 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u
     --            (0, iota m)
     --        --(--0, iota m)
     --in sign
-=======
->>>>>>> Stashed changes
         
 
 
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-<<<<<<< Updated upstream
 def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : [n]u32 =
     let (sign, vs) = powDiff us vs h l
     let vs = bmul us vs
@@ -247,19 +237,3 @@ def div [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
 --
 def quo [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
     undefined
-=======
---def step [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (s : u32) : ([n]u32) =
---    undefined
---
---def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (l : u32) (k : u32) : ([n]u32) =
---    undefined
---
---def shinV [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : ([n]u32) =
---    undefined
---
---def divShinV [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
---    undefined
---
---def quoShinV [n] (us : [n]u32) (vs : [n]u32) : ([n]u32) =
---    undefined
->>>>>>> Stashed changes
