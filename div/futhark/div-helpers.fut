@@ -40,13 +40,19 @@ def set [n] (u : *[n]u32) (d : u32) (idx : i64) : [n]u32 =
 def zeroAndSet (d : u32) (idx : i64) (m : i64) : []u32 = 
     tabulate m (\i -> if i == idx then d else 0u32)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 
 def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 = 
     let arr[idx] = d
     in
     arr
     
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
  
 
