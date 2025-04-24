@@ -9,8 +9,8 @@
 #include "cgbn-kers.cu.h"
 
 #define GPU_RUNS_ADD  500
-#define GPU_RUNS_CMUL 500
-#define GPU_RUNS_DIV 500
+#define GPU_RUNS_CMUL 200
+#define GPU_RUNS_DIV  200
 #define GPU_RUNS_POLY 125
 
 /****************************/
@@ -52,7 +52,7 @@ instance_t *generate_instances(uint32_t count) {
   printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
   for(int index=0;index<count;index++) {  
     ourMkRandom<BITS/32, BITS/32>(1, instances[index].a._limbs);
-    ourMkRandom<BITS/32, BITS/32>(1, instances[index].b._limbs);
+    ourMkRandom<BITS/32, 3>(1, instances[index].b._limbs);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
   }
@@ -60,12 +60,12 @@ instance_t *generate_instances(uint32_t count) {
 }
 
 // support routine to generate random instances
-instance_t_div *generate_instances_div(uint32_t count) {
-  instance_t_div *instances=(instance_t_div *)malloc(sizeof(instance_t_div)*count);
+instance_div_t *generate_instances_div(uint32_t count) {
+  instance_div_t *instances=(instance_div_t *)malloc(sizeof(instance_div_t)*count);
   printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
   for(int index=0;index<count;index++) {  
     ourMkRandom<BITS/32, BITS/32>(1, instances[index].a._limbs);
-    ourMkRandom<BITS/32, BITS/32>(1, instances[index].b._limbs);
+    ourMkRandom<BITS/32, 3>(1, instances[index].b._limbs);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
   }
@@ -104,23 +104,26 @@ void verifyResultsQuo(uint32_t num_instances, instance_t  *instances) {
     printf("VALID!\n");
 }
 
-void verifyResults_div(uint32_t num_instances, instance_t_div  *instances) {
-  printf("lol?");
-  uint32_t buffer[BITS/32];
-  uint32_t buffer2[BITS/32];
-  for(uint32_t i=0; i<num_instances; i++) {
-    printf("sker der?");
-      gmpDivOnce<uint32_t, BITS/32>(&instances[i].a._limbs[0], &instances[i].b._limbs[0], &buffer[0], &buffer2[0]);
-      for(uint32_t j=0; j<BITS/32; j++) {
-           if ( (buffer[j] != instances[i].quo._limbs[j]) || (buffer2[j] != instances[i].rem._limbs[j]) ) {
-              printf( "INVALID RESULT at instance: %u, local index %u: %u vs %u\n"
-                    , i, j, buffer[j], instances[i].quo._limbs[j]
-                    );
-              return;
-          }
-      }
-  }
-  printf("VALID!\n");
+void verifyResultsDiv(uint32_t num_instances, instance_div_t  *instances) {
+    uint32_t bufferQuo[BITS/32];
+    uint32_t bufferRem[BITS/32];
+    for(uint32_t i=0; i<num_instances; i++) {
+        gmpDivOnce<uint32_t, BITS/32>(&instances[i].a._limbs[0], &instances[i].b._limbs[0], &bufferQuo[0], &bufferRem[0]);
+        for(uint32_t j=0; j<BITS/32; j++) {
+             if ( bufferQuo[j] != instances[i].quo._limbs[j] ) {
+                printf( "INVALID RESULT at quotient: %u, local index %u: %u vs %u\n"
+                      , i, j, bufferQuo[j], instances[i].quo._limbs[j]
+                      );
+                return;
+            } else if ( bufferRem[j] != instances[i].rem._limbs[j] ) {
+                printf( "INVALID RESULT at remainder: %u, local index %u: %u vs %u\n"
+                      , i, j, bufferRem[j], instances[i].rem._limbs[j]
+                      );
+                return;
+            }
+        }
+    }
+    printf("VALID!\n");
 }
 
 void runAdd ( const uint32_t num_instances, const uint32_t cuda_block
@@ -313,8 +316,8 @@ averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f
 }
 
 void runDiv ( const uint32_t num_instances, const uint32_t cuda_block
-  , cgbn_error_report_t *report,  instance_t_div  *gpuInstances
-  , instance_t_div  *instances
+  , cgbn_error_report_t *report,  instance_div_t  *gpuInstances
+  , instance_div_t  *instances
 ) {
   //printf("Running GPU kernel ...\n");
 
@@ -358,13 +361,9 @@ averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f
 
   // copy the instances back from gpuMemory
   // printf("Copying results back to CPU, size of instance_t: %d ...\n", sizeof(instance_t));
-  CUDA_CHECK(cudaMemcpy(instances, gpuInstances, sizeof(instance_t_div)*num_instances, cudaMemcpyDeviceToHost));
+  CUDA_CHECK(cudaMemcpy(instances, gpuInstances, sizeof(instance_div_t)*num_instances, cudaMemcpyDeviceToHost));
 
-  //printf("Verifying the results ...\n");
-  //verify_results(instances, num_instances);
-
-  // verifyResults_div causes segmentation fault inside gmpDivOnce, fix incomming.
-  //verifyResults_div(num_instances, instances);
+  // verifyResultsDiv(num_instances, instances);
 }
 
 void runQuo ( const uint32_t num_instances, const uint32_t cuda_block
@@ -401,7 +400,7 @@ void runQuo ( const uint32_t num_instances, const uint32_t cuda_block
   double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
   double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
-  printf( "CGBN Quotient (num-instances = %d, num-word-len = %d, total-size: %d), \
+  printf( "CGBN quotient (num-instances = %d, num-word-len = %d, total-size: %d), \
 averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f\n"
     , num_instances, m, num_instances * m, GPU_RUNS_DIV
     , elapsed, gigaopsu32, num_instances / runtime_microsecs
@@ -415,63 +414,55 @@ averaged over %d runs: %lu microsecs, Gopsu32/sec: %.2f, Mil-Instances/sec: %.2f
   // printf("Copying results back to CPU, size of instance_t: %d ...\n", sizeof(instance_t));
   CUDA_CHECK(cudaMemcpy(instances, gpuInstances, sizeof(instance_t)*num_instances, cudaMemcpyDeviceToHost));
 
-
   //printf("Verifying the results ...\n");
-  //verify_results(instances, num_instances);
   verifyResultsQuo(num_instances, instances);
 }
 
 
 int main(int argc, char * argv[]) {
-    if (argc != 2) {
-        printf("Usage: %s <number-of-instances>\n", argv[0]);
-        exit(1);
-    }
-        
-    const int num_instances = atoi(argv[1]);
-    
-    instance_t          *instances, *gpuInstances;
-    instance_t_div      *instances_div, *gpuInstances_div; 
+  if (argc != 2) {
+      printf("Usage: %s <number-of-instances>\n", argv[0]);
+      exit(1);
+  }
+      
+  const int num_instances = atoi(argv[1]);
+  
+  instance_t          *instances, *gpuInstances;
+  instance_div_t      *instancesDiv, *gpuInstancesDiv; 
 	cgbn_error_report_t *report;
 
-	//printf("Genereating instances ...\n");
-	instances=generate_instances(num_instances);
-  instances_div=generate_instances_div(num_instances);
-  //printf("%d",num_instances);
-  //for (int i = 0; i < num_instances; i++){
-  //  //printInstance(i, instances);
-  //  for (int j = 0; j < (BITS/32); j++){
-  //  printf("%u & %u @ (%d,%d) \n", instances[i].a._limbs[j], instances[i].b._limbs[j], i, j);
-  //  }
-  //}
-
-	//printf("Copying instances to the GPU ...\n");
 	CUDA_CHECK(cudaSetDevice(0));
-	CUDA_CHECK(cudaMalloc((void **)&gpuInstances, sizeof(instance_t)*num_instances));
-  CUDA_CHECK(cudaMalloc((void **)&gpuInstances_div, sizeof(instance_t_div)*num_instances));
-	CUDA_CHECK(cudaMemcpy(gpuInstances, instances, sizeof(instance_t)*num_instances, cudaMemcpyHostToDevice));
-  
-	// create a cgbn_error_report for CGBN to report back errors
-	CUDA_CHECK(cgbn_error_report_alloc(&report)); 
-  
-  
-  runAdd (num_instances, 128, report, gpuInstances, instances);
-  runMul (num_instances, 128, report, gpuInstances, instances);
-  // runPoly(num_instances, 128, report, gpuInstances, instances);
-  runQuo(num_instances, 128, report, gpuInstances, instances);
-  
-  // clean up
-  free(instances);
-  CUDA_CHECK(cudaFree(gpuInstances));
-  
-  CUDA_CHECK(cudaMemcpy(gpuInstances_div, instances_div, sizeof(instance_t_div)*num_instances, cudaMemcpyHostToDevice));
+
+  // add and mul bechmarks
+  {
+	  instances = generate_instances(num_instances);
+    CUDA_CHECK(cudaMalloc((void **)&gpuInstances, sizeof(instance_t)*num_instances));
+    CUDA_CHECK(cudaMemcpy(gpuInstances, instances, sizeof(instance_t)*num_instances, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cgbn_error_report_alloc(&report)); 
     
-  runDiv(num_instances, 128, report, gpuInstances_div, instances_div);
+    runAdd (num_instances, 128, report, gpuInstances, instances);
+    runMul (num_instances, 128, report, gpuInstances, instances);
+    // runPoly(num_instances, 128, report, gpuInstances, instances);
+    runQuo(num_instances, 128, report, gpuInstances, instances);
 
-  free(instances_div);
-  CUDA_CHECK(cudaFree(gpuInstances_div));
+    free(instances);
+    CUDA_CHECK(cudaFree(gpuInstances));
+    CUDA_CHECK(cgbn_error_report_free(report));
+  }
 
-	CUDA_CHECK(cgbn_error_report_free(report));
+  // quo and div bechmarks
+  {
+    instancesDiv = generate_instances_div(num_instances);
+    CUDA_CHECK(cudaMalloc((void **)&gpuInstancesDiv, sizeof(instance_div_t)*num_instances));
+    CUDA_CHECK(cudaMemcpy(gpuInstancesDiv, instancesDiv, sizeof(instance_div_t)*num_instances, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cgbn_error_report_alloc(&report)); 
 
-    return 0;
+    runDiv(num_instances, 128, report, gpuInstancesDiv, instancesDiv);
+
+    free(instancesDiv);
+    CUDA_CHECK(cudaFree(gpuInstancesDiv));
+    CUDA_CHECK(cgbn_error_report_free(report));
+  }
+
+  return 0;
 }

@@ -205,7 +205,6 @@ void gmpDivOnce( uint_t* inst_as
     mpz_t a; mpz_t b; mpz_t q; mpz_t r;        
     mpz_init(a); mpz_init(b); mpz_init(r);
 
-    printf("here?");
     mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
     mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
 
