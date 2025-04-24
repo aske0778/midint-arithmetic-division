@@ -72,6 +72,63 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u
     --            (0, iota m)
     --        --(--0, iota m)
     --in sign
+def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u32) (l : u32) : (u32, []u32) =
+    let precU = prec us
+    let precV = prec vs
+    let L = precV + precU - l + 1
+
+    let (sign, ret) = 
+        if (precU == 0 || precV == 0) then
+            let sign' = 1
+            let ret' = zeroAndSet h 1i64 n
+            in (sign', ret')
+        else if (L >= h) then
+            let ret' = bmul us vs
+            let sign' = 0
+            in (sign', ret')
+        else 
+            --let sign' = 0
+            let ret' = multmod us vs L
+            in
+            if (!(ez vs) ) then 
+                if (vs[L-1] == 0) then 
+                    let sign' = 0
+                    in (sign', ret')
+                else 
+                    let sign' = 1
+                    in (sign', ret')
+            else 
+                let sign' = 1
+                in (sign', ret')
+
+    in (sign,ret)
+
+    --let sign = 1
+    --in
+    --if (precU == 0 || precV == 0) then
+    --    let retval = zeroAndSet vs 1 h
+    --    in (sign, retval)
+    --else if (L >= h) then
+    --    let res = bmul us vs
+    --    in
+    --    if (ltBpow vs h) then
+    --        (1, iota m) -- TODO: fix
+    --        -- (1, sub)
+    --    else
+    --        (0, iota m) -- TODO: fix
+    --        -- (0, sub)
+    --else 
+    --    let mlt = multmod us vs L
+    --    in
+    --    if (!(ez vs)) then
+    --        if (vs[L-1] == 0) then 
+    --            sign <- 0
+    --            (0, iota m)
+    --        else 
+    --            sign <- 42069
+    --            (0, iota m)
+    --        --(--0, iota m)
+    --in sign
         
 
 

@@ -39,6 +39,15 @@ def set [n] (u : *[n]u32) (d : u32) (idx : i64) : [n]u32 =
 -- zero bigint array and set given index to d
 def zeroAndSet (d : u32) (idx : i64) (m : i64) : []u32 = 
     tabulate m (\i -> if i == idx then d else 0u32)
+<<<<<<< Updated upstream
+=======
+
+def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 = 
+    let arr[idx] = d
+    in
+    arr
+    
+>>>>>>> Stashed changes
  
 
 -- performs shift operation
