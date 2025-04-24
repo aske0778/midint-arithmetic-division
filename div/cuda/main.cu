@@ -35,22 +35,6 @@ void mkRandArrays ( int num_instances
 }
 
 /**
- * Number of giga-u32-bit unit operations.
- */
-template<typename uint_t>
-uint64_t numAd32OpsOfDivInst(uint32_t m0) {
-    uint32_t m = m0*sizeof(uint_t) / 4;
-    uint32_t lgm = 0, mm = m;
-    for( ; mm > 1; mm >>= 1) lgm++;
-    uint64_t fft_cost = 300 * m * lgm;
-
-    uint32_t lgfft = 0, fftc = fft_cost;
-    for( ; fftc > 1; fftc >>= 1) lgfft++;
-    // return fft_cost;
-    return 2 * 300 * m * lgm;
-}
-
-/**
  * Validates asb(A - B) < ERR
  */
 template<class T>
@@ -375,8 +359,8 @@ void testQuotient( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = m;
-    uint_t vPrec = uPrec - (m/4);
+    uint_t uPrec = m-Q;
+    uint_t vPrec = 3;
 
     uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
@@ -403,8 +387,8 @@ void testDivision( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = m;
-    uint_t vPrec = uPrec - (m/4);
+    uint_t uPrec = m-Q;
+    uint_t vPrec = 3;
 
     uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);

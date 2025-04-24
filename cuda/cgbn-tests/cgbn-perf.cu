@@ -51,7 +51,7 @@ instance_t *generate_instances(uint32_t count) {
   instance_t *instances=(instance_t *)malloc(sizeof(instance_t)*count);
   printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
   for(int index=0;index<count;index++) {  
-    ourMkRandom<BITS/32, BITS/32>(1, instances[index].a._limbs);
+    ourMkRandom<BITS/32, BITS/32-8>(1, instances[index].a._limbs);
     ourMkRandom<BITS/32, 3>(1, instances[index].b._limbs);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
@@ -64,7 +64,7 @@ instance_div_t *generate_instances_div(uint32_t count) {
   instance_div_t *instances=(instance_div_t *)malloc(sizeof(instance_div_t)*count);
   printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
   for(int index=0;index<count;index++) {  
-    ourMkRandom<BITS/32, BITS/32>(1, instances[index].a._limbs);
+    ourMkRandom<BITS/32, BITS/32-8>(1, instances[index].a._limbs);
     ourMkRandom<BITS/32, 3>(1, instances[index].b._limbs);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
@@ -346,7 +346,7 @@ void runDiv ( const uint32_t num_instances, const uint32_t cuda_block
   const uint32_t m = BITS / 32;
   double runtime_microsecs = elapsed;
   //double num_u32_ops = 4.0 * num_instances * m * m; 
-  double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
+  double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint32_t>(m);
   double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
   printf( "CGBN division (num-instances = %d, num-word-len = %d, total-size: %d), \
@@ -397,7 +397,7 @@ void runQuo ( const uint32_t num_instances, const uint32_t cuda_block
   const uint32_t m = BITS / 32;
   double runtime_microsecs = elapsed;
   //double num_u32_ops = 4.0 * num_instances * m * m; 
-  double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
+  double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint32_t>(m);
   double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
   printf( "CGBN quotient (num-instances = %d, num-word-len = %d, total-size: %d), \
