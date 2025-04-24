@@ -218,7 +218,7 @@ let convolution4U16 (n: i32)
 
 
 
-let bmulU16 [ipb][n] (as: [ipb*(4*n)]L) (bs : [ipb*(4*n)]L) : [ipb*(4*n)]L =
+let bmulu16 [ipb][n] (as: [ipb*(4*n)]L) (bs : [ipb*(4*n)]L) : [ipb*(4*n)]L =
   #[unsafe]
   let nn = i32.i64 n
   let g = ipb * n  -- i64.i32 ((i32.i64 ipb) * nn)

@@ -1,6 +1,6 @@
 import "div-helpers"
+import "big-add"
 import "sqr-mul"
--- import "big-add"
 
 
 
@@ -8,14 +8,14 @@ import "sqr-mul"
 --
 -- Calculates (a * b) rem B^d
 --
-def multmod [ipb][m] (us : [ipb*(4*m)]u32) (vs : [ipb*(4*m)]u32) (d : u32) : [ipb*(4*m)]u32 = 
-    let res = bmul (map u64.u32 us) (map u64.u32 vs)
-    in tabulate (ipb*(4*m)) (\i -> if i >= d then 0 else res[i])
+def multmod [ipb][m] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (d : i64) : [ipb*(4*m)]u16 = 
+    let res = bmulu16 us vs
+    in tabulate (ipb*(4*m)) (\i -> if i >= d then 0u16 else res[i])
 
 --
 -- Calculates B^h-v*w
 --
-def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u32) (l : u32) : (u32, []u32) =
+def powDiff [n] [ipb] (us : [ipb * (4 * n)]u16) (vs : [ipb * (4 * n)]u16) (h : i64) (l : i64) : (u32, []u16) =
     let precU = prec us
     let precV = prec vs
     let L = precV + precU - l + 1
@@ -23,15 +23,16 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u
     let (sign, ret) = 
         if (precU == 0 || precV == 0) then
             let sign' = 1
-            let ret' = zeroAndSet h 1i64 n
+            let ret' = zeroAndSet 1u16 h n
             in (sign', ret')
         else if (L >= h) then
-            let ret' = bmul us vs
+            let ret' = bmulu16 us vs
             let sign' = 0
             in (sign', ret')
         else 
-            --let sign' = 0
-            let ret' = multmod us vs L
+            --et sign' = 0
+            let ret' = multmod us vs 2i64
+            --in (sign', ret')
             in
             if (!(ez vs) ) then 
                 if (vs[L-1] == 0) then 
@@ -45,104 +46,18 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u
                 in (sign', ret')
 
     in (sign,ret)
-
-    --let sign = 1
-    --in
-    --if (precU == 0 || precV == 0) then
-    --    let retval = zeroAndSet vs 1 h
-    --    in (sign, retval)
-    --else if (L >= h) then
-    --    let res = bmul us vs
-    --    in
-    --    if (ltBpow vs h) then
-    --        (1, iota m) -- TODO: fix
-    --        -- (1, sub)
-    --    else
-    --        (0, iota m) -- TODO: fix
-    --        -- (0, sub)
-    --else 
-    --    let mlt = multmod us vs L
-    --    in
-    --    if (!(ez vs)) then
-    --        if (vs[L-1] == 0) then 
-    --            sign <- 0
-    --            (0, iota m)
-    --        else 
-    --            sign <- 42069
-    --            (0, iota m)
-    --        --(--0, iota m)
-    --in sign
-def powDiff [n] [ipb] (us : [ipb * (4 * n)]u32) (vs : [ipb * (4 * n)]u32) (h : u32) (l : u32) : (u32, []u32) =
-    let precU = prec us
-    let precV = prec vs
-    let L = precV + precU - l + 1
-
-    let (sign, ret) = 
-        if (precU == 0 || precV == 0) then
-            let sign' = 1
-            let ret' = zeroAndSet h 1i64 n
-            in (sign', ret')
-        else if (L >= h) then
-            let ret' = bmul us vs
-            let sign' = 0
-            in (sign', ret')
-        else 
-            --let sign' = 0
-            let ret' = multmod us vs L
-            in
-            if (!(ez vs) ) then 
-                if (vs[L-1] == 0) then 
-                    let sign' = 0
-                    in (sign', ret')
-                else 
-                    let sign' = 1
-                    in (sign', ret')
-            else 
-                let sign' = 1
-                in (sign', ret')
-
-    in (sign,ret)
-
-    --let sign = 1
-    --in
-    --if (precU == 0 || precV == 0) then
-    --    let retval = zeroAndSet vs 1 h
-    --    in (sign, retval)
-    --else if (L >= h) then
-    --    let res = bmul us vs
-    --    in
-    --    if (ltBpow vs h) then
-    --        (1, iota m) -- TODO: fix
-    --        -- (1, sub)
-    --    else
-    --        (0, iota m) -- TODO: fix
-    --        -- (0, sub)
-    --else 
-    --    let mlt = multmod us vs L
-    --    in
-    --    if (!(ez vs)) then
-    --        if (vs[L-1] == 0) then 
-    --            sign <- 0
-    --            (0, iota m)
-    --        else 
-    --            sign <- 42069
-    --            (0, iota m)
-    --        --(--0, iota m)
-    --in sign
-        
-
 
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [n] (us : [n]u32) (vs : [n]u32) (h : i32) (l : i32) (n : i32) : [n]u32 =
+def step [m] (us : [m]u32) (vs : [m]u32) (h : i32) (l : i32) (n : i32) : [m]u32 =
     let (sign, vs) = powDiff us vs h l
     let vs = bmul us vs
     let vs = shift (2 * n - h) vs
     let us = shift n us
 
     in if sign then
-        badd us vs
+        baddu16 us vs
     else
         bsub us vs
 

@@ -1,17 +1,17 @@
 
 -- check the precision of bigint, eg n - (leading zero's)
-def prec [n] (u : [n]u16) : (i64) = 
+def prec [n] (u : [n]u32) : (u32) = 
     let bar = reduce (\idx1 idx2 -> 
                         if u[idx2] != 0 then idx2 else idx1) (0i64) (iota n)
-    in bar
+    in u32.i64(bar)
 
 -- checks if two bigints are equal
-def eq [n] (u : [n]u16) (v : [n]u16) : bool =
+def eq [n] (u : [n]u32) (v : [n]u32) : bool =
     reduce (\ x y -> (x == y && x != false)) true (map2 (==) u v)
 
 
 -- cheaks if given bigint = 0
-def ez [n] (u : [n]u16) : bool = 
+def ez [n] (u : [n]u32) : bool = 
     all (== 0) u    
 
 -- returns u < v for two bigint
@@ -26,7 +26,7 @@ def ez [n] (u : [n]u16) : bool =
 
 -- less than taken from thorbjørn, musch cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
-def lt [m] (u: [m]u16) (v: [m]u16) : bool =
+def lt [m] (u: [m]u32) (v: [m]u32) : bool =
   let res = map2 (\ x y -> (x < y, x == y) ) u v
   |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
   in res.0
@@ -37,14 +37,23 @@ def set [n] (u : *[n]u32) (d : u32) (idx : i64) : [n]u32 =
     let u[idx] =  d in u
 
 -- zero bigint array and set given index to d
-def zeroAndSet (d : u16) (idx : i64) (m : i64) : []u16 = 
-    tabulate m (\i -> if i == idx then d else 0u16)
+def zeroAndSet (d : u32) (idx : i64) (m : i64) : []u32 = 
+    tabulate m (\i -> if i == idx then d else 0u32)
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+=======
+>>>>>>> Stashed changes
 
 def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 = 
     let arr[idx] = d
     in
     arr
     
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
  
 
 -- performs shift operation
@@ -71,12 +80,12 @@ def shift [n] (shft : i64) (u : [n]u32) : ([n]u32) =
 --def quo (bpow : u32) (d : u32) : ([]u32) = 
 --    let r = 1i64
 
-def eqBpow [m] (u : [m]u16) (b : u16) : bool =
-    let bpow = zeroAndSet 1 (i64.u16 b) m
+def eqBpow [m] (u : [m]u32) (b : u32) : bool =
+    let bpow = zeroAndSet 1 (i64.u32 b) m
     in reduce (\ x y -> (x == y && x != false)) true (map2 (==) u bpow)
 
-def ltBpow [m] (u: [m]u16) (b: u16) : bool =
-    let bpow = zeroAndSet 1 (i64.u16 b) m
+def ltBpow [m] (u: [m]u32) (b: u32) : bool =
+    let bpow = zeroAndSet 1 (i64.u32 b) m
     in lt u bpow
 
 
