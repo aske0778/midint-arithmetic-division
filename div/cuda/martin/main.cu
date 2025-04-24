@@ -6,15 +6,16 @@
 
 int main()
 {
-    using Base = U32bits;
+    //using Base = U32bits;
   //  using Base = U64bits;
    // using Base = U16bits;
+    using Base = U8bits;
     using uint_t = Base::uint_t;
     const uint32_t M = 16;
     const uint32_t Q = 4;
 
-    uint_t u[16] = {9, 2, 4, 7, 5, 1, 4, 6, 9, 6, 1, 10, 10, 9, 0, 0};
-    uint_t v[16] = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t u[16] = {4, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    uint_t v[16] = {4, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
     // uint_t u[16] = {0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -45,13 +46,13 @@ int main()
     uint_t rem_gmp[M] = {0};
     div_gmp(u, v, quo_gmp, rem_gmp, M);
 
-    // prnt<uint_t>("u", u, M);
+    prnt<uint_t>("u", u, M);
     prnt<uint_t>("v", v, M);
 
-    // prnt<uint_t>("quo", quo, M);
-    // prnt<uint_t>("rem", rem, M);
-    // prnt<uint_t>("quo_gmp", quo_gmp, M);
-    // prnt<uint_t>("rem_gmp", rem_gmp, M);
+    prnt<uint_t>("quo", quo, M);
+    prnt<uint_t>("rem", rem, M);
+    prnt<uint_t>("quo_gmp", quo_gmp, M);
+    prnt<uint_t>("rem_gmp", rem_gmp, M);
 
     for (int i = 0; i < M; i++)
     {

@@ -265,8 +265,11 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
 
     if (ez(v, m) || ez(w, m) || L >= h)
     {
+        // prnt("w",w,m);
+        // prnt("v",v,m);
         bigint_t Bh = bpow(h, m);
         mult_gmp(v, w, B, m);
+    //    prnt("res",B,m);
     //     printf("l:%u \n", l);
     //     printf("L:%u \n", L);
     //     printf("h:%u \n", h);
@@ -276,18 +279,18 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
     //     int precv = prec(v, m);
 
     //     printf("res: %u, w: %u, v: %u\n", precr, precw, precv);
-     //   prnt("res",B,m);
+        prnt("res",B,m);
         if (lt(B, Bh, m)) {
-            prnt("VREG",B,m);
             sub_gmp(Bh, B, B, m);
-            prnt("1",B,m);
+            printf("HERE1");
         }
         else // else case nogensinde aktuelt?
         {
             sub_gmp(B, Bh, B, m);
             sign = 0;
+            printf("HERE3");
            // prnt("w",B,m);
-            prnt("2",B,m);
+          //  prnt("2",B,m);
         }
         free(Bh);
     }
@@ -303,7 +306,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
             if (B[L - 1] == 0)
             {
                 sign = 0;
-            //    printf("HERE");
+             //   printf("HERE1");
             }
             else
             {
@@ -315,7 +318,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
                 else
                 {
                     sub_gmp(B, Bl, B, m);
-                //    printf("HERE");
+                  //  printf("HERE2");
                     sign = 0;
                 }
                 free(Bl);
@@ -373,10 +376,11 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
    // prnt("w", tmp, m);
   //  printf("left: %u, \n", prec(w, m));
     if (sign) {
-       // prnt("res",w,m);
+      //  prnt("res",w,m);
         add_gmp(w, tmp, w, m);
     }
     else {
+    //    prnt("res",w,m);
        // printf("HERE");
         sub_gmp(w, tmp, w, m);
     }
@@ -410,9 +414,9 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         int n = min(h - k + 1 - l, l);
         s = max(0, k - 2 * l + 1 - g);
         shift(-s, v, v0, m);
-     //   prnt("w",w,m);
-        step(k + l + n - s + g, v0, w, n, l, g, m);
       //  prnt("w",w,m);
+        step(k + l + n - s + g, v0, w, n, l, g, m);
+        // prnt("w",w,m);
      //   printf("res11: %u\n", prec(w, m));
         shift(-1, w, w, m);
        // prnt("w",w,m);
@@ -436,9 +440,8 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
  * @param k
  * @param m the total number of digits in v
  */
-void shinv(bigint_t v, int h, bigint_t w, prec_t m)
+void shinv(bigint_t v, int h, bigint_t w, int k, prec_t m)
 {
-    int k = prec(v, m) - 1;
   //  printf("k: %u \n",k);
     bool rp = 0;
 
@@ -493,7 +496,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
     w[0] = (digit_t)(tmp);
     w[1] = (digit_t)(tmp >> bits);
 
-  //  prnt("res",w,m);
+   // prnt("res",w,m);
 
     if (h - k <= l)
     {
@@ -517,6 +520,7 @@ void shinv(bigint_t v, int h, bigint_t w, prec_t m)
 void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
 {
     int h = prec(u, m);
+    int k = prec(v, m) - 1;
 
     prec_t p = m * 2;
 
@@ -527,14 +531,22 @@ void div_shinv(bigint_t u, bigint_t v, bigint_t q, bigint_t r, prec_t m)
     cpy(b, v, m);         // `b = v`
     bigint_t c = init(p); // `c = 0`
 
+    if (k == 1)
+    {
+        h++;                   // `h = h + 1`
+        k++;                   // `k = k + 1`
+        shift(1, a, a, m + 1); // `a = a << 1`
+        shift(1, b, b, m + 1); // `b = b << 1`
+    }
+
     // Calculate quotient
-    shinv(b, h, c, p);
+    shinv(b, h, c, k, p);
    // prnt("res",c,p);
     mult_gmp(a, c, c, p);
     // int precr = prec(c, p);
     // if (precr >= m) printf("prec: %u\n", precr);
     shift(-h, c, c, p);
-  //  prnt("w",c,p);
+    prnt("w",c,p);
     cpy(q, c, m);
 
     // Calculate remainder
