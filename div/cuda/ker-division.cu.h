@@ -150,7 +150,7 @@ refine( volatile typename Base::uint_t* USh
     shift<uint_t, M, Q>((h-k <= 2) ? -3 : -4, RReg, USh, RReg);
     __syncthreads();
     shift<uint_t, M, Q>(2, RReg, USh, RReg);
-    
+#if 1
   //  while (h - k > l) {
     for (int i = 0; i < log2f(h-k); i++) {
         int n = min(h - k + 1 - l, l);             
