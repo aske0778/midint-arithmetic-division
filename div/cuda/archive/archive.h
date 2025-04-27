@@ -227,3 +227,72 @@ template<class uint_t, uint32_t Q>
      __syncthreads();    
      return sh_mem[0];  
  }
+
+ bsubaddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(sign, (carry_t*)VSh, RReg, VReg, RReg);
+
+ /**
+ * Subtraction implementation between two
+ * bigints stored in register memory; uses
+ * redundant computation to aleviate register
+ * pressure.
+ */
+template<class D, class S, class CT, uint32_t Q, D HIGHEST>
+__device__ inline void
+bsubaddRegs(
+          bool is_add 
+        , volatile CT* Csh
+        , D Arg[Q]
+        , S Brg[Q]
+        , D rs[Q]
+) {
+    {
+        CT accum = CarrySegBop<CT>::identity();
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            D a = Arg[i];
+            S b = Brg[i];
+            CT c;
+            
+            if(is_add) {
+                rs[i] = a + (D)b;
+                c = (CT) ( (rs[i] < a) );
+                c = c | ((rs[i] == HIGHEST) << 1);
+            } else {
+                rs[i] = a - (D)b;
+                c = (CT) ( (rs[i] > a) );
+                c = c | ((rs[i] == 0) << 1);
+            }
+            accum = CarrySegBop<CT>::apply(accum, c);
+        }
+        Csh[threadIdx.x] = accum;
+    }
+    __syncthreads();
+   
+    scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
+        
+    {
+        CT carry = CarrySegBop<CT>::identity();
+        if(threadIdx.x > 0) {
+            carry = Csh[threadIdx.x - 1];
+        }
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            D a = Arg[i];
+            S b = Brg[i];
+            CT c;
+            
+            if(is_add) {
+                rs[i] = a + (D)b;
+                c = (CT) ( (rs[i] < a) );
+                c = c | ((rs[i] == HIGHEST) << 1);
+                rs[i] += (carry & 1);
+            } else {
+                rs[i] = a - (D)b;
+                c = (CT) ( (rs[i] > a) );
+                c = c | ((rs[i] == 0) << 1);
+                rs[i] -= (carry & 1);
+            }
+            carry = CarrySegBop<CT>::apply(carry, c);         
+        }
+    }
+}

@@ -112,15 +112,11 @@ step( volatile typename Base::uint_t* USh
     shift<uint_t, M, Q>(n, RReg, USh, RReg);
     __syncthreads();
 
-#if 0
-    bsubaddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>(sign, (carry_t*)VSh, RReg, VReg, RReg);
-#else
     if (sign) {
         baddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg);
     } else {
-        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg);
+        bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg, VReg, RReg);
     }
-#endif
 }
 
 /**
@@ -150,7 +146,7 @@ refine( volatile typename Base::uint_t* USh
     shift<uint_t, M, Q>((h-k <= 2) ? -3 : -4, RReg, USh, RReg);
     __syncthreads();
     shift<uint_t, M, Q>(2, RReg, USh, RReg);
-#if 1
+
   //  while (h - k > l) {
     for (int i = 0; i < log2f(h-k); i++) {
         int n = min(h - k + 1 - l, l);             
@@ -166,27 +162,7 @@ refine( volatile typename Base::uint_t* USh
 
         l = l + n - 1;
     }
-#else
-    float my_log2f = log2f(h-k);
-    #pragma unroll
-    for(int i=0; i<16; i++)
-    {
-      if(i < my_log2f) {
-        int n = min(h - k + 1 - l, l);             
-        int s = max(0, k - 2 * l + 1 - 2);       
 
-        shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
-        __syncthreads();
-
-        step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
-        __syncthreads();
-
-        shift<uint_t, M, Q>(-1, RReg, USh, RReg);
-
-        l = l + n - 1;
-      }
-    }
-#endif
     shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
 }
 
@@ -246,7 +222,7 @@ shinv( volatile typename Base::uint_t* USh
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void 
-__launch_bounds__(M/Q, 512*2*Q / M)
+__launch_bounds__(M/Q) //, 512*2*Q / M)
 divShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
@@ -295,12 +271,12 @@ divShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
 
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2);
+    bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Base, Q>(RReg1, USh);
-        bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg2, VReg, RReg2);
+        bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
     }
 
     if (kIsOne) {
@@ -319,7 +295,7 @@ divShinv( typename Base::uint_t* u
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void
-__launch_bounds__(M/Q, 512*2*Q / M)
+__launch_bounds__(M/Q) //, 512*2*Q / M)
 quoShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
@@ -365,7 +341,7 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M);
     __syncthreads();
 
-    bsubRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, UReg, RReg2, RReg2);
+    bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();
