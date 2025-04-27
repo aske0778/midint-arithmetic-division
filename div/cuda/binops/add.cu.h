@@ -87,8 +87,9 @@ baddRegsOverflow( volatile CT* Csh
             carry = Csh[threadIdx.x - 1];
         }
         for(int i=0; i<Q; i++) {
-            uint32_t ind = threadIdx.x * Q + i;
-            if( (ind % m) == m-1 && cs[i] + 1 == 0 && (carry & 1) ) Dsh[0] = true;
+            if( (threadIdx.x * Q + i == m-1) && (rs[i] == HIGHEST) && (carry & 1) ) {
+                Dsh[0] = true;
+            }
             rs[i] += (carry & 1);
             carry = CarrySegBop<CT>::apply(carry, cs[i]);         
         }

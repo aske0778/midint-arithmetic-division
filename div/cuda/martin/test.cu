@@ -2,30 +2,29 @@
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include "../ker-division.cu.h"
+//#include "../ker-division-64.cu.h"
 #include "../helpers/helper.h"
 
 
 int main() {
 
-  //  using Base = U32bits;
-  //  using Base = U64bits;
-  //  using Base = U16bits;
+ //  using Base = U32bits;
+ //   using Base = U64bits;
+   // using Base = U16bits;
     using Base = U8bits;
     using uint_t = Base::uint_t;
 
-    srand(time(NULL));
+   // srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
     const uint32_t M = 16;
 
     for (int i = 0; i < 1000000 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint_t uPrec = min((rand() % M)+1, M-Q);
-        uint_t vPrec = (rand() % uPrec) + 1;
-
+        uint32_t uPrec = min((rand() % M)+1, M-Q);
+        uint32_t vPrec = (rand() % uPrec) + 1;
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
-      //  v[vPrec-1] = 1;
         // prnt<uint_t>("u", u, M);
         // prnt<uint_t>("v", v, M);
         uint_t* quo = (uint_t*)calloc(M, sizeof(uint_t));

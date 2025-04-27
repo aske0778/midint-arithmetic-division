@@ -26,6 +26,7 @@ void prnt( const char *str
     for (int i = 0; i < m; i++)
     {
         printf("%u", u[i]);
+        // printf("%" PRIu64 ", ", u[i]);
         if (i < m - 1)
             printf(", ");
     }

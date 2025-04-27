@@ -8,14 +8,16 @@
 #include <gmp.h>
 #include <string.h>
 
+typedef unsigned __int128 uint128_t;
+
 //8BIT
-typedef uint8_t digit_t;
-typedef uint16_t bigDigit_t;
-typedef uint32_t uquad_t;
-typedef digit_t *bigint_t;
-typedef uint32_t prec_t;
-const int32_t  bits = 8;
-typedef int bool;
+// typedef uint8_t digit_t;
+// typedef uint16_t bigDigit_t;
+// typedef uint32_t uquad_t;
+// typedef digit_t *bigint_t;
+// typedef uint32_t prec_t;
+// const int32_t  bits = 8;
+// typedef int bool;
 
 
 //16BIT
@@ -38,13 +40,13 @@ typedef int bool;
 // typedef int bool;
 
 //64BIT
-// typedef uint64_t digit_t;
-// typedef __uint128_t bigDigit_t;
-// typedef __uint128_t uquad_t;
-// typedef digit_t *bigint_t;
-// typedef uint32_t prec_t;
-// const int32_t bits = 64;
-// typedef int bool;
+typedef uint64_t digit_t;
+typedef __uint128_t bigDigit_t;
+typedef __uint128_t uquad_t;
+typedef digit_t *bigint_t;
+typedef uint32_t prec_t;
+const int32_t bits = 64;
+typedef int bool;
 
 /**
  * @brief Returns the minimum of two integers
@@ -179,12 +181,23 @@ prec_t prec(bigint_t u, prec_t m)
 /**
  * @brief Prints a string followed by the bigint_t
  */
+// void prnt(char *str, bigint_t u, prec_t m)
+// {
+//     printf("%s: [", str);
+//     for (int i = 0; i < m; i++)
+//     {
+//         printf("%u, ", u[i]);
+//     }
+//     printf("]\n");
+// }
+#include <inttypes.h>
 void prnt(char *str, bigint_t u, prec_t m)
 {
     printf("%s: [", str);
     for (int i = 0; i < m; i++)
     {
-        printf("%u, ", u[i]);
+      //  printf("%u, ", u[i]);
+        printf("%" PRIu64 ", ", u[i]);
     }
     printf("]\n");
 }
@@ -205,5 +218,34 @@ void cpy(bigint_t u, bigint_t v, prec_t m)
         u[i] = v[i];
     }
 }
+
+uint128_t divide_u256_by_u128(uint128_t high, uint128_t low, uint128_t divisor) {
+    uint128_t quotient = 0;
+    uint128_t rem = 0;
+    
+    bool overflow = 0;
+    for (int i = 192; i >= 0; i--) {
+        if (rem & (__uint128_t)1 << 127) {     //(__uint128_t)1 << 127  
+            overflow = 1;
+        }
+        rem <<= 1;
+
+        if (i == 192) {
+            rem |= 1;
+        } 
+
+        quotient <<= 1;
+
+        if (rem >= divisor || overflow) {
+            rem -= divisor;
+            quotient |= 1;
+            overflow = 0;
+        }
+    }
+
+    return quotient;
+}
+
+
 
 #endif // HELPER

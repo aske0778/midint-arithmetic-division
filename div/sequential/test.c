@@ -13,8 +13,8 @@ int main(int argc, char *argv[])
     //srand(time(NULL));
 
     prec_t m = atoi(argv[1]);
-    digit_t u_arr[16] = {22, 227, 165, 17, 65, 43, 133, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    digit_t v_arr[16] = {234, 170, 223, 240, 128, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    digit_t u_arr[16] = {1681692777, 1714636915, 1957747793, 424238335, 719885386, 1649760492, 596516649, 1189641421, 0, 0, 0, 0, 0, 0, 0, 0};
+    digit_t v_arr[16] = {1025202362, 1350490027, 783368690, 1102520059, 2044897763, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
     for (int i = 0; i < 1; i++) {
         printf("\rIteration: %u", i);
@@ -36,15 +36,15 @@ int main(int argc, char *argv[])
         div_shinv(u, v, q_own, r_own, m);
         div_gmp(u, v, q_gmp, r_gmp, m);
 
-        // printf("Inputs:\n");
-        // prnt("  u", u, m);
-        // prnt("  v", v, m);
-        // printf("Output:\n");
-        // prnt("  q", q_own, m);
-        // prnt("  r", r_own, m);
-        // printf("GMP:\n");
-        // prnt("  q", q_gmp, m);
-        // prnt("  r", r_gmp, m);
+        printf("Inputs:\n");
+        prnt("  u", u, m);
+        prnt("  v", v, m);
+        printf("Output:\n");
+        prnt("  q", q_own, m);
+        prnt("  r", r_own, m);
+        printf("GMP:\n");
+        prnt("  q", q_gmp, m);
+        prnt("  r", r_gmp, m);
 
         for (int i = 0; i < m; i++)
         {

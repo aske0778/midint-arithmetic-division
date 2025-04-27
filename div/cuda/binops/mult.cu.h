@@ -420,12 +420,13 @@ void naiveMult( volatile typename Base::uint_t* Ash
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
     
-    if (threadIdx.x < (M+Q-1)/Q)
+    if (threadIdx.x < (M+Q-1)/Q) {
         #pragma unroll
         for(int i=0; i<Q; i++) {
             Ash[Q*threadIdx.x + i] = Arg[i];
             Bsh[Q*threadIdx.x + i] = Brg[i];
         }
+    }
     __syncthreads();
 
     ubig_t accum = 0;
@@ -466,11 +467,13 @@ void naiveMult( volatile typename Base::uint_t* Ash
     Ash[threadIdx.x] = res;
     __syncthreads();
 
-    #pragma unroll
-    for(int i=0; i<Q; i++) {
-        int idx = Q*threadIdx.x + i;
-        if (idx < M) {
-            Rrg[i] = Ash[idx];
+    if (threadIdx.x < (M+Q-1)/Q) {
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            int idx = Q*threadIdx.x + i;
+            if (idx < M) {
+                Rrg[i] = Ash[idx];
+            }
         }
     }
 }

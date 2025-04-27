@@ -243,7 +243,7 @@ shift( int n
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
-        int val = 0;
+        uint_t val = 0;
         if (offset >= 0 && offset < M) {
             val = u[i];
         } else {
@@ -273,7 +273,7 @@ shiftDouble( int n
     for (int i = 0; i < Q; i++) {
         int idx = Q * threadIdx.x + i;
         int offset = idx + n;
-        int val = 0;
+        uint_t val = 0;
 
         if (offset >= 0 && offset < M) {
             val = u[i];
@@ -362,6 +362,33 @@ quo( uint32_t bpow
     }
 }
 
+__device__ inline uint128_t divide_u256_by_u128(uint128_t high, uint128_t low, uint128_t divisor) {
+    uint128_t quotient = 0;
+    uint128_t rem = 0;
+    
+    bool overflow = false;
+    for (int i = 192; i >= 0; i--) {
+        if (rem & (__uint128_t)1 << 127) {
+            overflow = true;
+        }
+        rem <<= 1;
+
+        if (i == 192) {
+            rem |= 1;
+        } 
+
+        quotient <<= 1;
+
+        if (rem >= divisor || overflow) {
+            rem -= divisor;
+            quotient |= 1;
+            overflow = false;
+        }
+    }
+    return quotient;
+}
+
+
 template<class uint_t, uint32_t Q>
 __device__ inline bool 
 lt( uint_t u[Q]
@@ -412,9 +439,9 @@ lt( uint_t u[Q]
     return reduceBlock<LessThan, uint_t>(RReg[Q-1], sh_mem) & 0b01;
 }
 
-// /**
-//  * Prints contents of register memory to stdout
-//  */
+/**
+ * Prints contents of register memory to stdout
+ */
 template<class uint_t, uint32_t M, uint32_t Q>
 __device__ inline void
 printRegs( const char *str
@@ -430,6 +457,7 @@ printRegs( const char *str
         printf("%s: [", str);
         for (int i = 0; i < M; i++) {
             printf("%u", sh_mem[i]);
+            // printf("%" PRIu64, sh_mem[i]);
             if (i < M - 1)
                 printf(", ");
         }
