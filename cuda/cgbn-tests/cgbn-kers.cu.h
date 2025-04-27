@@ -14,7 +14,7 @@ typedef struct {
   cgbn_mem_t<BITS> b;
   cgbn_mem_t<BITS> quo;
   cgbn_mem_t<BITS> rem;
-} instance_t_div;
+} instance_div_t;
 
 
 // helpful typedefs for the kernel
@@ -130,9 +130,6 @@ __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, u
   
   // decode an instance number from the blockIdx and threadIdx
   instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
-  //if (threadIdx.x == 1) {
-  //  printf("instance = %d, count = %d \n", instance, count);
-  //}
   if(instance>=count)
     return;
 
@@ -143,11 +140,11 @@ __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, u
   cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
   cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
   cgbn_div(bn_env, r, a, b);                           // r=a+b
-  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
+  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into quo
 }
 
 
-__global__ void kernel_div(cgbn_error_report_t *report, instance_t_div *instances, uint32_t count) {
+__global__ void kernel_div(cgbn_error_report_t *report, instance_div_t *instances, uint32_t count) {
   int32_t instance;
   
   // decode an instance number from the blockIdx and threadIdx
@@ -164,7 +161,7 @@ __global__ void kernel_div(cgbn_error_report_t *report, instance_t_div *instance
   cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
   cgbn_div_rem(bn_env, q, r, a, b);                           // r=a+b
   cgbn_store(bn_env, &(instances[instance].quo), q);
-  //cgbn_store(bn_env, &(instances[instance].rem), r);   // store r into sum
+  cgbn_store(bn_env, &(instances[instance].rem), r);   // store r into rem
 }
 
 

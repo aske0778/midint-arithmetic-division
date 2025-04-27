@@ -150,6 +150,19 @@ uint64_t numAd32OpsOfMultInst(uint32_t m0) {
 }
 
 /**
+ * Number of giga-u32-bit unit operations.
+ */
+template<typename uint_t>
+uint64_t numAd32OpsOfDivInst(uint32_t m0) {
+    uint32_t m = m0*sizeof(uint_t) / 4;
+    uint32_t lgm = 0, mm = m;
+    for( ; mm > 1; mm >>= 1) lgm++;
+    uint32_t lglgm = 0, lgmm = lgm;
+    for( ; lgmm > 1; lgmm >>= 1) lglgm++;
+    return m*m * lglgm;
+}
+
+/**
  * Creates `num_instances` big integers:
  * A big integer consists of `m` u32 words,
  * from which the first `nz` are nonzeroes,

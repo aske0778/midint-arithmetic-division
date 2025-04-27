@@ -43,6 +43,19 @@ uint64_t numAd32OpsOfMultInst(uint32_t m0) {
 }
 
 /**
+ * Number of giga-u32-bit unit operations.
+ */
+template<typename uint_t>
+uint64_t numAd32OpsOfDivInst(uint32_t m0) {
+    uint32_t m = m0*sizeof(uint_t) / 4;
+    uint32_t lgm = 0, mm = m;
+    for( ; mm > 1; mm >>= 1) lgm++;
+    uint32_t lglgm = 0, lgmm = lgm;
+    for( ; lgmm > 1; lgmm >>= 1) lglgm++;
+    return m*m * lglgm;
+}
+
+/**
  * Initialize the `data` array, which has `size` elements:
  * frac% of them are NaNs and (1-frac)% are random values.
  * 
@@ -205,7 +218,6 @@ void gmpDivOnce( uint_t* inst_as
     mpz_t a; mpz_t b; mpz_t q; mpz_t r;        
     mpz_init(a); mpz_init(b); mpz_init(r);
 
-    printf("here?");
     mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
     mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
 

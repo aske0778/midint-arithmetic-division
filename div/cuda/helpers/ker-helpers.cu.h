@@ -237,7 +237,7 @@ __device__ inline void
 shift( int n
      , uint_t u[Q]
      , volatile uint_t* sh_mem
-     , volatile uint_t RReg[Q]
+     , uint_t RReg[Q]
 ) {
     #pragma unroll
     for (int i = 0; i < Q; i++) {
@@ -515,3 +515,4 @@ void cpReg2Glb ( uint32_t ipb, volatile S* shmem , S Rrg[Q], S* rss ) {
         }
     }
 }
+

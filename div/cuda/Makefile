@@ -1,4 +1,6 @@
 CXX = nvcc -O3 -arch=sm_80
+# CXX = nvcc -O3 -arch=sm_80 -Xptxas -v 
+# -diag-suppress 550 -maxrregcount 70
 
 SRC_MAIN = main
 SRC_TEST = test
@@ -6,11 +8,12 @@ SRC_BENCH = bench
 SRC_time = timing
 
 BATCH_SIZE = 33554432
-# BATCH_SIZE = 134217728
+#BATCH_SIZE = 134217728
+# BATCH_SIZE = 4194304
 
 default: main
 
-main:
+main: $(SRC_MAIN).cu ker-division.cu.h
 	$(CXX) $(SRC_MAIN).cu -lgmp -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe $(BATCH_SIZE)
 
 test:
