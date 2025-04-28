@@ -26,7 +26,7 @@ def ez [n] (u : [n]u16) : bool =
 
 -- less than taken from thorbjørn, musch cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
-def lt [m] (u: [m]u16) (v: [m]u16) : bool =
+def lt [m][ipb] (u: [ipb*(4*m)]u16) (v: [ipb*(4*m)]u16) : bool =
   let res = map2 (\ x y -> (x < y, x == y) ) u v
   |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
   in res.0
@@ -37,7 +37,7 @@ def set [n] (u : *[n]u16) (d : u16) (idx : i32) : [n]u16 =
     let u[idx] =  d in u
 
 -- zero bigint array and set given index to d
-def zeroAndSet (d : u16) (idx : i64) (m : i64) : []u16 = 
+def zeroAndSet (d : u16) (idx : i64) (m : i64) : [m]u16 = 
     tabulate m (\i -> if i == idx then d else 0u16)
 
 def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 = 
@@ -58,9 +58,9 @@ def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 =
 -- concatination is often very memory expensive. 
 -- less than taken from thorbjørn, musch cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
-def shift [n] (shft : i64) (u : [n]u16) : ([n]u16) =
+def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
     map (\ idx -> let offset = idx - shft 
-           in if offset < n && offset >= 0 then u[offset] else 0) (iota n)
+           in if offset < (ipb*(4*m)) && offset >= 0 then u[offset] else 0) (iota (ipb*(4*m)))
 
 -- performs shift operation on bigint of size 2m
 -- do we need a double version in futhark ?
@@ -71,20 +71,14 @@ def shift [n] (shft : i64) (u : [n]u16) : ([n]u16) =
 --def quo (bpow : u32) (d : u32) : ([]u32) = 
 --    let r = 1i64
 
-def eqBpow [m] (u : [m]u16) (b : u16) : bool =
-    let bpow = zeroAndSet 1 (i64.u16 b) m
+def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : u64) : bool =
+    let bpow = zeroAndSet 1 (i64.u64 b) (ipb*(4*m))
     in reduce (\ x y -> (x == y && x != false)) true (map2 (==) u bpow)
 
-def ltBpow [m] (u: [m]u16) (b: u16) : bool =
-    let bpow = zeroAndSet 1 (i64.u16 b) m
+def ltBpow [m][ipb] (u: [ipb*(4*m)]u16) (b: u64) : bool =
+    let bpow = zeroAndSet 1 (i64.u64 b) (ipb*(4*m))
     in lt u bpow
 
-
-entry ez_test = ez
-
-entry lt_test = lt
-
-entry eq_test = eq
 
 -- Testing ez
 -- ==

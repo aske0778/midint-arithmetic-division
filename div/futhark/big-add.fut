@@ -205,6 +205,12 @@ let bsubu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u1
   in  (badd0 ipb n ash bsh) :> [ipb*(4*n)]u64 |> map u16.u64
 
 
+let badd1u16 [ipb][m] (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
+  tabulate (ipb* (4*m)) (\i -> 
+    if (i == 0) then us[i] + 1
+    else us[i]
+  )
+
 
 
 

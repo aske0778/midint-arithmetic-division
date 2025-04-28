@@ -1,7 +1,6 @@
 import "div-helpers"
 import "big-add"
 import "sqr-mul"
--- import "big-add"
 
 
 --
@@ -79,27 +78,32 @@ def refine [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : u64) (k : u
 
 -- Calculates the shifted inverse
 --
-def shinv [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : [n]u32 =
+def shinv [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : u64) (k : u64) : [ipb*(4*m)]u16 =
     if k == 0 then
-        [] -- TODO: implement quo
+        map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
         vs
-    else if k == h - 1 && vs[k] > u32.highest / 2 then
-        zeroAndSet 1 0 m
+    else if k == h - 1 && vs[i64.u64 k] > (u32.highest / 2 |> u16.u32) then
+        zeroAndSet 1 0 m :> [ipb*(4*m)]u16
     else if eqBpow vs k then
-        zeroAndSet 1 (h - k) m
+        zeroAndSet 1 (h - k |> i64.u64) m :> [ipb*(4*m)]u16
     else 
+        -- let V = 0u64
+        let l = u64.min k 2
+        let V = loop V = 0u64 for i < (i64.u64 l) do
+            V + (u64.u16 us[k - l + (u64.i64 i) + 1 |> i64.u64]) << 16*(u64.i64 i)
+        
+        let b2l = 1u64 << 16*2*l
+        let tmp = (b2l - V) / V + 1
 
-        -- TODO: Fix this shit
-        let V = (u64.u64 v[k-2]) + (u64.u64 v[k-1] << (i64u64.u64 bits))
-               + (u64.u64 v[k] << (i64(u64.u64 (2*bits))))
-        let V = ((0 - V) / V) + 1
-        let vs = tabulate m (\i -> if i <= 1 then
-                                        W >> (i64(u64.u64 (bits * i)))
-                                   else 0)
+        let vs = tabulate (ipb*(4*m)) (\i -> 
+            if i == 0 then u16.u64 tmp
+            else if i == 1 then u16.u64 (tmp >> 16)
+            else vs[i]
+        )
 
         in if h - k <= 2 then
-            shift (h-k-2) vs
+            shift (h-k-2 |> i64.u64) vs
         else
             refine us vs h k 2
 
@@ -108,7 +112,7 @@ def shinv [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) : [n]u32 =
 -- Implementation of multi-precision integer division using
 -- the shifted inverse and classical multiplication
 --
-def div [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
+def div [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [ipb*(4*m)]u16) =
     let h = prec us
     let k = (prec vs) - 1
 
@@ -122,30 +126,31 @@ def div [n] (us : [n]u32) (vs : [n]u32) : ([n]u32, [n]u32) =
         else
             (us, vs, h, k)
 
+    let tmp = shinv us vs (u64.i64 h) (u64.i64 k)
+    let tmp = bmulu16 us tmp
+    let tmp = shift (-h) tmp
+    let tmp = bmulu16 us tmp
+    let tmp = bsubu16 vs tmp
 
-    -- let tmp = shinv us vs h k
-    -- let tmp = bmul us tmp
-    -- let tmp = shift (-h) tmp
-    -- let tmp = bmul us tmp
+    let (tmp, vs) =
+        if lt tmp vs then
+            (bsubu16 us tmp, badd1u16 vs)
+        else
+            (tmp, vs)
 
-    -- TODO: implement sub
+    let tmp =
+        if k == 1 then
+            shift (-1) tmp
+        else 
+            tmp
 
-    -- in if lt tmp vs then
-        -- TODO: implement add1
-        -- TODO: implement sub
-        -- if 
-
-    -- in if k == 1 then
-    --     shift (-1) tmp
-    -- else 
-    --     tmp
-
-    in ([], [])
+    in (vs, tmp)
 
 
 --
 -- Implementation of multi-precision integer quotient using
 -- the shifted inverse and classical multiplication
 --
-def quo [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
-    undefined
+-- def quo [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
+--     undefined
+
