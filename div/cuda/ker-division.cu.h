@@ -5,6 +5,8 @@
 #include "binops/sub.cu.h"
 #include "binops/mult.cu.h"
 
+#define BLOCKS_PER_SM 3
+
 /**
  * Calculates (a * b) rem B^d
  */
@@ -222,7 +224,7 @@ shinv( volatile typename Base::uint_t* USh
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void 
-__launch_bounds__(M/Q) //, 512*2*Q / M)
+__launch_bounds__(M/Q, BLOCKS_PER_SM*512*Q/M)
 divShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
@@ -239,7 +241,6 @@ divShinv( typename Base::uint_t* u
     uint_t RReg1[2*Q] = {0};
     uint_t* RReg2 = &RReg1[Q];
     
-
     cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<uint_t, M, Q>(u, USh, UReg);
     __syncthreads();
@@ -283,7 +284,6 @@ divShinv( typename Base::uint_t* u
         __syncthreads(); 
         shift<uint_t, M, Q>(-1, RReg2, VSh, RReg2);
     }
-
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
     cpyReg2Sh2Glb<uint_t, M, Q>(rem, USh, RReg2);
@@ -295,7 +295,7 @@ divShinv( typename Base::uint_t* u
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void
-__launch_bounds__(M/Q) //, 512*2*Q / M)
+__launch_bounds__(M/Q, BLOCKS_PER_SM*512*Q/M)
 quoShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
@@ -331,7 +331,7 @@ quoShinv( typename Base::uint_t* u
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
     __syncthreads();
-#if 1
+
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
     __syncthreads();
 
@@ -352,7 +352,6 @@ quoShinv( typename Base::uint_t* u
         __syncthreads(); 
         shift<uint_t, M, Q>(-1, RReg2, VSh, RReg2);
     }
-#endif
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
 }
