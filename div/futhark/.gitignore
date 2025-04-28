@@ -8,3 +8,8 @@
 # C outputs
 *.c
 
+
+# Futhark test outputs
+*.actual
+*.expected
+
