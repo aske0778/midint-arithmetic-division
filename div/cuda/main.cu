@@ -387,22 +387,24 @@ void testDivision( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = m-Q;
-    uint_t vPrec = 3;
-
-    uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
-
-    const uint32_t x = Base::bits/Base::bits;
+    
+    
+    const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
+    
+    uint_t uPrec = (m/x)-Q;
+    uint_t vPrec = 3;
+    
+    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
 
     if(with_validation)
-        gmpDiv<uint_t, m>(num_instances, u, v, gmp_quo, gmp_rem);
+        gmpDiv<uint_t, m/x>(num_instances, u, v, gmp_quo, gmp_rem);
 
     gpuDiv<Base, m/x>(num_instances, u, v, our_quo, our_rem);
 
     if(with_validation) {
-        validateExact(gmp_quo, our_quo, gmp_rem, our_rem, num_instances*m);
+        validateExact(gmp_quo, our_quo, gmp_rem, our_rem, num_instances*(m/x));
     }
 }
 
@@ -471,7 +473,7 @@ void runDivisions(uint64_t total_work) {
     our_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
 #if 1
-    // testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
@@ -506,9 +508,9 @@ int main (int argc, char * argv[]) {
     }
 
     {   // 64bit integer elements
-        runNaiveMuls<U64bits>(total_work);
+        //runNaiveMuls<U64bits>(total_work);
 
-        runQuotients<U64bits>(total_work);
+        //runQuotients<U64bits>(total_work);
         runDivisions<U64bits>(total_work);
     }
 }
