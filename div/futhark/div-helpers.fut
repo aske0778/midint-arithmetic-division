@@ -58,7 +58,7 @@ def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 =
 -- concatination is often very memory expensive. 
 -- less than taken from thorbjørn, musch cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
-def shift [n] (shft : i64) (u : [n]u32) : ([n]u32) =
+def shift [n] (shft : i64) (u : [n]u16) : ([n]u16) =
     map (\ idx -> let offset = idx - shft 
            in if offset < n && offset >= 0 then u[offset] else 0) (iota n)
 

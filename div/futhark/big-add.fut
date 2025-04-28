@@ -184,6 +184,31 @@ let baddu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u1
   
   in  (badd0 ipb n ash bsh) :> [ipb*(4*n)]u64 |> map u16.u64
 
+
+let bsubu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u16 =
+  let g = ipb * n
+
+  let cp2sh (i : i32) = #[unsafe]
+        let g = i32.i64 g in
+        ( ( as[i], as[g + i], as[2*g + i], as[3*g + i] )
+        , ( bs[i], bs[g + i], bs[2*g + i], bs[3*g + i] ) )
+
+  let ( ass, bss ) = iota g |> map i32.i64
+                  |> map cp2sh  |> unzip
+  let (a1s, a2s, a3s, a4s) = unzip4 ass
+  let (b1s, b2s, b3s, b4s) = unzip4 bss
+  let ash = a1s ++ a2s ++ a3s ++ a4s
+  let bsh = b1s ++ b2s ++ b3s ++ b4s
+  let ash = ash |> opaque |> map u64.u16
+  let bsh = bsh |> opaque |> map u64.u16
+  
+  in  (badd0 ipb n ash bsh) :> [ipb*(4*n)]u64 |> map u16.u64
+
+
+
+
+
+
 --  let rs4 = iota g |> map i32.i64 |> map (seqscan4 carries)
 --  in  flatten rs4 :> [ipb*(4*n)]u64
 
