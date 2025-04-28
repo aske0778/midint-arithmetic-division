@@ -50,16 +50,16 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u16) (vs : [ipb * (4 * n)]u16) (h : i
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [m] (us : [m]u32) (vs : [m]u32) (h : i32) (l : i32) (n : i32) : [m]u32 =
+def step [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : i64) (l : i64) (n : i64) : [ipb*(4*m)]u16 =
     let (sign, vs) = powDiff us vs h l
-    let vs = bmul us vs
+    let vs = bmulu16 us (vs :> [ipb*(4*m)]u16)
     let vs = shift (2 * n - h) vs
     let us = shift n us
 
-    in if sign then
+    in if sign > 0 then
         baddu16 us vs
     else
-        bsub us vs
+        bsubu16 us vs
 
 --
 -- Refine the approximation of the quotient
@@ -68,10 +68,26 @@ def refine [n] (us : [n]u32) (vs : [n]u32) (h : u32) (k : u32) (l : u32) : [n]u3
     let us = shift 2 us
     
     let (us, vs, l) = loop (us, vs, l) = (us, vs, l) while h - k > l do
-        let n = min (h - k + 1 - l) l
+        let n = min (h - k + 1 - l) l   
         let s = max 0 (k - 2 * l + 1 - 2)
         let vs = shift (-s) vs
-        let us = step us vs (k + l + n - s + 2) n l
+        let us = step us vs (k +
+
+  let cp2sh (i : i32) = #[unsafe]
+        let g = i32.i64 g in
+        ( ( as[i], as[g + i], as[2*g + i], as[3*g + i] )
+        , ( bs[i], bs[g + i], bs[2*g + i], bs[3*g + i] ) )
+
+  let ( ass, bss ) = iota g |> map i32.i64
+                  |> map cp2sh  |> unzip
+  let (a1s, a2s, a3s, a4s) = unzip4 ass
+  let (b1s, b2s, b3s, b4s) = unzip4 bss
+  let ash = a1s ++ a2s ++ a3s ++ a4s
+  let bsh = b1s ++ b2s ++ b3s ++ b4s
+  let ash = ash |> opaque |> map u64.u16
+  let bsh = bsh |> opaque |> map u64.u16
+  
+  in  (badd0 ipb n ash bsh) :> [ipb*(4*n)]u64 |> map u16.u64 l + n - s + 2) n l
         let us = shift (-1) us
         let l = l + n - 1
         in (us, vs, l)
