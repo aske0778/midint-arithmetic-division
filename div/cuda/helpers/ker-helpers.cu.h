@@ -364,19 +364,14 @@ quo( uint32_t bpow
 
 __device__ inline uint128_t divide_u256_by_u128(uint128_t high, uint128_t low, uint128_t divisor) {
     uint128_t quotient = 0;
-    uint128_t rem = 0;
+    uint128_t rem = 1;
     
     bool overflow = false;
-    for (int i = 192; i >= 0; i--) {
+    for (int i = 191; i >= 0; i--) {
         if (rem & (__uint128_t)1 << 127) {
             overflow = true;
         }
         rem <<= 1;
-
-        if (i == 192) {
-            rem |= 1;
-        } 
-
         quotient <<= 1;
 
         if (rem >= divisor || overflow) {
@@ -387,7 +382,6 @@ __device__ inline uint128_t divide_u256_by_u128(uint128_t high, uint128_t low, u
     }
     return quotient;
 }
-
 
 template<class uint_t, uint32_t Q>
 __device__ inline bool 

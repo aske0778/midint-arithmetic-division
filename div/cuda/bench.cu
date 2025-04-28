@@ -10,7 +10,7 @@
 
 int main()
 {
-    using Base = U32bits;
+    using Base = U64bits;
     using uint_t = Base::uint_t;
     const uint64_t num_instances = 10000;
     const uint32_t M = 4096;
