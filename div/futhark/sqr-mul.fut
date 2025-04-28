@@ -26,6 +26,7 @@ let S_L = u32.u16
 type Dx4   = (D,D,D,D)
 type Lx4   = (L,L,L,L)
 type i64x4 = (i64,i64,i64,i64)
+type i16x4 = (i16,i16,i16,i16)
 
 let combine2 (l0:D, h1:D, c2:S) (l1:D, h2:D, c3:S) : Dx4 =
   let l1' = l1 + h1
@@ -138,24 +139,24 @@ let bmul [ipb][n] (as: [ipb*(4*n)]D) (bs : [ipb*(4*n)]D) : [ipb*(4*n)]D =
 
 
 
-let combine2U16 (l0:L, h1:L, c2:S) (l1:L, h2:L, c3:S) : Lx4 =
+let combine2u16 (l0:L, h1:L, c2:S) (l1:L, h2:L, c3:S) : Lx4 =
   let l1' = l1 + h1
   let c2' = c2 + S_bool (l1' < l1) -- we assume carry is big enough to not overflow
   let h2' = h2 + L_S c2'
   let c3' = c3 + S_bool (h2' < h2)
   in  (l0, l1', h2', L_S c3')
 
-let convolution4U16 (n: i32) 
-                 (ash: []L) 
-                 (bsh: []L)
-                 (tid: i32) 
-               : ( Lx4, i64x4, Lx4) =
+let convolution4u16 (n: i32) 
+                    (ash: []L) 
+                    (bsh: []L)
+                    (tid: i32) 
+                  : ( Lx4, i16x4, Lx4) =
  
   let instance = tid / n
   let vtid     = tid % n
   let offset = instance * (4*n)
 
-  let computeIterU16 (i: i32) (j: i32) (l: L, h: L, c: S) : (L, L, S) =
+  let computeIteru16 (i: i32) (j: i32) (l: L, h: L, c: S) : (L, L, S) =
         let ai = #[unsafe] ash[offset+i]
         let bj = #[unsafe] bsh[offset+j]
         let ck_l = ai * bj
@@ -175,12 +176,12 @@ let convolution4U16 (n: i32)
     for kk < k1 do
         let i = kk
         let j = k1 - i
-        let lhc0 = computeIterU16 i j lhc0
-        let lhc1 = computeIterU16 i (j+1) lhc1
+        let lhc0 = computeIteru16 i j lhc0
+        let lhc1 = computeIteru16 i (j+1) lhc1
         in  (lhc0, lhc1)
-  let lhc1 = computeIterU16 (k1+1) 0 lhc1
-  let (l0, l1, h2, c3) = combine2U16 lhc0 lhc1
-  let i0 = i64.i32 (offset + k1)
+  let lhc1 = computeIteru16 (k1+1) 0 lhc1
+  let (l0, l1, h2, c3) = combine2u16 lhc0 lhc1
+  let i0 = i16.i32 (offset + k1)
   
   -- second half
   let k2 = 4*n - k1 - 2
@@ -189,33 +190,16 @@ let convolution4U16 (n: i32)
     for kk < k2+1 do
         let i = kk
         let j = k2 - i
-        let lhc2 = computeIterU16 i j lhc2
-        let lhc3 = computeIterU16 i (j+1) lhc3
+        let lhc2 = computeIteru16 i j lhc2
+        let lhc3 = computeIteru16 i (j+1) lhc3
         in  (lhc2, lhc3)
-  let lhc3 = computeIterU16 (k2+1) 0 lhc3
-  let (l_nm2, l_nm1, h_n, c_np1) = combine2U16 lhc2 lhc3
-  let i_nm2 = i64.i32 (offset + k2 - 1)
+  let lhc3 = computeIteru16 (k2+1) 0 lhc3
+  let (l_nm2, l_nm1, h_n, c_np1) = combine2u16 lhc2 lhc3
+  let i_nm2 = i16.i32 (offset + k2 - 1)
   in  ( (l0,     l1, l_nm2,   l_nm1  )
       , (i0,   i0+1, i_nm2,   i_nm2+1)
       , (h2,     c3, h_n,     c_np1  )
       )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 let bmulu16 [ipb][n] (as: [ipb*(4*n)]L) (bs : [ipb*(4*n)]L) : [ipb*(4*n)]L =
@@ -242,34 +226,21 @@ let bmulu16 [ipb][n] (as: [ipb*(4*n)]L) (bs : [ipb*(4*n)]L) : [ipb*(4*n)]L =
   let hsh = replicate (ipb*(4*n)) zeroL
   let (ls, ils, hs) = iota g 
           |> map i32.i64
-          |> map (convolution4U16 nn ash bsh)
+          |> map (convolution4u16 nn ash bsh)
           |> unzip3
   let ( l_0,  l_1, l_nm2, l_nm1) = unzip4 ls
   let (il_0, il_1,il_nm2,il_nm1) = unzip4 ils
   let ( h_0,  h_1, h_nm2, h_nm1) = unzip4 hs
-  let lsh = scatter lsh (il_0++il_1++il_nm2++il_nm1)
+  let lsh = scatter lsh (il_0++il_1++il_nm2++il_nm1 |> map i64.i16)
                         (l_0 ++ l_1++ l_nm2++ l_nm1)
-  let add2 (x: i64) = 2 + i32.i64 x |> i64.i32 
+  let add2 (x: i16) = 2 + i32.i16 x |> i16.i32 
   let (ih_0, ih_1, ih_nm2, ih_nm1) =
         map (\ (a,b,c,d) -> (add2 a, add2 b, add2 c, add2 d) ) ils |> unzip4 
-  let hsh = scatter hsh (ih_0++ih_1++ih_nm2++ih_nm1)
+  let hsh = scatter hsh (ih_0++ih_1++ih_nm2++ih_nm1 |> map i64.i16)
                         (h_0 ++ h_1++ h_nm2++ h_nm1)
-  let rsh = badd0U16 ipb n lsh hsh
+  let rsh = badd0u16 ipb n lsh hsh
   in  rsh
   
-  -- fake computation
---  let tupSum (l: D, h: D, c: S) : D = l + h + (D_S c)
---  let f (tid: i32) =
---        let (inst, vid) = ( tid / nn, tid % nn )
---        let (lhc0, lhc1, lhc2, lhc3) =
---            convolution4 nn ash bsh inst vid
---        in  (tupSum lhc0, tupSum lhc1, tupSum lhc2, tupSum lhc3)
---  let (fr0, fr1, fr2, fr3) = iota g |> map i32.i64 |> map f |> unzip4
---  let fr = fr0 ++ fr1 ++ fr2 ++ fr3
---  let frs = (fr :> [ipb*(4*n)]u64) |> opaque
---  in  frs
-  
-
 
 --
 -- ==

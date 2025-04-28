@@ -154,3 +154,6 @@ def div [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, 
 -- def quo [n] (us : [n]u32) (vs : [n]u32) : [n]u32 =
 --     undefined
 
+
+
+
