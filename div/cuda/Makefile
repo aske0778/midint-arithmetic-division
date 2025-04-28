@@ -8,7 +8,7 @@ SRC_BENCH = bench
 SRC_time = timing
 
 BATCH_SIZE = 33554432
-#BATCH_SIZE = 134217728
+# BATCH_SIZE = 134217728
 # BATCH_SIZE = 4194304
 
 default: main

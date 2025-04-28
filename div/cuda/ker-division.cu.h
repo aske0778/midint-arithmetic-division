@@ -5,7 +5,7 @@
 #include "binops/sub.cu.h"
 #include "binops/mult.cu.h"
 
-#define BLOCKS_PER_SM 3
+#define BLOCKS_PER_SM 1
 
 /**
  * Calculates (a * b) rem B^d
@@ -224,7 +224,7 @@ shinv( volatile typename Base::uint_t* USh
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void 
-__launch_bounds__(M/Q, BLOCKS_PER_SM*512*Q/M)
+__launch_bounds__(M/Q, BLOCKS_PER_SM*1024*Q/M)
 divShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
@@ -295,7 +295,7 @@ divShinv( typename Base::uint_t* u
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void
-__launch_bounds__(M/Q, BLOCKS_PER_SM*512*Q/M)
+__launch_bounds__(M/Q, BLOCKS_PER_SM*1024*Q/M)
 quoShinv( typename Base::uint_t* u
         , typename Base::uint_t* v
         , typename Base::uint_t* quo
