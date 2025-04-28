@@ -393,7 +393,7 @@ void testDivision( int num_instances
     uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
 
-    const uint32_t x = Base::bits/32;
+    const uint32_t x = Base::bits/Base::bits;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
     if(with_validation)
@@ -472,9 +472,9 @@ void runDivisions(uint64_t total_work) {
 
 #if 1
     // testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     // testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
