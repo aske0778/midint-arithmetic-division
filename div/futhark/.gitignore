@@ -12,4 +12,4 @@
 # Futhark test outputs
 *.actual
 *.expected
-
+*.0

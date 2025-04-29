@@ -1,15 +1,14 @@
 CXX = cuda
+ALGO = div
 
-default: div
+default: bench-$(ALGO)
 
-div:
-	futhark bench --backend $(CXX) div.fut
+test-$(ALGO):
+	futhark bench --backend $(CXX) div.fut --entry test_$(ALGO)
 
-sqr-mul:
-	futhark bench --backend $(CXX) sqr-mul.fut
+bench-div:
+	futhark bench --backend $(CXX) div.fut --entry bench_$(ALGO)
 
-big-add:
-	futhark bench --backend $(CXX) big-add.fut
 
 .PHONY: clean
 clean:
