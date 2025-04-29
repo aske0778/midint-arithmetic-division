@@ -76,12 +76,12 @@ def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
 --def quo (bpow : u32) (d : u32) : ([]u32) = 
 --    let r = 1i64
 
-def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : u64) : bool =
-    let bpow = zeroAndSet 1 (i64.u64 b) (ipb*(4*m))
+def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : i64) : bool =
+    let bpow = zeroAndSet 1 b (ipb*(4*m))
     in reduce (\ x y -> (x == y && x != false)) true (map2 (==) u bpow)
 
-def ltBpow [m][ipb] (u: [ipb*(4*m)]u16) (b: u64) : bool =
-    let bpow = zeroAndSet 1 (i64.u64 b) (ipb*(4*m))
+def ltBpow [m][ipb] (u: [ipb*(4*m)]u16) (b: i64) : bool =
+    let bpow = zeroAndSet 1 b (ipb*(4*m))
     in lt u bpow
 
 

@@ -54,57 +54,54 @@ def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n
 --
 -- Refine the approximation of the quotient
 --
-def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: u64) (k: u64) (l: u64) : [ipb*(4*m)]u16 =
+def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
     let us = shift 2 us
     let (_, vs, _) = loop (us, vs, l) = (us, vs, l)
         while h - k > l do
-            let n = u64.min (h - k + 1 - l) l
-            let s = u64.max 0 (k - 2 * l + 1 - 2)
-            let us = shift (-s |> i64.u64) us
-            let us = step us vs (k + l + n - s + 2 |> i64.u64) (n |> i64.u64) (l |> i64.u64)
+            let n = i64.min (h - k + 1 - l) l
+            let s = i64.max 0 (k - 2 * l + 1 - 2)
+            let us = shift (-s) us
+            let us = step us vs (k + l + n - s + 2) n l
             let us = shift (-1) us
             let l = l + n - 1
             in (us, vs, l)
     in shift (-2) vs
-    
+
 --
 -- Calculates the shifted inverse
 --
-def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: u64) (k: u64) : [ipb*(4*m)]u16 =
+def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     if k == 0 then
         map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
         vs
-    else if k == h - 1 && vs[i64.u64 k] > (u32.highest / 2 |> u16.u32) then
+    else if k == h - 1 && vs[k] > u16.highest / 2 then
         zeroAndSet 1 0 m :> [ipb*(4*m)]u16
     else if eqBpow vs k then
-        zeroAndSet 1 (h - k |> i64.u64) m :> [ipb*(4*m)]u16
+        zeroAndSet 1 (h - k) m :> [ipb*(4*m)]u16
     else 
-        -- let V = 0u64
-        let l = u64.min k 2
-        let V = loop V = 0u64 for i < (i64.u64 l) do
-            V + (u64.u16 us[k - l + (u64.i64 i) + 1 |> i64.u64]) << 16*(u64.i64 i)
-        
-        let b2l = 1u64 << 16*2*l
+        let l = i64.min k 2
+        let V = loop V = 0u64 for i < l do
+            V + (u64.u16 vs[k - l + i + 1]) << 16*(u64.i64 i)
+        let b2l = 1u64 << 16*2*(u64.i64 l)
         let tmp = (b2l - V) / V + 1
 
         let vs = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
-            else vs[i]
-        )
+            else vs[i] )
 
-        in if h - k <= 2 then
-            shift (h-k-2 |> i64.u64) vs
+        in if h - k <= l then
+            shift (h-k-l) vs
         else
-            refine us vs h k 2
+            refine us vs h k l
 
 
 --
 -- Implementation of multi-precision integer division using
 -- the shifted inverse and classical multiplication
 --
-def div [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [ipb*(4*m)]u16) =
+def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [ipb*(4*m)]u16) =
     let h = prec us
     let k = (prec vs) - 1
 
@@ -118,7 +115,7 @@ def div [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, 
         else
             (false, us, vs, h, k)
 
-    let quo = shinv us vs (u64.i64 h) (u64.i64 k)
+    let quo = shinv us vs h k
         |> bmulu16 us
         |> shift (-h)
 
@@ -146,7 +143,7 @@ def div [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, 
 -- Implementation of multi-precision integer quotient using
 -- the shifted inverse and classical multiplication
 --
-def quo [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
+def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     let h = prec us
     let k = (prec vs) - 1
 
@@ -160,7 +157,7 @@ def quo [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         else
             (us, vs, h, k)
 
-    let quo = shinv us vs (u64.i64 h) (u64.i64 k)
+    let quo = shinv us vs h k
         |> bmulu16 us
         |> shift (-h)
 
