@@ -2,6 +2,8 @@ import "div-helpers"
 import "big-add"
 import "sqr-mul"
 
+let us = [1,4,2,3] :> [1*(4*1)]u16
+let vs = [0,0,4,1] :> [1*(4*1)]u16
 
 --
 -- Calculates (a * b) rem B^d

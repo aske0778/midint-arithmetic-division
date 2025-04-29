@@ -51,30 +51,9 @@ def ltbpow [m][ipb] (u: [ipb*(4*m)]u16) (bpow: i64) : bool =
   |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
   in res.0
  
-
--- performs shift operation
---def shift [n] (shft : i64) (u : [n]u32) : ([n]u32) = 
---    let foo = replicate shft 0u32
---    let bar = if n > 0 then (foo ++ u[:(n - shft)]) :> [n]u32 
---                       else (u[(n - shft):] ++ foo) :> [n]u32
---    in bar
-
--- performs shift operation. without the use of concatination 
--- concatination is often very memory expensive. 
--- less than taken from thorbjørn, musch cleaner than mine 
--- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
 def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
     map (\ idx -> let offset = idx - shft 
            in if offset < (ipb*(4*m)) && offset >= 0 then u[offset] else 0) (iota (ipb*(4*m)))
-
--- performs shift operation on bigint of size 2m
--- do we need a double version in futhark ?
---def shiftDouble [n] (shft : i64) (u : [n]u32) : ([n]u32) = 
---    undefined
-
--- Quotient calculation of a bpow and divisor d
---def quo (bpow : u32) (d : u32) : ([]u32) = 
---    let r = 1i64
 
 def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : i64) : bool =
     let bpow = zeroAndSet 1 b (ipb*(4*m))

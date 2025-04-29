@@ -2,11 +2,8 @@ CXX = cuda
 
 default: bench-div
 
-test-quo:
-	futhark bench div.fut --entry test_quo
-
-test-div:
-	futhark bench div.fut --entry test_div
+test:
+	futhark test div.fut
 
 bench-quo:
 	futhark bench --backend $(CXX) div.fut --entry bench_quo
