@@ -134,9 +134,16 @@ __device__ inline void quo(uint32_t bpow, uint32_t d, uint32_t RReg[Q]) {
         r <<= 32; 
         if (r >= d) {
             if (threadIdx.x == i / Q) {
+                if (threadIdx.x == 1) {
+                    printf(" r/ d = %llu \n", r / d);
+                }
                 RReg[i % Q] = r / d;
             }
+            if (threadIdx.x == 1) {
+                printf(" r/ d = %llu \n", r % d);
+            }
             r %= d;
+            
         }
     }
 }

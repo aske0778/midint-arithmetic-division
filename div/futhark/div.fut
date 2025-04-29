@@ -2,6 +2,9 @@ import "div-helpers"
 import "big-add"
 import "sqr-mul"
 
+--let us = [1,4,2,3, 0, 0, 0, 0] :> [1*(4*2)]u16
+--let vs = [0,0,4,1, 0, 0, 0, 0] :> [1*(4*2)]u16
+
 let us = [1,4,2,3] :> [1*(4*1)]u16
 let vs = [0,0,4,1] :> [1*(4*1)]u16
 
@@ -117,10 +120,10 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = shinv us vs h k
-        |> bmulu16 us
-        |> shift (-h)
-
+    let quo = trace (trace (trace(map u64.u16 (shinv us vs h k))
+        |> bmul (map u64.u16 (trace us))))
+        --|> shift (trace (-h)))
+    let quo = (map u16.u64 quo)
     let rem = bmulu16 vs quo
         |> bsubu16 us
 
@@ -153,8 +156,8 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         if k == 1 then
             let h = h + 1
             let k = k + 1
-            let us = shift 1 us
-            let vs = shift 1 vs
+            let us = shift (-1) us
+            let vs = shift (-1) vs
             in (us, vs, h, k)
         else
             (us, vs, h, k)
@@ -174,6 +177,22 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 
     in quo
 
+def quo_single (bpow : u16) (d :u16) (m : i64) : ([]u16) =
+    let ret = replicate m 0u16 :> *[m]u16
+    let (_r,ret) = loop (r,ret) = (1u32, copy ret) for i < (i64.u16 bpow) do
+                let r = trace (r << 16)
+                in
+                if (r > (u32.u16 d)) then 
+                                let ret[i] = u16.u32(r / (u32.u16 d))
+                                in
+                                (r % (u32.u16 d), ret)
+                        else 
+                                (r, ret)
+    in ret
+
+
+
+ --let V = loop V = 0u64 for i < l do
 
 -- ==
 -- entry: test_div
@@ -229,3 +248,24 @@ entry bench_quo [m] (us: [m]u16) (vs: [3]u16) : []u16 =
     let us = (us :> [ipb*(4*m)]u16)
     let vs = (vs :> [ipb*(4*m)]u16)
     in quo us vs
+
+def us' = [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] :> [1*(4*16)]u16
+def vs' = [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] :> [1*(4*16)]u16
+
+def x = [0,4,1,0]:> [1*(4*1)]u64
+def y = [1,4,2,3] :> [1*(4*1)]u64
+
+def x' = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u64
+def y' = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u64
+
+def x'' = [0,4,1,0,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
+def y'' = [1,4,2,3,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
+
+--def x'' = [0,0,0,0,0,4,1,0]:> [1*(4*2)]u64
+--def y'' = [0,0,0,0,1,4,2,3] :> [1*(4*2)]u64
+
+
+
+
+--def x' = [0,4,1,0]:> [1*(4*1)]u16
+--def y' = [1,4,2,3] :> [1*(4*1)]u16
