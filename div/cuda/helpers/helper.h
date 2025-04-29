@@ -33,6 +33,22 @@ void prnt( const char *str
     printf("]\n");
 }
 
+template<class uint_t>
+void prnt64( const char *str
+         , uint_t *u
+         , uint32_t m
+) {
+    printf("%s: [", str);
+    for (int i = 0; i < m; i++)
+    {
+        printf("%llu", u[i]);
+        // printf("%" PRIu64 ", ", u[i]);
+        if (i < m - 1)
+            printf(", ");
+    }
+    printf("]\n");
+}
+
 /**
  * Prints 3 indices of a bigint around
  * the index i to stdout
@@ -102,6 +118,36 @@ void div_gmp( uint_t* u
     mpz_clear(b);
     mpz_clear(c);
     mpz_clear(d);
+}
+
+
+/**
+ * A wrapper for the GMP implementation of multiplication
+ */
+ template<class uint_t>
+void mul_gmp( uint_t* u
+    , uint_t* v
+    , uint_t* r
+    , uint32_t m
+) {
+    set<uint_t>(r, 0, m);
+
+    mpz_t a;
+    mpz_init(a);
+    mpz_import(a, m, -1, sizeof(uint_t), 0, 0, u);
+    mpz_t b;
+    mpz_init(b);
+    mpz_import(b, m, -1, sizeof(uint_t), 0, 0, v);
+    mpz_t c;
+    mpz_init(c);
+
+
+    mpz_mul(c, a, b);
+
+    mpz_export(r, NULL, -1, sizeof(uint_t), 0, 0, c);
+    mpz_clear(a);
+    mpz_clear(b);
+    mpz_clear(c);
 }
 
 /**
