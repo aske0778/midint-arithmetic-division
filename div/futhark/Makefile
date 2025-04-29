@@ -16,4 +16,4 @@ bench-div:
 
 .PHONY: clean
 clean:
-	rm -rf *.o *.c big-add sqr-mul div
+	rm -rf *.o *.c big-add sqr-mul div *.0 *.actual *.expected

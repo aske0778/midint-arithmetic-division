@@ -32,6 +32,7 @@ def lt [m][ipb] (u: [ipb*(4*m)]u16) (v: [ipb*(4*m)]u16) : bool =
   in res.0
 
 
+
 -- set a given index of the bigint to 
 def set [n] (u : *[n]u16) (d : u16) (idx : i32) : [n]u16 = 
     let u[idx] =  d in u
@@ -45,6 +46,11 @@ def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 =
     in
     arr
     
+def ltbpow [m][ipb] (u: [ipb*(4*m)]u16) (bpow: i64) : bool =
+  let v = zeroAndSet 1 bpow m :> [ipb*(4*m)]u16
+  let res = map2 (\ x y -> (x < y, x == y) ) u v
+  |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
+  in res.0
  
 
 -- performs shift operation

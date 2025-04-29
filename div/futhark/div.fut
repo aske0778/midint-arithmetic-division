@@ -18,32 +18,24 @@ def powDiff [n] [ipb] (us : [ipb * (4 * n)]u16) (vs : [ipb * (4 * n)]u16) (h : i
     let precV = prec vs
     let L = precV + precU - l + 1
 
-    let (sign, ret) = 
-        if (precU == 0 || precV == 0) then
-            let sign' = 1
-            let ret' = zeroAndSet 1u16 h n
-            in (sign', ret')
-        else if (L >= h) then
-            let ret' = bmulu16 us vs
-            let sign' = 0
-            in (sign', ret')
+    in if (precU == 0 || precV == 0) then
+        let ret' = zeroAndSet 1u16 h n
+        in (1, ret')
+    else if (L >= h) then
+        let ret' = bmulu16 us vs
+        in if ltbpow ret' h then
+            let ret' = subbpowbigint h ret'
+            in (1, ret')
+        else
+            let ret' = subbigintbpow ret' h
+            in (0, ret')
+    else 
+        let ret' = multmod us vs L
+        in if !(ez ret') && vs[L-1] == 0 then 
+            (0, ret')
         else 
-            --et sign' = 0
-            let ret' = multmod us vs 2i64
-            --in (sign', ret')
-            in
-            if (!(ez vs) ) then 
-                if (vs[L-1] == 0) then 
-                    let sign' = 0
-                    in (sign', ret')
-                else 
-                    let sign' = 1
-                    in (sign', ret')
-            else 
-                let sign' = 1
-                in (sign', ret')
-
-    in (sign,ret)
+            let ret' = subbpowbigint L ret'
+            in (1, ret')
 
 --
 -- Iterate towards an approximation in at most log(M) steps
