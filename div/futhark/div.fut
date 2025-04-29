@@ -6,47 +6,47 @@ import "sqr-mul"
 --
 -- Calculates (a * b) rem B^d
 --
-def multmod [ipb][m] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (d : i64) : [ipb*(4*m)]u16 = 
+def multmod [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (d: i64) : [ipb*(4*m)]u16 = 
     let res = bmulu16 us vs
     in tabulate (ipb*(4*m)) (\i -> if i >= d then 0u16 else res[i])
 
 --
 -- Calculates B^h-v*w
 --
-def powDiff [n] [ipb] (us : [ipb * (4 * n)]u16) (vs : [ipb * (4 * n)]u16) (h : i64) (l : i64) : (u32, []u16) =
+def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) : (u32, [ipb*(4*m)]u16) =
     let precU = prec us
     let precV = prec vs
     let L = precV + precU - l + 1
 
     in if (precU == 0 || precV == 0) then
-        let ret' = zeroAndSet 1u16 h n
-        in (1, ret')
+        let ret = zeroAndSet 1u16 h m
+        let ret = ret :> [ipb*(4*m)]u16
+        in (1, ret)
     else if (L >= h) then
-        let ret' = bmulu16 us vs
-        in if ltbpow ret' h then
-            let ret' = subbpowbigint h ret'
-            in (1, ret')
+        let ret = bmulu16 us vs
+        in if ltbpow ret h then
+            let ret = subbpowbigint h ret
+            in (1, ret)
         else
-            let ret' = subbigintbpow ret' h
-            in (0, ret')
+            let ret = subbigintbpow ret h
+            in (0, ret)
     else 
-        let ret' = multmod us vs L
-        in if !(ez ret') && vs[L-1] == 0 then 
-            (0, ret')
+        let ret = multmod us vs L
+        in if !(ez ret) && ret[L-1] == 0 then 
+            (0, ret)
         else 
-            let ret' = subbpowbigint L ret'
-            in (1, ret')
+            let ret = subbpowbigint L ret
+            in (1, ret)
 
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : i64) (l : i64) (n : i64) : [ipb*(4*m)]u16 =
-    let (sign, vs) = powDiff us vs h l
-    let vs = bmulu16 us (vs :> [ipb*(4*m)]u16)
-    let vs = shift (2 * n - h) vs
+def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
+    let (sign, vs) = powDiff us vs (h-n) (l-2)
+    let vs = bmulu16 us vs
+        |> shift (2 * n - h)
     let us = shift n us
-
-    in if sign > 0 then
+    in if sign != 0 then
         baddu16 us vs
     else
         bsubu16 us vs
@@ -54,7 +54,7 @@ def step [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : i64) (l : i64
 --
 -- Refine the approximation of the quotient
 --
-def refine [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : u64) (k : u64) (l : u64) : [ipb*(4*m)]u16 =
+def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: u64) (k: u64) (l: u64) : [ipb*(4*m)]u16 =
     let us = shift 2 us
     
     let (_, vs, _) = loop (us, vs, l) = (us, vs, l) while h - k > l do

@@ -43,8 +43,7 @@ def zeroAndSet (d : u16) (idx : i64) (m : i64) : [m]u16 =
 
 def zeroAndSet_inplace [n] (d : u32) (idx : i64) (arr : *[n]u32) : []u32 = 
     let arr[idx] = d
-    in
-    arr
+    in arr
     
 def ltbpow [m][ipb] (u: [ipb*(4*m)]u16) (bpow: i64) : bool =
   let v = zeroAndSet 1 bpow m :> [ipb*(4*m)]u16
