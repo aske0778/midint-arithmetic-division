@@ -82,7 +82,7 @@ int main()
 {
   //  using Base = U32bits;
     //using Base = U64bits;
-    using Base = U32bits;
+    using Base = U16bits;
    // using Base = U8bits;
     using uint_t = Base::uint_t;
     //const uint32_t M = 8;
@@ -155,14 +155,14 @@ int main()
 
     mul_gmp<uint_t>(u, v, gmp_mul, M);
 
-    prnt64<uint_t>("u", u, M);
-    prnt64<uint_t>("v", v, M);
+    prnt<uint_t>("u", u, M);
+    prnt<uint_t>("v", v, M);
 
     //prnt<uint_t>("quo", quo, M);
     //prnt<uint_t>("rem", rem, M);
     //prnt<uint_t>("quo_gmp", quo_gmp, M);
     //prnt<uint_t>("rem_gmp", rem_gmp, M);
-    prnt64<uint_t>("mul_gmp", gmp_mul, M);
+    prnt<uint_t>("mul_gmp", gmp_mul, M);
 
     //for (int i = 0; i < M; i++)
     //{
