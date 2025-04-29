@@ -76,7 +76,7 @@ def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) 
 -- Calculates the shifted inverse
 --
 def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
-    if k == 0 then
+    if (trace k) == 0 then
         map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
         vs
@@ -120,10 +120,9 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = trace (trace (trace(map u64.u16 (shinv us vs h k))
-        |> bmul (map u64.u16 (trace us))))
-        --|> shift (trace (-h)))
-    let quo = (map u16.u64 quo)
+    let quo = shinv us vs h k
+        |> bmulu16 us
+        |> shift (-h)
     let rem = bmulu16 vs quo
         |> bsubu16 us
 
@@ -183,7 +182,7 @@ def quo_single (bpow : u16) (d :u16) (m : i64) : ([]u16) =
                 let r = trace (r << 16)
                 in
                 if (r > (u32.u16 d)) then 
-                                let ret[i] = u16.u32(r / (u32.u16 d))
+                                let ret[i] = trace (u16.u32(r / (u32.u16 d)))
                                 in
                                 (r % (u32.u16 d), ret)
                         else 
@@ -254,6 +253,9 @@ def vs' = [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16,
 
 def x = [0,4,1,0]:> [1*(4*1)]u64
 def y = [1,4,2,3] :> [1*(4*1)]u64
+
+def foo = [0,4,1,0]:> [1*(4*1)]u16
+def bar = [420, 2, 0, 0] :> [1*(4*1)]u16
 
 def x' = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u64
 def y' = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u64
