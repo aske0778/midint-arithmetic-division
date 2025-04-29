@@ -72,12 +72,25 @@ def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) 
             in (us, vs, l)
     in shift (-2) vs
 
+def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)]u16) =
+    let ret = replicate n 0u16 :> [ipb*(4*m)]u16
+    let (_r,ret) = loop (r,ret) = (1u32, copy ret) for i < bpow do
+                let r = r << 16
+                in
+                if (r > (u32.u16 d[0])) then 
+                                let ret[(bpow - 1) - i] = u16.u32(r / (u32.u16 d[0]))
+                                in
+                                (r % (u32.u16 d[0]), ret)
+                        else 
+                                (r, ret)
+    in ret
+
 --
 -- Calculates the shifted inverse
 --
 def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
-    if (trace k) == 0 then
-        map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
+    if k == 0 then
+        quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16--map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
         vs
     else if k == h - 1 && vs[k] > u16.highest / 2 then
@@ -102,6 +115,8 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
             refine us vs h k l
 
 
+
+
 --
 -- Implementation of multi-precision integer division using
 -- the shifted inverse and classical multiplication
@@ -120,7 +135,7 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = shinv us vs h k
+    let quo = (shinv us vs h k)
         |> bmulu16 us
         |> shift (-h)
     let rem = bmulu16 vs quo
@@ -176,18 +191,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 
     in quo
 
-def quo_single (bpow : u16) (d :u16) (m : i64) : ([]u16) =
-    let ret = replicate m 0u16 :> *[m]u16
-    let (_r,ret) = loop (r,ret) = (1u32, copy ret) for i < (i64.u16 bpow) do
-                let r = trace (r << 16)
-                in
-                if (r > (u32.u16 d)) then 
-                                let ret[i] = trace (u16.u32(r / (u32.u16 d)))
-                                in
-                                (r % (u32.u16 d), ret)
-                        else 
-                                (r, ret)
-    in ret
+
 
 
 
@@ -255,10 +259,14 @@ def x = [0,4,1,0]:> [1*(4*1)]u64
 def y = [1,4,2,3] :> [1*(4*1)]u64
 
 def foo = [0,4,1,0]:> [1*(4*1)]u16
-def bar = [420, 2, 0, 0] :> [1*(4*1)]u16
+def bar = [420, 0, 0, 0] :> [1*(4*1)]u16
 
 def x' = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u64
 def y' = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u64
+
+def mads = [20, 42, 10, 4, 63, 8, 22, 1] :> [1*(4*2)]u16
+def mikkel = [5, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*2)]u16
+
 
 def x'' = [0,4,1,0,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
 def y'' = [1,4,2,3,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64

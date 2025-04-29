@@ -2,7 +2,7 @@
 -- check the precision of bigint, eg n - (leading zero's)
 def prec [n] (u : [n]u16) : (i64) = 
     let bar = reduce (\idx1 idx2 -> 
-                        if u[idx2] != 0 then idx2 else idx1) (0i64) (iota n)
+                        if u[idx2] != 0 then (idx2 + 1) else idx1) (0i64) (iota n)
     in bar
 
 -- checks if two bigints are equal
