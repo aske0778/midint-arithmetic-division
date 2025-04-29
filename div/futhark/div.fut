@@ -56,21 +56,21 @@ def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n
 --
 def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: u64) (k: u64) (l: u64) : [ipb*(4*m)]u16 =
     let us = shift 2 us
-    
-    let (_, vs, _) = loop (us, vs, l) = (us, vs, l) while h - k > l do
-        let n = u64.min (h - k + 1 - l) l
-        let s = u64.max 0 (k - 2 * l + 1 - 2)
-        let vs = shift (-s |> i64.u64) vs
-        let us = step us vs (k + l + n - s + 2 |> i64.u64) (n |> i64.u64) (l |> i64.u64)
-        let us = shift (-1) us
-        let l = l + n - 1
-        in (us, vs, l)
-
+    let (_, vs, _) = loop (us, vs, l) = (us, vs, l)
+        while h - k > l do
+            let n = u64.min (h - k + 1 - l) l
+            let s = u64.max 0 (k - 2 * l + 1 - 2)
+            let us = shift (-s |> i64.u64) us
+            let us = step us vs (k + l + n - s + 2 |> i64.u64) (n |> i64.u64) (l |> i64.u64)
+            let us = shift (-1) us
+            let l = l + n - 1
+            in (us, vs, l)
     in shift (-2) vs
-
+    
+--
 -- Calculates the shifted inverse
 --
-def shinv [m][ipb] (us : [ipb*(4*m)]u16) (vs : [ipb*(4*m)]u16) (h : u64) (k : u64) : [ipb*(4*m)]u16 =
+def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: u64) (k: u64) : [ipb*(4*m)]u16 =
     if k == 0 then
         map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
