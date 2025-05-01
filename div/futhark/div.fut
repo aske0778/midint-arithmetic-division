@@ -83,7 +83,7 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
         zeroAndSet 1 (h - k) m :> [ipb*(4*m)]u16
     else 
         let l = i64.min k 2
-        let V = loop V = 0u64 for i < l do
+        let V = loop V = 0u64 for i <= l do
             V + (u64.u16 vs[k - l + i + 1]) << 16*(u64.i64 i)
         let b2l = 1u64 << 16*2*(u64.i64 l)
         let V = trace V
