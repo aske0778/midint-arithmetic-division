@@ -190,47 +190,47 @@ entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*1
 entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
     quo us vs
 
--- 
+-- ==
 -- entry: bench_div
--- compiled random input {  [2097152][64]u16  [3]u16 }
--- compiled random input { [1048576][128]u16  [3]u16 }
--- compiled random input {  [524288][256]u16  [3]u16 }
--- compiled random input {  [262144][512]u16  [3]u16 }
--- compiled random input { [131072][1024]u16  [3]u16 }
--- compiled random input {  [65536][2048]u16  [3]u16 }
--- compiled random input {  [32768][4096]u16  [3]u16 }
--- compiled random input {  [16384][8192]u16  [3]u16 }
--- compiled random input {  [8192][16384]u16  [3]u16 }
--- compiled random input {  [4096][32768]u16  [3]u16 }
--- entry bench_div [m][n] (us: [n][m]u16) (vs: [3]u16) : [n]([m]u16, [m]u16) =
---     let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
---     let mdiv4 = m / 4
---     let vs = replicate n vs
---     let us = us :> [n][1*(4*mdiv4)]u16
---     let vs = vs :> [n][1*(4*mdiv4)]u16
---     let ret = map2 div us vs :> [n]([m]u16, [m]u16) 
---     in ret
+-- compiled random input { [131072][64]u16  [3]u16 }
+-- compiled random input { [65536][128]u16  [3]u16 }
+-- compiled random input { [32768][256]u16  [3]u16 }
+-- compiled random input { [16384][512]u16  [3]u16 }
+-- compiled random input { [8192][1024]u16  [3]u16 }
+-- compiled random input { [4096][2048]u16  [3]u16 }
+-- compiled random input { [2048][4096]u16  [3]u16 }
+-- compiled random input { [1024][8192]u16  [3]u16 }
+-- compiled random input { [512][16384]u16  [3]u16 }
+-- compiled random input { [256][32768]u16  [3]u16 }
+entry bench_div [m][n] (us: [n][m]u16) (vs: [3]u16) : [n]([m]u16, [m]u16) =
+    let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
+    let mdiv4 = m / 4
+    let vs = replicate n vs
+    let us = us :> [n][1*(4*mdiv4)]u16
+    let vs = vs :> [n][1*(4*mdiv4)]u16
+    let ret = map2 div us vs :> [n]([m]u16, [m]u16) 
+    in ret
 
 
 -- ==
 -- entry: bench_quo
--- compiled random input {  [2097152][64]u16  [3]u16 }
--- compiled random input { [1048576][128]u16  [3]u16 }
--- compiled random input {  [524288][256]u16  [3]u16 }
--- compiled random input {  [262144][512]u16  [3]u16 }
--- compiled random input { [131072][1024]u16  [3]u16 }
--- compiled random input {  [65536][2048]u16  [3]u16 }
--- compiled random input {  [32768][4096]u16  [3]u16 }
--- compiled random input {  [16384][8192]u16  [3]u16 }
--- compiled random input {  [8192][16384]u16  [3]u16 }
--- compiled random input {  [4096][32768]u16  [3]u16 }
+-- compiled random input { [131072][64]u16  [3]u16 }
+-- compiled random input { [65536][128]u16  [3]u16 }
+-- compiled random input { [32768][256]u16  [3]u16 }
+-- compiled random input { [16384][512]u16  [3]u16 }
+-- compiled random input { [8192][1024]u16  [3]u16 }
+-- compiled random input { [4096][2048]u16  [3]u16 }
+-- compiled random input { [2048][4096]u16  [3]u16 }
+-- compiled random input { [1024][8192]u16  [3]u16 }
+-- compiled random input { [512][16384]u16  [3]u16 }
+-- compiled random input { [256][32768]u16  [3]u16 }
 entry bench_quo [m][n] (us: [n][m]u16) (vs: [3]u16) : [n][m]u16 =
     let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
     let mdiv4 = m / 4
     let vs = replicate n vs
     let us = us :> [n][1*(4*mdiv4)]u16
     let vs = vs :> [n][1*(4*mdiv4)]u16
-    let ret = map2 quo us vs :> [n][m]u16
+    let ret = imap2Intra us vs quo :> [n][m]u16
     in ret
 
 
