@@ -2,11 +2,8 @@ import "div-helpers"
 import "big-add"
 import "sqr-mul"
 
---let us = [1,4,2,3, 0, 0, 0, 0] :> [1*(4*2)]u16
---let vs = [0,0,4,1, 0, 0, 0, 0] :> [1*(4*2)]u16
-
-let us = [1,4,2,3] :> [1*(4*1)]u16
-let vs = [0,0,4,1] :> [1*(4*1)]u16
+let us = [1,1,1,1] :> [1*(4*1)]u16
+let vs = [2,2,2,2] :> [1*(4*1)]u16
 
 --
 -- Calculates (a * b) rem B^d
@@ -72,19 +69,6 @@ def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) 
             in (us, vs, l)
     in shift (-2) vs
 
-def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)]u16) =
-    let ret = replicate n 0u16 :> [ipb*(4*m)]u16
-    let (_r,ret) = loop (r,ret) = (1u32, copy ret) for i < bpow do
-                let r = r << 16
-                in
-                if (r > (u32.u16 d[0])) then 
-                                let ret[(bpow - 1) - i] = u16.u32(r / (u32.u16 d[0]))
-                                in
-                                (r % (u32.u16 d[0]), ret)
-                        else 
-                                (r, ret)
-    in ret
-
 --
 -- Calculates the shifted inverse
 --
@@ -102,6 +86,7 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
         let V = loop V = 0u64 for i < l do
             V + (u64.u16 vs[k - l + i + 1]) << 16*(u64.i64 i)
         let b2l = 1u64 << 16*2*(u64.i64 l)
+        let V = trace V
         let tmp = (b2l - V) / V + 1
 
         let vs = tabulate (ipb*(4*m)) (\i -> 
@@ -113,9 +98,6 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
             shift (h-k-l) vs
         else
             refine us vs h k l
-
-
-
 
 --
 -- Implementation of multi-precision integer division using
@@ -157,7 +139,6 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
 
     in (quo, rem)
 
-
 --
 -- Implementation of multi-precision integer quotient using
 -- the shifted inverse and classical multiplication
@@ -192,11 +173,6 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     in quo
 
 
-
-
-
- --let V = loop V = 0u64 for i < l do
-
 -- ==
 -- entry: test_div
 -- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
@@ -214,68 +190,48 @@ entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*1
 entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
     quo us vs
 
--- ==
+-- 
 -- entry: bench_div
--- compiled random input { [64]u16   [3]u16 }
--- compiled random input { [128]u16  [3]u16 }
--- compiled random input { [256]u16  [3]u16 }
--- compiled random input { [512]u16  [3]u16 }
--- compiled random input { [1024]u16 [3]u16 }
--- compiled random input { [2048]u16 [3]u16 }
--- compiled random input { [4096]u16 [3]u16 }
--- compiled random input { [8192]u16 [3]u16 }
--- compiled random input { [16384]u16 [3]u16 }
-entry bench_div [m] (us: [m]u16) (vs: [3]u16) : ([]u16, []u16) =
-    let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
-    let ipb = 1
-    let m = m / 4
-    let us = (us :> [ipb*(4*m)]u16)
-    let vs = (vs :> [ipb*(4*m)]u16)
-    in div us vs
+-- compiled random input {  [2097152][64]u16  [3]u16 }
+-- compiled random input { [1048576][128]u16  [3]u16 }
+-- compiled random input {  [524288][256]u16  [3]u16 }
+-- compiled random input {  [262144][512]u16  [3]u16 }
+-- compiled random input { [131072][1024]u16  [3]u16 }
+-- compiled random input {  [65536][2048]u16  [3]u16 }
+-- compiled random input {  [32768][4096]u16  [3]u16 }
+-- compiled random input {  [16384][8192]u16  [3]u16 }
+-- compiled random input {  [8192][16384]u16  [3]u16 }
+-- compiled random input {  [4096][32768]u16  [3]u16 }
+-- entry bench_div [m][n] (us: [n][m]u16) (vs: [3]u16) : [n]([m]u16, [m]u16) =
+--     let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
+--     let mdiv4 = m / 4
+--     let vs = replicate n vs
+--     let us = us :> [n][1*(4*mdiv4)]u16
+--     let vs = vs :> [n][1*(4*mdiv4)]u16
+--     let ret = map2 div us vs :> [n]([m]u16, [m]u16) 
+--     in ret
+
 
 -- ==
 -- entry: bench_quo
--- compiled random input { [64]u16   [3]u16 }
--- compiled random input { [128]u16  [3]u16 }
--- compiled random input { [256]u16  [3]u16 }
--- compiled random input { [512]u16  [3]u16 }
--- compiled random input { [1024]u16 [3]u16 }
--- compiled random input { [2048]u16 [3]u16 }
--- compiled random input { [4096]u16 [3]u16 }
--- compiled random input { [8192]u16 [3]u16 }
--- compiled random input { [16384]u16 [3]u16 }
-entry bench_quo [m] (us: [m]u16) (vs: [3]u16) : []u16 =
+-- compiled random input {  [2097152][64]u16  [3]u16 }
+-- compiled random input { [1048576][128]u16  [3]u16 }
+-- compiled random input {  [524288][256]u16  [3]u16 }
+-- compiled random input {  [262144][512]u16  [3]u16 }
+-- compiled random input { [131072][1024]u16  [3]u16 }
+-- compiled random input {  [65536][2048]u16  [3]u16 }
+-- compiled random input {  [32768][4096]u16  [3]u16 }
+-- compiled random input {  [16384][8192]u16  [3]u16 }
+-- compiled random input {  [8192][16384]u16  [3]u16 }
+-- compiled random input {  [4096][32768]u16  [3]u16 }
+entry bench_quo [m][n] (us: [n][m]u16) (vs: [3]u16) : [n][m]u16 =
     let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
-    let ipb = 1
-    let m = m / 4
-    let us = (us :> [ipb*(4*m)]u16)
-    let vs = (vs :> [ipb*(4*m)]u16)
-    in quo us vs
-
-def us' = [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] :> [1*(4*16)]u16
-def vs' = [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] :> [1*(4*16)]u16
-
-def x = [0,4,1,0]:> [1*(4*1)]u64
-def y = [1,4,2,3] :> [1*(4*1)]u64
-
-def foo = [0,4,1,0]:> [1*(4*1)]u16
-def bar = [420, 0, 0, 0] :> [1*(4*1)]u16
-
-def x' = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u64
-def y' = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u64
-
-def mads = [20, 42, 10, 4, 63, 8, 22, 1] :> [1*(4*2)]u16
-def mikkel = [5, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*2)]u16
-
-
-def x'' = [0,4,1,0,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
-def y'' = [1,4,2,3,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
-
---def x'' = [0,0,0,0,0,4,1,0]:> [1*(4*2)]u64
---def y'' = [0,0,0,0,1,4,2,3] :> [1*(4*2)]u64
+    let mdiv4 = m / 4
+    let vs = replicate n vs
+    let us = us :> [n][1*(4*mdiv4)]u16
+    let vs = vs :> [n][1*(4*mdiv4)]u16
+    let ret = map2 quo us vs :> [n][m]u16
+    in ret
 
 
 
-
---def x' = [0,4,1,0]:> [1*(4*1)]u16
---def y' = [1,4,2,3] :> [1*(4*1)]u16

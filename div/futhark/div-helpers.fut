@@ -63,6 +63,18 @@ def ltBpow [m][ipb] (u: [ipb*(4*m)]u16) (b: i64) : bool =
     let bpow = zeroAndSet 1 b (ipb*(4*m))
     in lt u bpow
 
+def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)]u16) =
+    let ret = replicate n 0u16 :> [ipb*(4*m)]u16
+    let (_r,ret) = loop (r,ret) = (1u32, copy ret) for i < bpow do
+                let r = r << 16
+                in
+                if (r > (u32.u16 d[0])) then 
+                                let ret[(bpow - 1) - i] = u16.u32(r / (u32.u16 d[0]))
+                                in
+                                (r % (u32.u16 d[0]), ret)
+                        else 
+                                (r, ret)
+    in ret
 
 -- Testing ez
 -- ==
