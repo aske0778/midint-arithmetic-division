@@ -21,13 +21,13 @@ typedef unsigned __int128 uint128_t;
 
 
 //16BIT
-// typedef uint16_t digit_t;
-// typedef uint32_t bigDigit_t;
-// typedef uint64_t uquad_t;
-// typedef digit_t *bigint_t;
-// typedef uint32_t prec_t;
-// const int32_t  bits = 16;
-// typedef int bool;
+typedef uint16_t digit_t;
+typedef uint32_t bigDigit_t;
+typedef uint64_t uquad_t;
+typedef digit_t *bigint_t;
+typedef uint32_t prec_t;
+const int32_t  bits = 16;
+typedef int bool;
 
 
 //32BIT
@@ -40,13 +40,13 @@ typedef unsigned __int128 uint128_t;
 // typedef int bool;
 
 //64BIT
-typedef uint64_t digit_t;
-typedef __uint128_t bigDigit_t;
-typedef __uint128_t uquad_t;
-typedef digit_t *bigint_t;
-typedef uint32_t prec_t;
-const int32_t bits = 64;
-typedef int bool;
+// typedef uint64_t digit_t;
+// typedef __uint128_t bigDigit_t;
+// typedef __uint128_t uquad_t;
+// typedef digit_t *bigint_t;
+// typedef uint32_t prec_t;
+// const int32_t bits = 64;
+// typedef int bool;
 
 /**
  * @brief Returns the minimum of two integers

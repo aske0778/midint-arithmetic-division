@@ -492,12 +492,12 @@ void shinv(bigint_t v, int h, bigint_t w, int k, prec_t m)
     int l = min(k, 2);
     uquad_t V = 0;
     uquad_t tmp;
-    for (int i = 0; i < l; i++)
+    for (int i = 0; i <= l; i++)
     {
-        V += ((uquad_t)v[k - l + i + 1]) << (bits * i);
+        V += ((uquad_t)v[k - l + i]) << (bits * i);
     }
     if (1) {
-        uquad_t b2l = (uquad_t)1 << bits * (2 * l - 1);
+        uquad_t b2l = (uquad_t)1 << bits * (2 * l);
         tmp = (b2l - V) / V + 1;
     }
     else {
