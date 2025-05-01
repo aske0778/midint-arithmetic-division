@@ -8,6 +8,9 @@ test:
 bench-quo:
 	futhark bench --backend $(CXX) div.fut --entry bench_quo
 
+bench-quo-single:
+	futhark bench --backend $(CXX) div.fut --entry bench_quo_single
+
 bench-div:
 	futhark bench --backend $(CXX) div.fut --entry bench_div
 

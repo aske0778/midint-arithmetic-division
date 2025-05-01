@@ -234,4 +234,23 @@ entry bench_quo [m][n] (us: [n][m]u16) (vs: [3]u16) : [n][m]u16 =
     in ret
 
 
+-- ==
+-- entry: bench_quo_single
+-- compiled random input {  [64]u16  [3]u16 }
+-- compiled random input { [128]u16  [3]u16 }
+-- compiled random input {  [256]u16  [3]u16 }
+-- compiled random input {  [512]u16  [3]u16 }
+-- compiled random input { [1024]u16  [3]u16 }
+-- compiled random input {  [2048]u16  [3]u16 }
+-- compiled random input {  [4096]u16  [3]u16 }
+-- compiled random input {  [8192]u16  [3]u16 }
+-- compiled random input {  [16384]u16  [3]u16 }
+-- compiled random input {  [32768]u16  [3]u16 }
+entry bench_quo_single [m] (us: [m]u16) (vs: [3]u16) : [m]u16 =
+    let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
+    let mdiv4 = m / 4
+    let us = us :> [1*(4*mdiv4)]u16
+    let vs = vs :> [1*(4*mdiv4)]u16
+    let ret = quo us vs :> [m]u16
+    in ret
 
