@@ -359,22 +359,22 @@ void testQuotient( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    uint_t uPrec = m-Q;
-    uint_t vPrec = 3;
-
-    uint_t* u = randBigInt<uint_t>(uPrec, m, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m, num_instances);
-
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
 
+    uint_t uPrec = (m/x)-Q;
+    uint_t vPrec = 3;
+
+    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+
     if(with_validation)
-        gmpQuo<uint_t, m>(num_instances, u, v, res_gmp);
+        gmpQuo<uint_t, m/x>(num_instances, u, v, res_gmp);
 
     gpuQuo<Base, m/x>(num_instances, u, v, res_our);
 
     if(with_validation)  
-        validateExact(res_gmp, res_our, num_instances*m);
+        validateExact(res_gmp, res_our, num_instances*(m/x));
 }
 
 template<class Base, int m>
@@ -420,16 +420,16 @@ void runNaiveMuls(uint64_t total_work) {
     mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
 
 #if 1
-    // testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
 
-    // testNsqMul<Base,  512>( total_work/512,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base,  256>( total_work/256,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base,  128>( total_work/128,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base,   64>( total_work/64,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base,   32>( total_work/32,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
-    // testNsqMul<Base,   16>( total_work/16,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,  512>( total_work/512,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,  256>( total_work/256,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,  128>( total_work/128,  h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,   64>( total_work/64,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,   32>( total_work/32,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base,   16>( total_work/16,   h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
 #endif
     free(h_as);
     free(h_bs);
@@ -447,15 +447,15 @@ void runQuotients(uint64_t total_work) {
     res_gmp = (uint_t*)calloc(total_work, sizeof(uint_t));
     
 #if 1
-    // testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base, 4096>( total_work/4096, res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base, 2048>( total_work/2048, res_gmp, res_our, WITH_VALIDATION );
     testQuotient<Base, 1024>( total_work/1024, res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
-    // testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,  512>( total_work/512,  res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,  256>( total_work/256,  res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,  128>( total_work/128,  res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,   64>( total_work/64,   res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,   32>( total_work/32,   res_gmp, res_our, WITH_VALIDATION );
+    testQuotient<Base,   16>( total_work/16,   res_gmp, res_our, WITH_VALIDATION );
 #endif
     free(res_gmp);
     free(res_our);
@@ -477,11 +477,11 @@ void runDivisions(uint64_t total_work) {
     testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    // testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+    testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
 #endif
     free(gmp_quo);
     free(gmp_rem);
@@ -501,16 +501,16 @@ int main (int argc, char * argv[]) {
     // cudaSetDevice(1);
 
     {   // 32bit integer elements
-        // runNaiveMuls<U32bits>(total_work);
+        runNaiveMuls<U32bits>(total_work);
 
-        // runQuotients<U32bits>(total_work);
+        runQuotients<U32bits>(total_work);
         runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
-        //runNaiveMuls<U64bits>(total_work);
+        runNaiveMuls<U64bits>(total_work);
 
-        //runQuotients<U64bits>(total_work);
+        runQuotients<U64bits>(total_work);
         runDivisions<U64bits>(total_work);
     }
 }

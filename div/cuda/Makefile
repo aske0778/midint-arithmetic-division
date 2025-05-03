@@ -7,14 +7,15 @@ SRC_TEST = test
 SRC_BENCH = bench
 SRC_time = timing
 
+FLAGS = -lgmp -diag-suppress 63
+
 BATCH_SIZE = 33554432
 # BATCH_SIZE = 134217728
-# BATCH_SIZE = 4194304
 
 default: main
 
 main: $(SRC_MAIN).cu ker-division.cu.h
-	$(CXX) $(SRC_MAIN).cu -lgmp -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe $(BATCH_SIZE)
+	$(CXX) $(SRC_MAIN).cu $(FLAGS) -o $(SRC_MAIN).exe && ./$(SRC_MAIN).exe $(BATCH_SIZE)
 
 test:
 	$(CXX) $(SRC_TEST).cu -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
