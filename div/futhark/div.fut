@@ -74,7 +74,7 @@ def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) 
 --
 -- Calculates the shifted inverse
 --
-def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
+def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     if k == 0 then
         quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16 
     else if k >= h && !(eqBpow vs h) then
@@ -88,15 +88,12 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
         let b2l = 1u64 << 3*16
         let tmp = (b2l - V) / V + 1
 
-        let vs = tabulate (ipb*(4*m)) (\i -> 
+        let ws = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
             else 0u16 )
 
-        -- in if h - k <= 2 then
-        --     shift (h-k-2) vs
-        -- else
-        in refine us vs h k 2
+        in refine vs ws h k 2
 
 --
 -- Implementation of multi-precision integer division using
@@ -116,7 +113,7 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = (shinv us vs h k)
+    let quo = (shinv vs h k)
         |> bmulu16 us
         |> shift (-h)
     let rem = bmulu16 vs quo
@@ -156,7 +153,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         else
             (us, vs, h, k)
 
-    let quo = shinv us vs h k
+    let quo = shinv vs h k
         |> bmulu16 us
         |> shift (-h)
 
@@ -180,7 +177,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 entry test_add (us: [1*(4*1)]u16) (vs: [1*(4*1)]u16) : [1*(4*1)]u16 =
     baddu16 us vs
 
--- ==
+--
 -- entry: test_add1
 -- compiled input { [15u16, 63u16, 23u16, 65535u16] }
 -- output { [15u16, 63u16, 23u16, 65535u16] }
@@ -195,7 +192,7 @@ entry test_add1 (us: [1*(4*1)]u16) : [1*(4*1)]u16 =
 entry test_sub (us: [1*(4*1)]u16) (vs: [1*(4*1)]u16) : [1*(4*1)]u16 =
     bsubu16 us vs
 
--- 
+-- ==
 -- entry: test_div
 -- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 -- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
