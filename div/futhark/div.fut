@@ -2,6 +2,7 @@ import "div-helpers"
 import "big-add"
 import "sqr-mul"
 import "futhark_new/sub"
+import "futhark_new/mul"
 
 
 let us = [1,1,1,1] :> [1*(4*1)]u16
@@ -11,7 +12,7 @@ let vs = [2,2,2,2] :> [1*(4*1)]u16
 -- Calculates (a * b) rem B^d
 --
 def multmod [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (d: i64) : [ipb*(4*m)]u16 = 
-    let res = bmulu16 us vs
+    let res = convMulV2 us vs
     in tabulate (ipb*(4*m)) (\i -> if i >= d then 0u16 else res[i])
 
 --
@@ -27,19 +28,22 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
         let ret = ret :> [ipb*(4*m)]u16
         in (1, ret)
     else if (L >= h) then
-        let ret = bmulu16 vs ws
+        let ret = convMulV2 vs ws
         in if ltBpow ret h then
-            let ret = subbpowbigint h ret
+            let bpow = zeroAndSet 1 h (ipb*(4*m))
+            let (ret, _) = bsub bpow ret
             in (1, ret)
         else
-            let ret = subbigintbpow ret h
+            let bpow = zeroAndSet 1 h (ipb*(4*m))
+            let (ret, _) = bsub ret bpow
             in (0, ret)
     else 
         let ret = multmod vs ws L
         in if !(ez ret) && ret[L-1] == 0 then 
             (0, ret)
         else 
-            let ret = subbpowbigint L ret
+            let bpow = zeroAndSet 1 L (ipb*(4*m))
+            let (ret, _) = bsub bpow ret
             in (1, ret)
 
 --
@@ -47,7 +51,7 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
 --
 def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
     let (sign, tmp) = powDiff vs ws (h-n) (l-2)
-    let tmp = bmulu16 ws tmp
+    let tmp = convMulV2 ws tmp
         |> shift (2 * n - h)
     let ws = shift n ws
     in if sign != 0 then
@@ -113,16 +117,17 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = (shinv vs h k)
-        |> bmulu16 us
+    let quo = shinv vs h k
+        |> convMulV2 us
         |> shift (-h)
-    let rem = bmulu16 vs quo
-        |> bsubu16 us
+
+    let (rem, _) = convMulV2 vs quo
+        |> bsub us
 
     let (quo, rem) =
         if lt rem vs then
             let quo = badd1u16 quo
-            let rem = bsubu16 rem vs
+            let (rem, _) = bsub rem vs
             in (quo, rem)
         else
             (quo, rem)

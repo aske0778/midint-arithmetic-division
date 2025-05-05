@@ -76,7 +76,7 @@ def convMulV1 [m] (us: [2*m]ui) (vs: [2*m]ui) : [2*m]ui =
 -- V2: Multiplication by convolution with four elements per thread
 --------------------------------------------------------------------------------
 
-def convMulV2 [m] (us: [4*m]ui) (vs: [4*m]ui) : [4*m]ui =
+def convMulV2 [m][ipb] (us: [ipb*(4*m)]ui) (vs: [ipb*(4*m)]ui) : [ipb*(4*m)]ui =
   -- MULTIPLICATION BODY
   let CONV (us: []ui) (vs: []ui) (tid: i64)
       : ( (ui, ui, ui, ui), (ui, ui, ui, ui), (i64, i64, i64, i64) ) = #[unsafe]
@@ -133,7 +133,7 @@ def convMulV2 [m] (us: [4*m]ui) (vs: [4*m]ui) : [4*m]ui =
   let arr2 = scatter (replicate (4*m) 0) (map (+ 2) inds1) vals2
 
   -- 5. add the convolution parts
-  in baddV2 arr1 arr2
+  in baddV2 arr1 arr2 :> [ipb*(4*m)]u16
 
 
 --------------------------------------------------------------------------------
@@ -255,8 +255,8 @@ def convMulV4 [ipb][m] (us: [ipb*(2*m)]ui) (vs: [ipb*(2*m)]ui) : [ipb*(2*m)]ui =
 entry oneMulV1 [n] (m: i64) (uss: [n][2*m]ui) (vss: [n][2*m]ui) : [n][2*m]ui =
   imap2Intra uss vss convMulV1
 
-entry oneMulV2 [n] (m: i64) (uss: [n][4*m]ui) (vss: [n][4*m]ui) : [n][4*m]ui =
-  imap2Intra uss vss convMulV2
+-- entry oneMulV2 [n] (m: i64) (uss: [n][4*m]ui) (vss: [n][4*m]ui) : [n][4*m]ui =
+--   imap2Intra uss vss convMulV2
 
 entry oneMulV3 [n][ipb] (m: i64) (usss: [n][ipb][4*m]ui) (vsss: [n][ipb][4*m]ui) : [n][ipb][4*m]ui =
   let uss = map flatten usss :> [n][ipb*(4*m)]ui
@@ -280,13 +280,13 @@ entry sixMulV1 [n] (m: i64) (uss: [n][2*m]ui) (vss: [n][2*m]ui) : [n][2*m]ui =
   let wss5 = imap2Intra wss4 wss1 convMulV1
   in imap2Intra wss5 wss1 convMulV1
 
-entry sixMulV2 [n] (m: i64) (uss: [n][4*m]ui) (vss: [n][4*m]ui) : [n][4*m]ui =
-  let wss1 = imap2Intra uss  vss  convMulV2
-  let wss2 = imap2Intra wss1 wss1 convMulV2
-  let wss3 = imap2Intra wss2 wss1 convMulV2
-  let wss4 = imap2Intra wss3 wss1 convMulV2
-  let wss5 = imap2Intra wss4 wss1 convMulV2
-  in imap2Intra wss5 wss1 convMulV2
+-- entry sixMulV2 [n] (m: i64) (uss: [n][4*m]ui) (vss: [n][4*m]ui) : [n][4*m]ui =
+--   let wss1 = imap2Intra uss  vss  convMulV2
+--   let wss2 = imap2Intra wss1 wss1 convMulV2
+--   let wss3 = imap2Intra wss2 wss1 convMulV2
+--   let wss4 = imap2Intra wss3 wss1 convMulV2
+--   let wss5 = imap2Intra wss4 wss1 convMulV2
+--   in imap2Intra wss5 wss1 convMulV2
 
 entry sixMulV3 [n][ipb] (m: i64) (usss: [n][ipb][4*m]ui) (vsss: [n][ipb][4*m]ui) : [n][ipb][4*m]ui =
   let uss = map flatten usss :> [n][ipb*(4*m)]ui

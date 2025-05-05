@@ -9,7 +9,7 @@ def prec [n] (u : [n]u16) : (i64) =
 -- Checks if two bigints are equal
 --
 def eq [n] (u : [n]u16) (v : [n]u16) : bool =
-    reduce (\ x y -> (x == y && x != false)) true (map2 (==) u v)
+    map2 (==) u v |> reduce (&&) true
 
 --
 -- Checks if bigint is zero
@@ -26,7 +26,7 @@ def lt [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : bool =
   in res.0
 
 --
--- Sets a given index of the bigint to d
+-- Sets a given index of the bigint to d in place
 --
 def set [n] (u : *[n]u16) (d : u16) (idx : i32) : [n]u16 = 
     let u[idx] =  d in u
@@ -50,21 +50,22 @@ def zeroAndSet (d : u16) (idx : i64) (m : i64) : [m]u16 =
 -- Shifts the bigint by n either left or right
 --
 def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
-    map (\ idx -> let offset = idx - shft 
-           in if offset < (ipb*(4*m)) && offset >= 0 then u[offset] else 0) (iota (ipb*(4*m)))
+    map (\idx ->
+            let offset = idx - shft 
+            in if offset < (ipb*(4*m)) && offset >= 0 then u[offset] else 0) (iota (ipb*(4*m)))
 
 --
 -- Checks equality of u and bpow
 --
 def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : i64) : bool =
-    let bpow = zeroAndSet 1 b (ipb*(4*m))
-    in reduce (\ x y -> (x == y && x != false)) true (map2 (==) u bpow)
+    let bpow = zeroAndSet 1 b (ipb*(4*m)) :> [ipb*(4*m)]u16
+    in map2 (==) u bpow |> reduce (&&) true
 
 --
 -- Checks equality of u and bpow
 --
 def ltBpow [m][ipb] (u: [ipb*(4*m)]u16) (b: i64) : bool =
-    let bpow = zeroAndSet 1 b (ipb*(4*m))
+    let bpow = zeroAndSet 1 b (ipb*(4*m)) :> [ipb*(4*m)]u16
     in lt u bpow
 
 --
