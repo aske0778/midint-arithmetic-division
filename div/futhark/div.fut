@@ -74,7 +74,7 @@ def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) 
 --
 -- Calculates the shifted inverse
 --
-def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
+def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     if k == 0 then
         quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16 
     else if k >= h && !(eqBpow vs h) then
@@ -88,15 +88,12 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
         let b2l = 1u64 << 3*16
         let tmp = (b2l - V) / V + 1
 
-        let vs = tabulate (ipb*(4*m)) (\i -> 
+        let ws = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
             else 0u16 )
 
-        -- in if h - k <= 2 then
-        --     shift (h-k-2) vs
-        -- else
-        in refine us vs h k 2
+        in refine vs ws h k 2
 
 --
 -- Implementation of multi-precision integer division using
