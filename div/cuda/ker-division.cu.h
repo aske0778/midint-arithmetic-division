@@ -23,7 +23,6 @@ multMod( volatile typename Base::uint_t* USh
         naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
     } else {
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
-
         #pragma unroll
         for (int i=0; i < Q; i++) {
             if (Q * threadIdx.x + i >= d) {
@@ -73,6 +72,7 @@ powDiff( volatile typename Base::uint_t* USh
         __syncthreads();
         multMod<Base, M, Q>(USh, VSh, VReg, RReg, L, VReg);
         __syncthreads();
+
         if (!ez<uint_t, Q>(VReg, USh)) {
             if (ez<uint_t, Q>(VReg, L-1, VSh)) {
                 sign = 0;
@@ -139,32 +139,22 @@ refine( volatile typename Base::uint_t* USh
 
     shift<uint_t, M, Q>(2, RReg, (uint_t*)USh, RReg);
 
-    int n = min(h - k + 1 - l, l);
-    int s = max(0, k - 2 * l + 1 - 2);     
-    shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
-    __syncthreads();
-    step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
-    __syncthreads();
-    shift<uint_t, M, Q>((h-k <= 2) ? -3 : -4, RReg, USh, RReg);
-    __syncthreads();
-    shift<uint_t, M, Q>(2, RReg, USh, RReg);
-
-  //  while (h - k > l) {
-    for (int i = 0; i < log2f(h-k); i++) {
-        int n = min(h - k + 1 - l, l);             
+    for (int i = 0; i < log2f(h-k)+1; i++) {
+        int n = min(h - k + 1 - l, l);      
         int s = max(0, k - 2 * l + 1 - 2);       
 
-        shift<uint_t, M, Q>(-s, VReg, VSh, TReg );
+        shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
-
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
         __syncthreads();
-
-        shift<uint_t, M, Q>(-1, RReg, USh, RReg);
-
-        l = l + n - 1;
+        if (i == 0) {
+            shift<uint_t, M, Q>(-1 - (n > 1), RReg, USh, RReg);
+        }
+        else {
+            shift<uint_t, M, Q>(-1, RReg, USh, RReg);
+            l = l + n - 1;
+        }
     }
-
     shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
 }
 
@@ -247,6 +237,7 @@ divShinv( typename Base::uint_t* u
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
     int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
+
     bool kIsOne = false;                                 
 
     if (k == 1) {
@@ -344,7 +335,7 @@ quoShinv( typename Base::uint_t* u
 
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();
-        add1<Base, Q>(RReg1, USh); 
+        add1<Base, Q>(RReg1, VSh); 
     }
 
     if (kIsOne) {
