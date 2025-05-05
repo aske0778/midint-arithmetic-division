@@ -1,6 +1,8 @@
 import "div-helpers"
 import "big-add"
 import "sqr-mul"
+import "futhark_new/sub"
+
 
 let us = [1,1,1,1] :> [1*(4*1)]u16
 let vs = [2,2,2,2] :> [1*(4*1)]u16
@@ -15,17 +17,17 @@ def multmod [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (d: i64) : [ipb*(
 --
 -- Calculates B^h-v*w
 --
-def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) : (u32, [ipb*(4*m)]u16) =
-    let precU = prec us
+def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) : (u32, [ipb*(4*m)]u16) =
     let precV = prec vs
-    let L = precV + precU - l + 1
+    let precW = prec ws
+    let L = precW + precV - l + 1
 
-    in if (precU == 0 || precV == 0) then
+    in if (precV == 0 || precW == 0) then
         let ret = zeroAndSet 1u16 h m
         let ret = ret :> [ipb*(4*m)]u16
         in (1, ret)
     else if (L >= h) then
-        let ret = bmulu16 us vs
+        let ret = bmulu16 vs ws
         in if ltbpow ret h then
             let ret = subbpowbigint h ret
             in (1, ret)
@@ -33,7 +35,7 @@ def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64)
             let ret = subbigintbpow ret h
             in (0, ret)
     else 
-        let ret = multmod us vs L
+        let ret = multmod vs ws L
         in if !(ez ret) && ret[L-1] == 0 then 
             (0, ret)
         else 
@@ -43,15 +45,15 @@ def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64)
 --
 -- Iterate towards an approximation in at most log(M) steps
 --
-def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
-    let (sign, vs) = powDiff us vs (h-n) (l-2)
-    let vs = bmulu16 us vs
+def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
+    let (sign, tmp) = powDiff vs ws (h-n) (l-2)
+    let tmp = bmulu16 ws tmp
         |> shift (2 * n - h)
-    let us = shift n us
+    let ws = shift n ws
     in if sign != 0 then
-        baddu16 us vs
+        baddu16 ws tmp
     else
-        bsubu16 us vs
+        bsubu16 ws tmp
 
 --
 -- Refine the approximation of the quotient
@@ -82,22 +84,19 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
     else if eqBpow vs k then
         zeroAndSet 1 (h - k) m :> [ipb*(4*m)]u16
     else 
-        let l = i64.min k 2
-        let V = loop V = 0u64 for i < l+1 do
-            V + (u64.u16 vs[k - l + i + 1]) << 16*(u64.i64 i)
-        let b2l = 1u64 << 16*2*(u64.i64 l)
-        let V = trace V
+        let V = (u64.u16 vs[k - 1]) | (u64.u16 vs[k]) << 16
+        let b2l = 1u64 << 3*16
         let tmp = (b2l - V) / V + 1
 
         let vs = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
-            else vs[i] )
+            else 0u16 )
 
-        in if h - k <= l then
-            shift (h-k-l) vs
-        else
-            refine us vs h k l
+        -- in if h - k <= 2 then
+        --     shift (h-k-2) vs
+        -- else
+        in refine us vs h k 2
 
 --
 -- Implementation of multi-precision integer division using
@@ -173,7 +172,30 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     in quo
 
 
+-- 
+-- entry: test_add
+-- compiled input { [15u16, 63u16, 23u16, 65535u16]
+-- [9u16, 65535u16, 32u16, 22u16] }
+-- output { [24u16, 62u16, 56u16, 21u16] }
+entry test_add (us: [1*(4*1)]u16) (vs: [1*(4*1)]u16) : [1*(4*1)]u16 =
+    baddu16 us vs
+
 -- ==
+-- entry: test_add1
+-- compiled input { [15u16, 63u16, 23u16, 65535u16] }
+-- output { [15u16, 63u16, 23u16, 65535u16] }
+entry test_add1 (us: [1*(4*1)]u16) : [1*(4*1)]u16 =
+    badd1u16 us
+
+-- 
+-- entry: test_sub
+-- compiled input { [15u16, 63u16, 23u16, 65535u16]
+-- [9u16, 65535u16, 32u16, 22u16] }
+-- output { [6u16, 64u16, 65526u16, 65512u16] }
+entry test_sub (us: [1*(4*1)]u16) (vs: [1*(4*1)]u16) : [1*(4*1)]u16 =
+    bsubu16 us vs
+
+-- 
 -- entry: test_div
 -- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 -- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
@@ -182,7 +204,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*16)]u16) =
     div us vs
 
--- ==
+-- 
 -- entry: test_quo
 -- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 -- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
@@ -190,7 +212,7 @@ entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*1
 entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
     quo us vs
 
--- ==
+-- 
 -- entry: bench_div
 -- compiled random input { [131072][64]u16  [3]u16 }
 -- compiled random input { [65536][128]u16  [3]u16 }
@@ -211,7 +233,7 @@ entry bench_div [m][n] (us: [n][m]u16) (vs: [3]u16) : ([n][m]u16, [n][m]u16) =
     let ret = map2 div us vs |> unzip :> ([n][m]u16, [n][m]u16)
     in ret
 
--- ==
+-- 
 -- entry: bench_quo
 -- compiled random input { [131072][64]u16  [3]u16 }
 -- compiled random input { [65536][128]u16  [3]u16 }
@@ -233,7 +255,7 @@ entry bench_quo [m][n] (us: [n][m]u16) (vs: [3]u16) : [n][m]u16 =
     in ret
 
 
--- ==
+-- 
 -- entry: bench_quo_single
 -- compiled random input {  [64]u16  [3]u16 }
 -- compiled random input { [128]u16  [3]u16 }
