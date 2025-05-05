@@ -58,18 +58,18 @@ def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n
 --
 -- Refine the approximation of the quotient
 --
-def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
-    let us = shift 2 us
-    let (_, vs, _) = loop (us, vs, l) = (us, vs, l)
+def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
+    let ws = shift 2 ws
+    let (ws, _) = loop (ws, l) = (ws, l)
         while h - k > l do
             let n = i64.min (h - k + 1 - l) l
             let s = i64.max 0 (k - 2 * l + 1 - 2)
-            let us = shift (-s) us
-            let us = step us vs (k + l + n - s + 2) n l
-            let us = shift (-1) us
+            let vs = shift (-s) vs
+            let tmp = step vs ws (k + l + n - s + 2) n l
+            let ws = shift (-1) tmp
             let l = l + n - 1
-            in (us, vs, l)
-    in shift (-2) vs
+            in (ws, l)
+    in shift (-2) ws
 
 --
 -- Calculates the shifted inverse
