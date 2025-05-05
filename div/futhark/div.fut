@@ -23,12 +23,12 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
     let L = precW + precV - l + 1
 
     in if (precV == 0 || precW == 0) then
-        let ret = zeroAndSet 1u16 h m
+        let ret = zeroAndSet 1u16 h (ipb*(4*m))
         let ret = ret :> [ipb*(4*m)]u16
         in (1, ret)
     else if (L >= h) then
         let ret = bmulu16 vs ws
-        in if ltbpow ret h then
+        in if ltBpow ret h then
             let ret = subbpowbigint h ret
             in (1, ret)
         else
@@ -80,12 +80,12 @@ def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     else if k >= h && !(eqBpow vs h) then
         vs
     else if k == h - 1 && vs[k] > u16.highest / 2 then
-        zeroAndSet 1 0 m :> [ipb*(4*m)]u16
+        zeroAndSet 1 0 (ipb*(4*m)) :> [ipb*(4*m)]u16
     else if eqBpow vs k then
-        zeroAndSet 1 (h - k) m :> [ipb*(4*m)]u16
+        zeroAndSet 1 (h - k) (ipb*(4*m)) :> [ipb*(4*m)]u16
     else 
-        let V = (u64.u16 vs[k - 1]) | (u64.u16 vs[k]) << 16
-        let b2l = 1u64 << 3*16
+        let V = (u64.u16 vs[k - 2]) | (u64.u16 vs[k - 1]) << 1*16 | (u64.u16 vs[k]) << 2*16
+        let b2l = 1u64 << 4*16
         let tmp = (b2l - V) / V + 1
 
         let ws = tabulate (ipb*(4*m)) (\i -> 
