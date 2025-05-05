@@ -74,7 +74,7 @@ def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) 
 --
 def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     if k == 0 then
-        quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16--map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
+        quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16 
     else if k >= h && !(eqBpow vs h) then
         vs
     else if k == h - 1 && vs[k] > u16.highest / 2 then
