@@ -238,18 +238,6 @@ divShinv( typename Base::uint_t* u
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
     int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
 
-    bool kIsOne = false;                                 
-
-    if (k == 1) {
-        kIsOne = true;
-        h++;
-        k++;
-        __syncthreads();
-        shift<uint_t, M, Q>(1, UReg, USh, UReg);
-        shift<uint_t, M, Q>(1, VReg, VSh, VReg);
-        __syncthreads();
-    }
-
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
     __syncthreads();
 
@@ -270,10 +258,6 @@ divShinv( typename Base::uint_t* u
         bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
     }
 
-    if (kIsOne) {
-        __syncthreads(); 
-        shift<uint_t, M, Q>(-1, RReg2, VSh, RReg2);
-    }
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
     cpyReg2Sh2Glb<uint_t, M, Q>(rem, USh, RReg2);
@@ -307,17 +291,6 @@ quoShinv( typename Base::uint_t* u
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);
     int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1;
-    bool kIsOne = false;
-
-    if (k == 1) {
-        kIsOne = true;
-        h++;
-        k++;
-        __syncthreads();
-        shift<uint_t, M, Q>(1, UReg, USh, UReg);
-        shift<uint_t, M, Q>(1, VReg, VSh, VReg);
-        __syncthreads();
-    }
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
     __syncthreads();
@@ -338,10 +311,6 @@ quoShinv( typename Base::uint_t* u
         add1<Base, Q>(RReg1, VSh); 
     }
 
-    if (kIsOne) {
-        __syncthreads(); 
-        shift<uint_t, M, Q>(-1, RReg2, VSh, RReg2);
-    }
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(quo, VSh, RReg1);
 }
