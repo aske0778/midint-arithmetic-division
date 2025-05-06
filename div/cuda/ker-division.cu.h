@@ -168,13 +168,14 @@ shinv( volatile typename Base::uint_t* USh
      , typename Base::uint_t VReg[Q]
      , typename Base::uint_t TReg[Q]
      , int h
-     , int k
      , typename Base::uint_t RReg[Q]
 ) {
     using uint_t = typename Base::uint_t;
     using ubig_t = typename Base::ubig_t;
     using uquad_t = typename Base::uquad_t;
     
+    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
+
     if (k == 0) {
         quo<Base, Q>(h, VSh[0], VSh, RReg);
         return;
@@ -236,9 +237,8 @@ divShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
 
-    shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
+    shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
 
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
@@ -290,9 +290,8 @@ quoShinv( typename Base::uint_t* u
     __syncthreads();
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1;
 
-    shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
+    shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, RReg1);
     __syncthreads();
 
     bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
