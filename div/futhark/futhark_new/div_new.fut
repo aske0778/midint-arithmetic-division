@@ -3,9 +3,6 @@ import "add"
 import "mul"
 import "sub"
 
-let us = [1,1,1,1] :> [1*(4*1)]u16
-let vs = [2,2,2,2] :> [1*(4*1)]u16
-
 --
 -- Calculates (a * b) rem B^d
 --
@@ -28,7 +25,8 @@ def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64)
     else if (L >= h) then
         let ret = convMulV3 us vs
         in if ltbpow ret h then
-            let ret = subbpowbigint h ret
+            let tmp = zeroAndSet 1 (h) (ipb*(4*m))
+            let ret = (bsub tmp ret).0
             in (1, ret)
         else
             let ret = subbigintbpow ret h
@@ -45,10 +43,11 @@ def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64)
 -- Iterate towards an approximation in at most log(M) steps
 --
 def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
-    let (sign, vs) = powDiff us vs (h-n) (l-2)
-    let vs = convMulV3 us vs
+    let (sign, us) = (powDiff vs  us (h-n) (l-2))
+    let us = convMulV3 us vs
         |> shift (2 * n - h)
-    let us = shift n us
+    --let us = trace (shift n us)
+    let vs = shift n vs
     in if sign != 0 then
         baddV3 us vs
     else
@@ -60,18 +59,19 @@ def step [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64) (n
 --
 -- Refine the approximation of the quotient
 --
-def refine [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
-    let us = shift 2 us
-    let (_, vs, _) = loop (us, vs, l) = (us, vs, l)
+def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
+    let ws = (shift 2 ws)
+    let (ws, _) = loop (ws, l) = (ws, l)
         while h - k > l do
             let n = i64.min (h - k + 1 - l) l
             let s = i64.max 0 (k - 2 * l + 1 - 2)
-            let us = shift (-s) us
-            let us = step us vs (k + l + n - s + 2) n l
-            let us = shift (-1) us
+            let vs = shift (-s) vs
+            let tmp = step ( vs) ( ws) (k + l + n - s + 2) n l
+            let ws = shift (-1) tmp
             let l = l + n - 1
-            in (us, vs, l)
-    in shift (-2) vs
+            in (ws, l)
+    in shift (-2) ws
+
 
 --
 -- Calculates the shifted inverse
@@ -89,18 +89,18 @@ def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) :
         let l = i64.min k 2
         --let V = loop V = 0u64 for i < l+1 do
         --    (V + (u64.u16 vs[k - l + i + 1]) << 16*(u64.i64 i))
-        let V = (u64.u16 vs[k - 1]) | (u64.u16 vs[k]) << 16
-        let b2l = 1u64 << 16*3 --*(u64.i64 l)
-        let tmp = (b2l - V) / V + 1
+        let V = (u64.u16 vs[k - 2]) | (u64.u16 vs[k - 1]) << 16 | (u64.u16 vs[k]) << 32 
+        let b2l = 1u64 << 16*4--*(u64.i64 l)
+        let tmp = (b2l - V) / (V + 1)
 
-        let vs = tabulate (ipb*(4*m)) (\i -> 
+        let ws = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
-            else 0u16) 
+            else 0u16)
         in if h - k <= l then
-            shift (h-k-l) vs
+            shift (h-k-l) ws
         else
-            refine us vs h k l
+            refine vs ws h k l
 
 
 --
@@ -121,19 +121,29 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = shinv us vs h k
-        |> convMulV3 us
-        |> shift (-h)
+    --let quo = shinv us vs h k
+    --    |> convMulV3 us
+    --    |> shift (-h)
+    let quo = 
+        let m = m * 2
+        let quo_padded = ((shinv us vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let mul_res = convMulV3 quo_padded us_padded
+        let mul_shifted = shift (-h) mul_res
+        let res = take (ipb*(4*(m/2))) mul_shifted
+        in res
+    let quo = quo :> [ipb * (4 * m)]u16
+    --let quo = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] :> [ipb*(4*m)]u16
     let rem = (convMulV3 vs quo
         |> bsub us).0
-        --|> .1
         --|> bsubu16 us)
 
     let (quo, rem) =
-        if lt rem vs then
+        if not (lt rem vs) then
             let quo = badd1u16 quo
             -- same deal of different sub implementation, testing will reveal the best
-            let rem = (bsubu16 rem vs)
+            -- our bsubu16 does not work for the us' vs' input
+            --let rem = bsubu16 rem vs
             let rem = ((bsub rem vs).0)
             in (quo, rem)
         else
@@ -143,6 +153,7 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         if kIsOne then
             (shift (-1) rem)
         else 
+
             (rem)
 
     in (quo, rem)
@@ -274,46 +285,36 @@ entry bench_quo_single [m] (us: [m]u16) (vs: [3]u16) : [m]u16 =
 
 -- alot of junk for testing 
 
-def mads' = [[[20, 42, 10, 4, 63, 8, 22, 1]]] :> [1][1][(4*2)]u64
-def mikkel' = [[[5, 0, 0, 0, 0, 0, 0, 0]]] :> [1][1][(4*2)]u64
-
-def x = [0,4,1,0]:> [1*(4*1)]u64
-def y = [1,4,2,3] :> [1*(4*1)]u64
-
-def foo = [0,4,1,0]:> [1*(4*1)]u16
-def bar = [420, 0, 0, 0] :> [1*(4*1)]u16
-
-def x' = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u64
-def y' = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u64
-def kom = [0,4,1,0,0,0,0,0]:> [1*(4*2)]u16
-def nu = [1,4,2,3,0,0,0,0] :> [1*(4*2)]u16
-
+-- gives correct result
 def mads = [20, 42, 10, 4, 63, 8, 22, 1] :> [1*(4*2)]u16
 def mikkel = [5, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*2)]u16
 
-def foo' = [[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]] :> [1][16][4*4]u64--[1][16][16]u64
-def bar' = [[[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]] :> [1][16][4*4]u64--[1][16][16]u64
 
-def j = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] :> [1 *(4 * 4)]u64
-def r = [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] :> [1 *(4 * 4)]u64
+-- give correct result
+def foo = [0,1,4,0]:> [1*(4*1)]u16
+def bar = [420, 0, 0, 0] :> [1*(4*1)]u16
 
---def mads' = [[[20, 42, 10, 4, 63, 8, 22, 1]]] :> [1][1][(4*2)]u64
---def mikkel' = [[[5, 0, 0, 0, 0, 0, 0, 0]]] :> [1][1][(4*2)]u64
-
-
-def x'' = [0,4,1,0,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
-def y'' = [1,4,2,3,0,0,0,0,0,0,0,0,0,0,0,0] :> [1*(4*4)]u64
-
-
+-- gives correct result
 def cat = [4,2,2,2,0,0,0,0] :> [1*(4*2)]u16
 def dog = [4,1,1,1,0,0,0,0] :> [1*(4*2)]u16
 
---def x'' = [0,0,0,0,0,4,1,0]:> [1*(4*2)]u64
---def y'' = [0,0,0,0,1,4,2,3] :> [1*(4*2)]u64
+-- gives correct result
+def y = [1,4,2,3] :> [1*(4*1)]u16
+def x = [0,4,1,0]:> [1*(4*1)]u16
 
+-- gives correct result
 def horse = [7, 3, 5, 10, 7, 9, 7, 9, 7, 2, 2, 10, 0, 0, 0, 0] :> [1*(4*4)]u16
-def donkey = [4, 4, 5, 1, 7, 2, 2, 10, 0, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*4)]u16
+def donkey = [4, 4, 5, 1, 7, 2, 2, 10, 0, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*4)]u16 
 
+-- gives correct result
+def us' = [39017, 18547, 56401, 23807, 37962, 22764, 7977, 31949, 0, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*4)]u16
+def vs' = [22714, 55211, 16882, 7931, 43491, 57670, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*4)]u16
 
---def x' = [0,4,1,0]:> [1*(4*1)]u16
---def y' = [1,4,2,3] :> [1*(4*1)]u16
+-- gives correct result
+def knold = [4, 2, 3, 6, 9, 6, 10, 10, 10, 9, 9, 9, 0, 0, 0, 0] :> [1*(4*4)]u16 
+def tot = [10, 1, 1, 5, 10, 2, 4, 4, 1, 1, 1, 0, 0, 0, 0, 0] :> [1*(4*4)]u16 
+
+-- does not give correct result, something happens in refine, second round of powdiff gives wrong result.
+def us = [35165, 45317, 41751, 43096, 23273, 33886, 43220, 48555, 36018, 53453, 57542, 0, 0, 0, 0, 0] :> [1*(4*4)]u16 
+def vs = [30363, 40628, 9300, 34321, 50190, 7554, 63604, 34369, 0, 0, 0, 0, 0, 0, 0, 0] :> [1*(4*4)]u16 
+
