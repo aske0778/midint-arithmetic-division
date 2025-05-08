@@ -97,7 +97,10 @@ def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
             else if i == 1 then u16.u64 (tmp >> 16)
             else 0u16 )
 
-        in refine vs ws h k 2
+        in if h - k <= 2 then
+            shift (h-k-2) ws
+        else
+            refine vs ws h k 2
 
 --
 -- Implementation of multi-precision integer division using
@@ -121,11 +124,21 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         |> convMulV2 us
         |> shift (-h)
 
+    -- let quo = 
+    --     let m = m * 2
+    --     let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+    --     let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+    --     let mul_res = convMulV3 quo_padded us_padded
+    --     let mul_shifted = shift (-h) mul_res
+    --     let res = take (ipb*(4*(m/2))) mul_shifted
+    --     in res
+    -- let quo = quo :> [ipb * (4 * m)]u16
+
     let (rem, _) = convMulV2 vs quo
         |> bsub us
 
     let (quo, rem) =
-        if lt rem vs then
+        if not (lt rem vs) then
             let quo = badd1u16 quo
             let (rem, _) = bsub rem vs
             in (quo, rem)
@@ -166,7 +179,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         |> bsubu16 us
 
     let quo =
-        if lt rem vs then
+        if not (lt rem vs) then
             badd1u16 quo
         else
             quo
@@ -174,86 +187,76 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     in quo
 
 
+-- 
+-- entry: test_div
+-- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+-- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [19472u16, 62163u16, 27479u16, 13589u16, 47175u16, 43963u16, 55342u16, 58871u16, 55235u16, 53043u16, 2386u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+-- [39433u16, 45455u16, 53114u16, 8163u16, 2139u16, 41117u16, 26901u16, 18168u16, 43904u16, 52648u16, 42003u16, 21686u16, 4014u16, 49277u16, 30849u16, 40590u16, 42920u16, 59996u16, 43580u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*16)]u16) =
+    div us vs
 
---
--- ==
+-- 
+-- entry: test_quo
+-- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+-- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [19472u16, 62163u16, 27479u16, 13589u16, 47175u16, 43963u16, 55342u16, 58871u16, 55235u16, 53043u16, 2386u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
+    quo us vs
+
+-- 
 -- entry: bench_div
--- compiled random input { [131072][64]u16  [131072][64]u16 }
--- compiled random input { [65536][128]u16  [65536][128]u16 }
--- compiled random input { [8192][256]u16  [8192][256]u16 }
--- compiled random input { [16384][512]u16  [16384][512]u16 }
--- compiled random input { [8192][1024]u16  [8192][1024]u16 }
--- compiled random input { [4096][2048]u16  [4096][2048]u16 }
--- compiled random input { [2048][4096]u16  [2048][4096]u16 }
--- compiled random input { [1024][8192]u16  [1024][8192]u16 }
--- compiled random input { [512][16384]u16  [512][16384]u16 }
-entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([n][m]u16, [n][m]u16) = 
+-- compiled random input { [65536][2][64]u16   [65536][2][64]u16  }
+-- compiled random input { [32768][2][128]u16  [32768][2][128]u16 }
+-- compiled random input { [16384][2][256]u16  [16384][2][256]u16 }
+-- compiled random input { [8192][2][512]u16   [8192][2][512]u16  }
+-- compiled random input { [4096][2][1024]u16  [4096][2][1024]u16 }
+-- compiled random input { [2048][2][2048]u16  [2048][2][2048]u16 }
+-- compiled random input { [1024][2][4096]u16  [1024][2][4096]u16 }
+-- compiled random input { [512][2][8192]u16   [512][2][8192]u16  }
+-- compiled random input { [256][2][16384]u16  [256][2][16384]u16 }
+entry bench_div [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : ([n][ipb*(4*m)]u16, [n][ipb*(4*m)]u16) =
     #[unsafe]
     let mdiv4 = m / 4
-    let us = us :> [n][1*(4*mdiv4)]u16
-    let vs = vs :> [n][1*(4*mdiv4)]u16
-    let ret = map2 div us vs 
-    let ret = unzip ret :> ([n][m]u16, [n][m]u16)
-    in ret
+    let us = (map flatten us) :> [n][ipb*(4*mdiv4)]u16
+    let vs = (map flatten vs) :> [n][ipb*(4*mdiv4)]u16
+    let ret = map2 div us vs |> unzip :> ([n][ipb*(4*m)]u16, [n][ipb*(4*m)]u16)
+    in  ret
 
---
--- ==
--- entry: bench_div64
--- compiled random input { [131072][64]u16  [131072][64]u16 }
-entry bench_div64 [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([n][m]u16, [n][m]u16) = 
-    #[unsafe]
-    let mdiv4 = m / 4
-    let us = us :> [n][1*(4*mdiv4)]u16
-    let vs = vs :> [n][1*(4*mdiv4)]u16
-    let ret = map2 div us vs 
-    let ret = unzip ret :> ([n][m]u16, [n][m]u16)
-    in ret
-
-
-
-
---
--- ==
+-- 
 -- entry: bench_quo
--- compiled random input { [131072][64]u16  [3]u16 }
--- compiled random input { [65536][128]u16  [3]u16 }
--- compiled random input { [32768][256]u16  [3]u16 }
--- compiled random input { [16384][512]u16  [3]u16 }
--- compiled random input { [8192][1024]u16  [3]u16 }
--- compiled random input { [4096][2048]u16  [3]u16 }
--- compiled random input { [2048][4096]u16  [3]u16 }
--- compiled random input { [1024][8192]u16  [3]u16 }
--- compiled random input { [512][16384]u16  [3]u16 }
--- compiled random input { [256][32768]u16  [3]u16 }
-entry bench_quo [m][n] (us: [n][m]u16) (vs: [3]u16) : [n][m]u16 =
-    let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
+-- compiled random input { [65536][2][64]u16   [65536][2][64]u16  }
+-- compiled random input { [32768][2][128]u16  [32768][2][128]u16 }
+-- compiled random input { [16384][2][256]u16  [16384][2][256]u16 }
+-- compiled random input { [8192][2][512]u16   [8192][2][512]u16  }
+-- compiled random input { [4096][2][1024]u16  [4096][2][1024]u16 }
+-- compiled random input { [2048][2][2048]u16  [2048][2][2048]u16 }
+-- compiled random input { [1024][2][4096]u16  [1024][2][4096]u16 }
+-- compiled random input { [512][2][8192]u16   [512][2][8192]u16  }
+-- compiled random input { [256][2][16384]u16  [256][2][16384]u16 }
+entry bench_quo [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : [n][ipb*(4*m)]u16 =
+    #[unsafe]
     let mdiv4 = m / 4
-    let vs = replicate n vs
-    let us = us :> [n][1*(4*mdiv4)]u16
-    let vs = vs :> [n][1*(4*mdiv4)]u16
-    let ret = imap2Intra us vs quo :> [n][m]u16
-    in ret
+    let us = (map flatten us) :> [n][ipb*(4*mdiv4)]u16
+    let vs = (map flatten vs) :> [n][ipb*(4*mdiv4)]u16
+    let ret = map2 quo us vs :> [n][ipb*(4*m)]u16
+    in  ret
 
-
---
--- ==
+-- 
 -- entry: bench_quo_single
--- compiled random input {  [64]u16  [3]u16 }
--- compiled random input { [128]u16  [3]u16 }
--- compiled random input {  [256]u16  [3]u16 }
--- compiled random input {  [512]u16  [3]u16 }
--- compiled random input { [1024]u16  [3]u16 }
--- compiled random input {  [2048]u16  [3]u16 }
--- compiled random input {  [4096]u16  [3]u16 }
--- compiled random input {  [8192]u16  [3]u16 }
--- compiled random input {  [16384]u16  [3]u16 }
--- compiled random input {  [32768]u16  [3]u16 }
-entry bench_quo_single [m] (us: [m]u16) (vs: [3]u16) : [m]u16 =
-    let vs = tabulate m (\i -> if i < 3 then vs[i] else 0)
+-- compiled random input { [64]u16    [64]u16    }
+-- compiled random input { [128]u16   [128]u16   }
+-- compiled random input { [256]u16   [256]u16   }
+-- compiled random input { [512]u16   [512]u16   }
+-- compiled random input { [1024]u16  [1024]u16  }
+-- compiled random input { [2048]u16  [2048]u16  }
+-- compiled random input { [4096]u16  [4096]u16  }
+-- compiled random input { [8192]u16  [8192]u16  }
+-- compiled random input { [16384]u16 [16384]u16 }
+entry bench_quo_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
     let mdiv4 = m / 4
     let us = us :> [1*(4*mdiv4)]u16
     let vs = vs :> [1*(4*mdiv4)]u16
-    let ret = quo us vs :> [m]u16
-    in ret
+    in quo us vs :> [m]u16
 
 
