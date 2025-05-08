@@ -29,14 +29,16 @@ def powDiff [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (l: i64)
             let ret = (bsub tmp ret).0
             in (1, ret)
         else
-            let ret = subbigintbpow ret h
+            let bpow = zeroAndSet 1 h (ipb*(4*m))
+            let (ret, _) = bsub ret bpow
             in (0, ret)
     else 
         let ret = multmod us vs L
         in if !(ez ret) && ret[L-1] == 0 then 
             (0, ret)
         else 
-            let ret = subbpowbigint L ret
+            let bpow = zeroAndSet 1 L (ipb*(4*m))
+            let (ret, _) = bsub bpow ret
             in (1, ret)
 
 --
@@ -76,7 +78,7 @@ def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) 
 --
 -- Calculates the shifted inverse
 --
-def shinv [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
+def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     if k == 0 then
         quo_single h (vs) (ipb*(4*m)) :> [ipb*(4*m)]u16--map u16.i64 (iota (ipb*(4*m))) -- TODO: implement quo
     else if k >= h && !(eqBpow vs h) then
@@ -126,7 +128,7 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
     --    |> shift (-h)
     let quo = 
         let m = m * 2
-        let quo_padded = ((shinv us vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
         let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
         let mul_res = convMulV3 quo_padded us_padded
         let mul_shifted = shift (-h) mul_res
@@ -176,7 +178,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         else
             (us, vs, h, k)
 
-    let quo = shinv us vs h k
+    let quo = shinv vs h k
         |> convMulV3 us
         |> shift (-h)
 

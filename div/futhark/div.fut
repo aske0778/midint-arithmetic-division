@@ -1,12 +1,10 @@
-import "div-helpers"
-import "big-add"
-import "sqr-mul"
+import "futhark_new/div-helpers"
+--import "big-add"
+--import "sqr-mul"
 import "futhark_new/sub"
+import "futhark_new/add"
 import "futhark_new/mul"
 
-
-let us = [1,1,1,1] :> [1*(4*1)]u16
-let vs = [2,2,2,2] :> [1*(4*1)]u16
 
 --
 -- Calculates (a * b) rem B^d
@@ -50,14 +48,18 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
 -- Iterate towards an approximation in at most log(M) steps
 --
 def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
-    let (sign, tmp) = powDiff vs ws (h-n) (l-2)
+    --let (sign, tmp) = powDiff vs ws (h-n) (l-2)
+    let (sign, tmp) = powDiff ws vs (h-n) (l-2)
     let tmp = convMulV2 ws tmp
         |> shift (2 * n - h)
     let ws = shift n ws
     in if sign != 0 then
-        baddu16 ws tmp
+        --baddu16 ws tmp
+        baddV3 ws tmp
     else
-        bsubu16 ws tmp
+        -- bsubu16 ws tmp
+        let (ret, _) = bsub tmp ws 
+        in ret
 
 --
 -- Refine the approximation of the quotient
@@ -88,19 +90,20 @@ def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
     else if eqBpow vs k then
         zeroAndSet 1 (h - k) (ipb*(4*m)) :> [ipb*(4*m)]u16
     else 
+        let l = i64.min k 2
         let V = (u64.u16 vs[k - 2]) | (u64.u16 vs[k - 1]) << 1*16 | (u64.u16 vs[k]) << 2*16
         let b2l = 1u64 << 4*16
-        let tmp = (b2l - V) / V + 1
+        let tmp = (b2l - V) / (V + 1)
 
         let ws = tabulate (ipb*(4*m)) (\i -> 
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
             else 0u16 )
 
-        in if h - k <= 2 then
-            shift (h-k-2) ws
+        in if h - k <= l then
+            shift (h-k-l) ws
         else
-            refine vs ws h k 2
+            refine vs ws h k l
 
 --
 -- Implementation of multi-precision integer division using
@@ -120,19 +123,19 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    let quo = shinv vs h k
-        |> convMulV2 us
-        |> shift (-h)
+    --let quo = shinv vs h k
+    --    |> convMulV2 us
+    --    |> shift (-h)
 
-    -- let quo = 
-    --     let m = m * 2
-    --     let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
-    --     let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
-    --     let mul_res = convMulV3 quo_padded us_padded
-    --     let mul_shifted = shift (-h) mul_res
-    --     let res = take (ipb*(4*(m/2))) mul_shifted
-    --     in res
-    -- let quo = quo :> [ipb * (4 * m)]u16
+    let quo = 
+        let m = m * 2
+        let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let mul_res = convMulV3 quo_padded us_padded
+        let mul_shifted = shift (-h) mul_res
+        let res = take (ipb*(4*(m/2))) mul_shifted
+        in res
+    let quo = quo :> [ipb * (4 * m)]u16
 
     let (rem, _) = convMulV2 vs quo
         |> bsub us
@@ -172,10 +175,10 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
             (us, vs, h, k)
 
     let quo = shinv vs h k
-        |> bmulu16 us
+        |> convMulV2 us
         |> shift (-h)
 
-    let rem = bmulu16 vs quo
+    let rem = convMulV2 vs quo
         |> bsubu16 us
 
     let quo =
@@ -187,14 +190,33 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     in quo
 
 
--- 
+-- testing division
+-- ==
 -- entry: test_div
+-- compiled input { [20u16, 42u16, 10u16, 4u16, 63u16, 8u16, 22u16, 1u16] [5u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [4u16, 39330u16, 39323u16, 52429u16, 13119u16, 39323u16, 13111u16, 0u16] [0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- compiled input { [0u16,1u16,4u16,0u16] [420u16, 0u16, 0u16, 0u16]}
+-- output { [10142u16, 624u16, 0u16, 0u16] [200u16, 0u16, 0u16, 0u16] }
+-- compiled input { [4u16,2u16,2u16,2u16,0u16,0u16,0u16,0u16] [4u16,1u16,1u16,1u16,0u16,0u16,0u16,0u16] }
+-- output { [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] [0u16, 1u16, 1u16, 1u16, 0u16, 0u16, 0u16, 0u16] }
+-- compiled input { [1u16,4u16,2u16,3u16] [0u16,4u16,1u16,0u16] }
+-- output { [65526u16, 2u16, 0u16, 0u16] [1u16, 44u16, 0u16, 0u16] }
+-- compiled input { [7u16, 3u16, 5u16, 10u16, 7u16, 9u16, 7u16, 9u16, 7u16, 2u16, 2u16, 10u16, 0u16, 0u16, 0u16, 0u16] [4u16, 4u16, 5u16, 1u16, 7u16, 2u16, 2u16, 10u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] } 
+-- output { [0u16, 0u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] [7u16, 3u16, 5u16, 10u16, 3u16, 5u16, 2u16, 8u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- compiled input { [4u16, 2u16, 3u16, 6u16, 9u16, 6u16, 10u16, 10u16, 10u16, 9u16, 9u16, 9u16, 0u16, 0u16, 0u16, 0u16] [10u16, 1u16, 1u16, 5u16, 10u16, 2u16, 4u16, 4u16, 1u16, 1u16, 1u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [65535u16, 8u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] [14u16, 65449u16, 65530u16, 1u16, 65510u16, 65453u16, 65531u16, 65513u16, 65510u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] [22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [54959u16, 255u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] [30019u16, 15584u16, 62297u16, 30007u16, 47579u16, 3678u16, 23u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
 -- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 -- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
 -- output { [19472u16, 62163u16, 27479u16, 13589u16, 47175u16, 43963u16, 55342u16, 58871u16, 55235u16, 53043u16, 2386u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 -- [39433u16, 45455u16, 53114u16, 8163u16, 2139u16, 41117u16, 26901u16, 18168u16, 43904u16, 52648u16, 42003u16, 21686u16, 4014u16, 49277u16, 30849u16, 40590u16, 42920u16, 59996u16, 43580u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
-entry test_div (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : ([1*(4*16)]u16, [1*(4*16)]u16) =
-    div us vs
+entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
+    let mdiv4 = m / 4
+    let us = us :> [1*(4*mdiv4)]u16
+    let vs = vs :> [1*(4*mdiv4)]u16
+    let ret = div us vs :> ([m]u16, [m]u16)
+    in ret
 
 -- 
 -- entry: test_quo
@@ -258,5 +280,3 @@ entry bench_quo_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
     let us = us :> [1*(4*mdiv4)]u16
     let vs = vs :> [1*(4*mdiv4)]u16
     in quo us vs :> [m]u16
-
-
