@@ -22,8 +22,13 @@ let badd1u16 [ipb][m] (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 -- check the precision of bigint, eg n - (leading zero's)
 def prec [n] (u : [n]u16) : (i64) = 
     let bar = reduce (\idx1 idx2 -> 
-                        if u[idx2] != 0 then (idx2 + 1) else idx1) (0i64) (iota n)
+                        if u[idx2] != 0 then (idx2) else idx1) (0i64) (iota n)
+    let bar = if (bar == 0) && (u[0]== 0 ) then 0 else bar + 1
     in bar
+
+--def prec [n] (u : [n]u16) : (i64) = 
+--    let bar = map (\ x -> if x == 0u16 then 0 else 1) u :> reduce + (0i16)
+--    in bar  
 
 -- checks if two bigints are equal
 def eq [n] (u : [n]u16) (v : [n]u16) : bool =
