@@ -10,19 +10,19 @@ int main() {
 
   //  using Base = U32bits;
    // using Base = U64bits;
-    using Base = U16bits;
-   // using Base = U8bits;
+   // using Base = U16bits;
+    using Base = U8bits;
     using uint_t = Base::uint_t;
 
     //srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
-    const uint32_t M = 16;
+    const uint32_t M = 32;
 
-    for (int i = 0; i < 1000000 && !stop; i++) {
+    for (int i = 0; i < 10000000 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint32_t uPrec = min((rand() % M)+1, M-Q);
-        uint32_t vPrec = (rand() % uPrec) + 1;
+        uint32_t uPrec = min((rand() % M)+1, M/4);
+        uint32_t vPrec = (rand() % uPrec) + 3;
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
         // prnt<uint_t>("u", u, M);

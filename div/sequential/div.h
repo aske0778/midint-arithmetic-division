@@ -271,7 +271,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
         // prnt("leftmull",v,m);
         // prnt("rightmull",w,m);
         mult_gmp(v, w, B, m);
-      //  prnt("mullafter",B,m);
+        // prnt("mullafter",B,m);
     //     printf("l:%u \n", l);
     //     printf("L:%u \n", L);
     //     printf("h:%u \n", h);
@@ -291,7 +291,7 @@ bool powdiff(bigint_t v, bigint_t w, int h, int l, bigint_t B, prec_t m)
             sub_gmp(B, Bh, B, m);
             sign = 0;
         //    printf("HERE3");
-           // prnt("w",B,m);
+          //  prnt("B",B,m);
           //  prnt("2",B,m);
         }
         free(Bh);
@@ -346,21 +346,21 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
    // printf("h: %u, \n", h);
   //  printf("n: %u, \n", n);
     bigint_t tmp = init(m);
-
+    
     prec_t sign = powdiff(v, w, h - n, l - g, tmp, m);
-    // prnt("w",w,m);
-    // prnt("v",v,m);
-    // prnt("tmp",tmp,m);
+    // prnt("1",w,m);
+    // prnt("2",v,m);
+    // prnt("3",tmp,m);
     // prnt("left",w,m);
    // int precv = prec(tmp, m);
     // printf("v: %u, \n", prec(v, m));
     // printf("m: %i, \n", m );
     // printf("w: %u, \n", prec(w, m));
     // printf("right: %u, \n", prec(tmp, m));
-    // prnt("1",w,m);
-    // prnt("1",tmp,m);
+    prnt("left",w,m);
+    prnt("right",tmp,m);
     mult_gmp(w, tmp, tmp, m);
-   // prnt("resMul",tmp,m);
+    prnt("resMul",tmp,m);
    // prnt("res",tmp,m);
    // int precr = prec(tmp, m);
     // if (precr >= m/2) printf("prec: %u\n", precr);
@@ -371,7 +371,7 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
    // printf("m: %i, \n", n );
  //   printf("right: %u, \n", prec(tmp, m));
     shift(2 * n - h, tmp, tmp, m);
-  //  prnt("right", tmp, m);
+    prnt("SHIFTED", tmp, m);
   //  printf("right: %u, \n", prec(tmp, m));
   //  printf("left: %u, \n", prec(w, m));
     shift(n, w, w, m);
@@ -420,9 +420,9 @@ void refine3(bigint_t v, int h, int k, bigint_t w, int l, prec_t m)
         int n = min(h - k + 1 - l, l);
         s = max(0, k - 2 * l + 1 - g);
         shift(-s, v, v0, m);
-       // prnt("w",w,m);
+        // prnt("w",w,m);
         step(k + l + n - s + g, v0, w, n, l, g, m);
-      //  prnt("w",w,m);
+        prnt("w",w,m);
      //   printf("res11: %u\n", prec(w, m));
         shift(-1, w, w, m);
        // prnt("w",w,m);

@@ -96,13 +96,15 @@ step( volatile typename Base::uint_t* USh
     , typename Base::uint_t RReg[Q]
     , int n
     , int l
+    , int g
 ) {
     using uint_t  = typename Base::uint_t; 
     using ubig_t  = typename Base::ubig_t;
     using carry_t = typename Base::carry_t;
 
-    bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - 2);
+    bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - g);
     __syncthreads();
+
     int maxMul = (l+2)*3;                            
     if (maxMul <= blockDim.x) {
         naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
@@ -110,13 +112,18 @@ step( volatile typename Base::uint_t* USh
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
     }
     __syncthreads();
-    shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
-    shift<uint_t, M, Q>(n, RReg, USh, RReg);
-    __syncthreads();
 
+    shift<uint_t, M, Q>(n, RReg, USh, RReg);
     if (sign) {
+        shift<uint_t, M, Q>(2 * n - h, VReg, VSh, VReg);
+        __syncthreads();
         baddRegs<uint_t, uint_t, carry_t, Q, Base::HIGHEST>((carry_t*)VSh, RReg, VReg, RReg);
     } else {
+        bool isZero = ezShift<uint_t, Q>(VReg, 2 * n - h, VSh);
+        __syncthreads();
+        shift<uint_t, M, Q>(2 * n - h, VReg, USh, VReg);
+        if (!isZero) add1<Base, Q>(VReg, VSh); 
+        __syncthreads();
         bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg, VReg, RReg);
     }
 }
@@ -126,7 +133,7 @@ step( volatile typename Base::uint_t* USh
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __device__ inline void
-refine( volatile typename Base::uint_t* USh
+refine3( volatile typename Base::uint_t* USh
       , volatile typename Base::uint_t* VSh
       , typename Base::uint_t VReg[Q]
       , typename Base::uint_t TReg[Q]
@@ -142,10 +149,9 @@ refine( volatile typename Base::uint_t* USh
     for (int i = 0; i < log2f(h-k)+1; i++) {
         int n = min(h - k + 1 - l, l);      
         int s = max(0, k - 2 * l + 1 - 2);       
-
         shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
-        step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l);
+        step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         __syncthreads();
         if (i == 0) {
             shift<uint_t, M, Q>(-1 - (n > 1), RReg, USh, RReg);
@@ -156,6 +162,66 @@ refine( volatile typename Base::uint_t* USh
         }
     }
     shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
+}
+
+template<typename Base, uint32_t M, uint32_t Q>
+__device__ inline void
+refine2( volatile typename Base::uint_t* USh
+      , volatile typename Base::uint_t* VSh
+      , typename Base::uint_t VReg[Q]
+      , typename Base::uint_t TReg[Q]
+      , int h
+      , int k
+      , int l                               
+      , typename Base::uint_t RReg[Q]
+) {
+    using uint_t = typename Base::uint_t;
+
+    shift<uint_t, M, Q>(2, RReg, (uint_t*)USh, RReg);
+
+    for (int i = 0; i < log2f(h-k)+1; i++) {
+        int n = min(h - k + 1 - l, l);      
+        int s = 0;
+        shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
+        __syncthreads();
+        step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
+        __syncthreads();
+        if (i == 0) {
+            shift<uint_t, M, Q>(-1 - (n > 1), RReg, USh, RReg);
+        }
+        else {
+            shift<uint_t, M, Q>(-1, RReg, USh, RReg);
+            l = l + n - 1;
+        }
+    }
+    shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
+}
+
+template<typename Base, uint32_t M, uint32_t Q>
+__device__ inline void
+refine1( volatile typename Base::uint_t* USh
+      , volatile typename Base::uint_t* VSh
+      , typename Base::uint_t VReg[Q]
+      , typename Base::uint_t TReg[Q]
+      , int h
+      , int k
+      , int l                               
+      , typename Base::uint_t RReg[Q]
+) {
+    using uint_t = typename Base::uint_t;
+    h = h+1;
+    shift<uint_t, M, Q>(h-k-l, RReg, (uint_t*)USh, RReg);
+
+    for (int i = 0; i < log2f(h-k); i++) {
+        __syncthreads();
+        shift<uint_t, M, Q>(0, VReg, VSh, TReg);
+        __syncthreads();
+        step<Base, M, Q>(USh, VSh, h, TReg, RReg, 0, l, 0);
+        __syncthreads();
+    
+        l = min(2*l-1, h-k);
+    }
+    shift<uint_t, M, Q>(-1, RReg, VSh, RReg);
 }
 
 /**
@@ -206,7 +272,7 @@ shinv( volatile typename Base::uint_t* USh
     }
     __syncthreads();
 
-    refine<Base, M, Q>(USh, VSh, VReg, TReg, h, k, 2, RReg);
+    refine3<Base, M, Q>(USh, VSh, VReg, TReg, h, k, 2, RReg);
 }
 
 /**
@@ -250,8 +316,13 @@ divShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
     __syncthreads();
 
+    if(lt<uint_t, Q>(UReg, RReg2, USh)) {
+        __syncthreads();
+        sub<Base, Q>(RReg1, 0, VSh);
+        bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
+    }
+    __syncthreads();
     bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
-
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
         __syncthreads();
         add1<Base, Q>(RReg1, USh);
@@ -303,8 +374,14 @@ quoShinv( typename Base::uint_t* u
     bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M);
     __syncthreads();
 
+    if(lt<uint_t, Q>(UReg, RReg2, USh)) {
+        __syncthreads();
+        sub<Base, Q>(RReg1, 0, VSh);
+        bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
+    }
+    __syncthreads();
+    
     bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
-
     if (!lt<uint_t, Q>(RReg2, VReg, USh)) { 
         __syncthreads();
         add1<Base, Q>(RReg1, VSh); 

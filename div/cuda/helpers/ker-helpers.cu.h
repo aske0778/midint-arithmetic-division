@@ -125,6 +125,30 @@ eq( uint_t u[Q]
     return sh_mem[0];
 }
 
+template<class uint_t, uint32_t Q>
+__device__ inline bool 
+ezShift( uint_t u[Q]
+  , int ind
+  , volatile uint_t* sh_mem
+) {
+    bool tmp = true;
+    sh_mem[0] = true;
+    __syncthreads();   
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        if (u[i] != 0 && Q * threadIdx.x + i < ind) {
+            tmp = false;
+        }
+    }
+    if (tmp == false) {
+        sh_mem[0] = false;
+    }
+    __syncthreads();   
+    return sh_mem[0];
+}
+
+
+
 /**
  * Checks if a bigint is zero
  */
