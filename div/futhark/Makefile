@@ -6,13 +6,13 @@ test:
 	futhark test div.fut
 
 bench-quo:
-	futhark bench --backend $(CXX) div.fut --entry bench_quo
+	futhark bench div.fut --backend=$(CXX) --entry=bench_quo
 
 bench-quo-single:
-	futhark bench --backend $(CXX) div.fut --entry bench_quo_single
+	futhark bench div.fut --backend=$(CXX) --entry=bench_quo_single
 
 bench-div:
-	futhark bench --backend $(CXX) div.fut --entry bench_div
+	futhark bench div.fut --backend=$(CXX) --entry=bench_div
 
 .PHONY: clean
 clean:

@@ -22,8 +22,13 @@ let badd1u16 [ipb][m] (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 -- check the precision of bigint, eg n - (leading zero's)
 def prec [n] (u : [n]u16) : (i64) = 
     let bar = reduce (\idx1 idx2 -> 
-                        if u[idx2] != 0 then (idx2 + 1) else idx1) (0i64) (iota n)
+                        if u[idx2] != 0 then (idx2) else idx1) (0i64) (iota n)
+    let bar = if (bar == 0) && (u[0]== 0 ) then 0 else bar + 1
     in bar
+
+--def prec [n] (u : [n]u16) : (i64) = 
+--    let bar = map (\ x -> if x == 0u16 then 0 else 1) u :> reduce + (0i16)
+--    in bar  
 
 -- checks if two bigints are equal
 def eq [n] (u : [n]u16) (v : [n]u16) : bool =
@@ -96,11 +101,22 @@ def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)
                                 (r, ret)
     in ret
 
+--let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
+--  let min_idx = (reduce u16.min (trace u16.highest) us) |> i64.u16
+--  in tabulate (ipb* (4*m)) (\i -> 
+--    if (i < min_idx) then 0
+--    -- why is 1 - us[i] wrong?? is it wrong?? 
+--    else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
+--    else us[i] )
+
 let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
-  let min_idx = reduce u16.min u16.highest us |> i64.u16
+  let min_idx = (reduce u16.min (trace u16.highest) (trace us)) |> i64.u16
+  --let min_idx = ()
+  let min_idx = trace min_idx
   in tabulate (ipb* (4*m)) (\i -> 
     if (i < min_idx) then 0
-    else if i < bpow then 1 - us[i]
+    -- why is 1 - us[i] wrong?? is it wrong?? 
+    else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
     else us[i] )
 
 let subbigintbpow [ipb][m] (us : [ipb*(4*m)]u16) (bpow : i64) : [ipb*(4*m)]u16 =
@@ -108,7 +124,6 @@ let subbigintbpow [ipb][m] (us : [ipb*(4*m)]u16) (bpow : i64) : [ipb*(4*m)]u16 =
   in tabulate (ipb* (4*m)) (\i -> 
     if (i >= bpow && i <= min_idx) then us[i] - 1
     else us[i] )
-
 
 let subPairwiseu16 (m: i32) (ash: []u16) (bsh: []u16) (tid: i32) (i: i32) : (u16, cT)=
   let ind = tid * 4 + i
