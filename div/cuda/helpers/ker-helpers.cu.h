@@ -114,7 +114,7 @@ eq( uint_t u[Q]
       
     #pragma unroll
     for (int i = 0; i < Q; i++) {
-        if (u[i] != (bpow == (i * blockDim.x + threadIdx.x))) {
+        if (u[i] != (bpow == (Q * threadIdx.x + i))) {
             tmp = false;
         }
     }

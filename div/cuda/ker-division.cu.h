@@ -252,7 +252,7 @@ shinv( volatile typename Base::uint_t* USh
         set<uint_t, Q>(RReg, 1, 0);
         return;
     }
-    if (eq<uint_t, Q>(VReg, k,&USh[12])) {
+    if (eq<uint_t, Q>(VReg, k, &USh[12])) {
         set<uint_t, Q>(RReg, 1, h - k);
         return;
     }
