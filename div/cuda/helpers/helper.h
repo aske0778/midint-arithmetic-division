@@ -321,6 +321,34 @@ void gmpDivOnce( uint_t* inst_as
     }
 }
 
+/**
+ * A wrapper for the GMP div operation
+ */
+template<class uint_t, uint32_t m>
+void gmpGCDOnce( uint_t* inst_as
+               , uint_t* inst_bs
+               , uint_t* inst_rs
+) {
+    uint_t buff[4*m];
+    mpz_t a; mpz_t b; mpz_t r;   
+    mpz_init(a); mpz_init(b); mpz_init(r);
+
+    mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+    mpz_import(b, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_bs);
+
+    mpz_gcd(r, a, b);
+        
+    size_t count = 0;
+    mpz_export (buff, &count, GMP_ORDER, sizeof(uint_t), 0, 0, r);
+        
+    for(int j=0; j<m; j++) {
+        inst_rs[j] = buff[j];
+    }      
+    for(int j=count; j < m; j++) {
+        inst_rs[j] = 0;
+    }
+}
+
 template<int m>
 void gmpMultiply(int num_instances, uint32_t* as, uint32_t* bs, uint32_t* rs) {
     uint32_t* it_as = as;
@@ -370,6 +398,25 @@ void gmpDiv( int num_instances
     for(int i=0; i<num_instances; i++) {
         gmpDivOnce<uint_t, m>(it_as, it_bs, it_quo, it_rem);
         it_as += m; it_bs += m; it_quo += m; it_rem += m;
+    }
+}
+
+/**
+ * A wrapper to call GMP div for a number of instances
+ */
+template<class uint_t, int m>
+void gmpGCD( int num_instances
+           , uint_t* as
+           , uint_t* bs
+           , uint_t* rs
+) {
+    uint_t* it_as = as;
+    uint_t* it_bs = bs;
+    uint_t* it_rs = rs;
+        
+    for(int i=0; i<num_instances; i++) {
+        gmpGCDOnce<uint_t, m>(it_as, it_bs, it_rs);
+        it_as += m; it_bs += m; it_rs += m;
     }
 }
 
