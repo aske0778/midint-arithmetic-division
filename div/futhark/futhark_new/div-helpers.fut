@@ -193,63 +193,42 @@ let bsubu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u1
 
 
 
--- Testing ez
--- ==
--- entry: ez_test 
--- compiled input { [0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32] }
--- output { true }
--- compiled input { [1u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32] }
--- output { false }
--- compiled input { [0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32] }
--- output { false }
--- compiled input { [0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 1u32] }
--- output { false }
+
+
+entry test_quo_single [m] (bpow : i64) (d :[m]u16) (n : i64) : ([m]u16) =
+    let mdiv4 = m / 4
+    let ds = d :> [1 * (4 * mdiv4)]u16
+    let ret = (quo_single bpow ds n) :> [m]u16
+    in ret
+
+entry test_lt [m] (us: [m]u16) (vs: [m]u16) : bool =
+    let mdiv4 = m / 4
+    let us' = us :> [1 * (4 * mdiv4)]u16
+    let vs' = vs :> [1 * (4 * mdiv4)]u16
+    in
+    lt us' vs'
+
+entry test_prec [n] (u : [n]u16) : (i64) = 
+    prec u 
+
 
 -- Testing lt 
 -- == 
--- entry: lt_test
--- compiled input {   [1u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]
---                    [2u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]}
+-- entry: test_lt
+-- compiled input {   [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+--                    [2u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]}
 -- output { true }
--- compiled input {   [2u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]}
+-- compiled input {   [2u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+--                    [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]}
 -- output { false }
--- compiled input {   [2u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32]}
+-- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+--                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16]}
 -- output { true }
--- compiled input {   [2u32, 0u32, 1u32, 0u32, 0u32, 1u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32]}
+-- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 1u16, 0u16, 0u16]
+--                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16]}
 -- output { false }
--- compiled input {   [2u32, 0u32, 1u32, 0u32, 0u32, 1u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 1u32]}
--- output { true }
-
--- Testing eq
--- == 
--- entry: eq_test
--- compiled input {   [1u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]
---                    [2u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32, 0u32]}
--- output { false }
--- compiled input {   [1u32, 0u32, 1u32, 0u32, 1u32, 0u32, 0u32, 1u32]
---                    [1u32, 0u32, 1u32, 0u32, 1u32, 0u32, 0u32, 1u32]}
--- output { true }
--- compiled input {   [2u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32]}
--- output { false }
--- compiled input {   [2u32, 0u32, 1u32, 0u32, 0u32, 1u32, 0u32, 0u32]
---                    [1u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32, 0u32]}
--- output { false }
--- compiled input {   [2u32, 0u32, 1u32, 1u32, 0u32, 1u32, 0u32, 1u32]
---                    [2u32, 0u32, 1u32, 1u32, 0u32, 1u32, 0u32, 1u32]}
+-- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 1u16, 0u16, 0u16]
+--                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 1u16]}
 -- output { true }
 
-
---                    [2u32,  0u32,  1u32,  0u32, 0u32,  1u32,  0u32,  0u32]
---                    [1u32,  0u32,  0u32,  1u32, 0u32,  0u32,  0u32,  1u32]
---                    [false, false, false, true, false, false, false, true]
-
---                    [true, false, false, false, true, false, false, false]
-
---                    [2u32,  0u32,  1u32,  0u32, 0u32,  1u32,  1u32,  1u32]
---                    [1u32,  0u32,  0u32,  1u32, 0u32,  0u32,  2u32,  1u32]
---                    [false, false, false, true, false, false, true, false]
+-- testting pres 
