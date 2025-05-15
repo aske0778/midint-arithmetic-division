@@ -226,7 +226,7 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
 entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
     quo us vs
 
--- ==
+-- 
 -- entry: bench_div
 -- compiled random input { [65536][2][64]u16   [65536][2][64]u16  }
 -- compiled random input { [32768][2][128]u16  [32768][2][128]u16 }
@@ -264,7 +264,7 @@ entry bench_quo [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : [n][ipb*
     let ret = map2 quo us vs :> [n][ipb*(4*m)]u16
     in  ret
 
--- ==
+-- 
 -- entry: bench_div_single
 -- compiled random input { [64]u16    [64]u16    }
 -- compiled random input { [128]u16   [128]u16   }

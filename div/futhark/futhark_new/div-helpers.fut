@@ -21,8 +21,8 @@ let badd1u16 [ipb][m] (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 
 -- check the precision of bigint, eg n - (leading zero's)
 def prec [n] (u : [n]u16) : (i64) = 
-    let bar = reduce (\idx1 idx2 -> 
-                        if u[idx2] != 0 then (idx2) else idx1) (0i64) (iota n)
+    let bar = reduce (\ idx1 idx2 -> 
+                        if u[idx2] != 0 then (i64.max idx2 idx1) else idx1) (0i64) (iota n)
     let bar = if (bar == 0) && (u[0]== 0 ) then 0 else bar + 1
     in bar
 
@@ -213,7 +213,7 @@ entry test_prec [n] (u : [n]u16) : (i64) =
 
 
 -- Testing lt 
--- == 
+-- 
 -- entry: test_lt
 -- compiled input {   [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
 --                    [2u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]}
@@ -231,4 +231,10 @@ entry test_prec [n] (u : [n]u16) : (i64) =
 --                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 1u16]}
 -- output { true }
 
--- testting pres 
+-- testting prec
+-- ==
+-- entry: test_prec
+-- compiled input { [1u16, 1u16, 1u16, 1u16, 1u16, 1u16, 1u16, 1u16] }
+-- output { 8i64 }
+-- compiled input { [1u16, 0u16, 1u16, 0u16, 1u16, 1u16, 1u16, 0u16] }
+-- output { 7i64 }
