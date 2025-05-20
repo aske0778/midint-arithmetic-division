@@ -632,21 +632,21 @@ int main (int argc, char * argv[]) {
 
     // cudaSetDevice(1);
 
-    // {   // 32bit integer elements
-    //     runNaiveMuls<U32bits>(total_work);
+    {   // 32bit integer elements
+        // runNaiveMuls<U32bits>(total_work);
 
-    //     runQuotients<U32bits>(total_work);
-    //     runDivisions<U32bits>(total_work);
-    // }
-
-    // {   // 64bit integer elements
-    //     runNaiveMuls<U64bits>(total_work);
-
-    //     runQuotients<U64bits>(total_work);
-    //     runDivisions<U64bits>(total_work);
-    // }
-
-    {
-        runGCDs<U32bits>(total_work);
+        // runQuotients<U32bits>(total_work);
+        runDivisions<U32bits>(total_work);
     }
+
+    {   // 64bit integer elements
+        // runNaiveMuls<U64bits>(total_work);
+
+        // runQuotients<U64bits>(total_work);
+        runDivisions<U64bits>(total_work);
+    }
+
+    // {   // GCD computation
+    //     runGCDs<U32bits>(total_work);
+    // }
 }

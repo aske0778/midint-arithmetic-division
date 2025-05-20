@@ -460,10 +460,6 @@ gcd( typename Base::uint_t* u
         for (int i = 0; i < Q; i++) {
             UReg[i] = TReg[i];
         }
-
-        if (threadIdx.x == 0) {
-            printf("looped");
-        }
     }
     __syncthreads();
     cpyReg2Sh2Glb<uint_t, M, Q>(r, VSh, UReg);
