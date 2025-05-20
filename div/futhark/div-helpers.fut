@@ -26,10 +26,6 @@ def prec [n] (u : [n]u16) : (i64) =
     let bar = if (bar == 0) && (u[0]== 0 ) then 0 else bar + 1
     in bar
 
---def prec [n] (u : [n]u16) : (i64) = 
---    let bar = map (\ x -> if x == 0u16 then 0 else 1) u :> reduce + (0i16)
---    in bar  
-
 -- checks if two bigints are equal
 def eq [n] (u : [n]u16) (v : [n]u16) : bool =
     reduce (\ x y -> (x == y && x != false)) true (map2 (==) u v)
@@ -39,15 +35,6 @@ def eq [n] (u : [n]u16) (v : [n]u16) : bool =
 def ez [n] (u : [n]u16) : bool = 
     all (== 0) u    
 
--- returns u < v for two bigint
---def lt [n] (u : [n]u32) (v : [n]u32) : bool = 
---    let temp =  (map2 (\ x y -> i32.u32(x) - i32.u32(y)) (reverse u) (reverse v))
---    let temp2 =  (reduce (\ne x -> if (((x) > 0 && (ne) == 1) || ne == 0) then 0 
---                                        else if  (x == 0 && ne != -1) then 1 
---                                        else if  (x < 0 && ne == 1) then -1
---                                        else -1) 1 temp)
---    in 
---        if temp2 == -1 then true else false
 
 -- less than taken from thorbjørn, musch cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
@@ -101,21 +88,13 @@ def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)
                                 (r, ret)
     in ret
 
---let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
---  let min_idx = (reduce u16.min (trace u16.highest) us) |> i64.u16
---  in tabulate (ipb* (4*m)) (\i -> 
---    if (i < min_idx) then 0
---    -- why is 1 - us[i] wrong?? is it wrong?? 
---    else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
---    else us[i] )
+
 
 let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
   let min_idx = (reduce u16.min (trace u16.highest) (trace us)) |> i64.u16
-  --let min_idx = ()
   let min_idx = trace min_idx
   in tabulate (ipb* (4*m)) (\i -> 
     if (i < min_idx) then 0
-    -- why is 1 - us[i] wrong?? is it wrong?? 
     else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
     else us[i] )
 
@@ -211,30 +190,3 @@ entry test_lt [m] (us: [m]u16) (vs: [m]u16) : bool =
 entry test_prec [n] (u : [n]u16) : (i64) = 
     prec u 
 
-
--- Testing lt 
--- 
--- entry: test_lt
--- compiled input {   [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
---                    [2u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]}
--- output { true }
--- compiled input {   [2u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
---                    [1u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]}
--- output { false }
--- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16, 0u16]
---                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16]}
--- output { true }
--- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 1u16, 0u16, 0u16]
---                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 0u16]}
--- output { false }
--- compiled input {   [2u16, 0u16, 1u16, 0u16, 0u16, 1u16, 0u16, 0u16]
---                    [1u16, 0u16, 0u16, 1u16, 0u16, 0u16, 0u16, 1u16]}
--- output { true }
-
--- testting prec
--- ==
--- entry: test_prec
--- compiled input { [1u16, 1u16, 1u16, 1u16, 1u16, 1u16, 1u16, 1u16] }
--- output { 8i64 }
--- compiled input { [1u16, 0u16, 1u16, 0u16, 1u16, 1u16, 1u16, 0u16] }
--- output { 7i64 }
