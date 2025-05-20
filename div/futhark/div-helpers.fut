@@ -91,8 +91,8 @@ def quo_single [m][ipb] (bpow : i64) (d :[ipb*(4*m)]u16) (n : i64) : ([ipb*(4*m)
 
 
 let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
-  let min_idx = (reduce u16.min (trace u16.highest) (trace us)) |> i64.u16
-  let min_idx = trace min_idx
+  let min_idx = (reduce u16.min u16.highest us) |> i64.u16
+  let min_idx = min_idx
   in tabulate (ipb* (4*m)) (\i -> 
     if (i < min_idx) then 0
     else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
