@@ -17,11 +17,11 @@ int main() {
    // srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
-    const uint32_t M = 32;
+    const uint32_t M = 256;
 
     for (int i = 0; i < 1000000 && !stop; i++) {
         printf("\rIteration: %u", i);
-        uint32_t uPrec = min((rand() % M)+1, M/4);
+        uint32_t uPrec = min((rand() % M)+1, M-2);
         uint32_t vPrec = (rand() % uPrec) + 3;
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
@@ -39,9 +39,9 @@ int main() {
         cudaMemcpy(d_u, u, M * sizeof(uint_t), cudaMemcpyHostToDevice);
         cudaMemcpy(d_v, v, M * sizeof(uint_t), cudaMemcpyHostToDevice);
 
-        cudaFuncSetAttribute(divShinv<Base,M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
+        cudaFuncSetAttribute(divShinvKer<Base,M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
 
-        divShinv<Base, M, Q><<<1, M/Q,  2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
+        divShinvKer<Base, M, Q><<<1, M/Q,  2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess) {
             printf("Kernel Launch Error: %s\n", cudaGetErrorString(err));

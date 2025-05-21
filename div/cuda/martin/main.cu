@@ -12,7 +12,7 @@ int main()
     using Base = U16bits;
    // using Base = U8bits;
     using uint_t = Base::uint_t;
-    const uint32_t M = 32;
+    const uint32_t M = 16;
     const uint32_t Q = 4;
 
     // uint_t u[16] = {35165, 45317, 41751, 43096, 23273, 33886, 43220, 48555, 36018, 53453, 57542, 0, 0, 0, 0, 0};
@@ -41,8 +41,11 @@ int main()
     // uint_t u[32] = {4295, 1, 1, 19047, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // uint_t v[32] = {1, 24982, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    uint_t u[32] = {107, 152, 26, 164, 95, 172, 25, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    uint_t v[32] = {1, 224, 1, 195, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // uint_t u[32] = {107, 152, 26, 164, 95, 172, 25, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // uint_t v[32] = {1, 224, 1, 195, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    uint_t u[16] = {24, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0};
+    uint_t v[16] = {18, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0};
 
     // uint_t u[16] = {58205, 29807, 37142, 18428, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // uint_t v[16] = {46992, 20179, 51535, 21667, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -79,7 +82,7 @@ int main()
     cudaMemcpy(d_u, u, M * sizeof(uint_t), cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, M * sizeof(uint_t), cudaMemcpyHostToDevice);
 
-    divShinv<Base, M, Q><<<1, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
+    divShinvKer<Base, M, Q><<<1, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
     cudaDeviceSynchronize();
 
     cudaMemcpy(quo, d_quo, M * sizeof(uint_t), cudaMemcpyDeviceToHost);

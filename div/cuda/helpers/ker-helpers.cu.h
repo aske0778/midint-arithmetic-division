@@ -76,6 +76,20 @@ cpyShm2Reg ( volatile uint_t* shmem         //remove volatile?
 }
 
 /**
+ * Copy from one register to another
+ */
+template<class uint_t, uint32_t Q>
+__device__ inline void 
+cpyReg2Reg( uint_t AReg[Q]
+          , uint_t BReg[Q]
+) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        BReg[i] = AReg[i];
+    }
+}
+
+/**
  * Calculate the precision of a bigint in register memory
  */
 template<class uint_t, uint32_t Q>
@@ -238,6 +252,18 @@ set( uint_t u[Q]
 }
 
 /**
+ * Zeros a bigint
+ */
+template<class uint_t, uint32_t Q>
+__device__ inline void 
+zeroReg(uint_t u[Q]) {
+    #pragma unroll
+    for (int i = 0; i < Q; i++) {
+        u[i] = 0;
+    }
+}
+
+/**
  * Zeros a bigint and sets index idx to value d
  */
 template<class uint_t, uint32_t Q>
@@ -246,10 +272,7 @@ zeroAndSet( uint_t u[Q]
           , uint_t d
           , uint32_t idx
 ) {
-    #pragma unroll
-    for (int i = 0; i < Q; i++) {
-        u[i] = 0;
-    }
+    zeroReg<uint_t, Q>(u);
     set<uint_t, Q>(u, d, idx);
 }
 

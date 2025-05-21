@@ -56,7 +56,7 @@ int main()
     }
 
     {   // dry run div
-        divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
+        divShinvKer<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -65,7 +65,7 @@ int main()
         gettimeofday(&t_start, NULL); 
 
         for(int i=0; i<GPU_RUNS_DIV; i++) {
-            divShinv<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
+            divShinvKer<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         }
         cudaDeviceSynchronize();
 

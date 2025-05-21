@@ -162,7 +162,7 @@ uint_t* randBigInt( uint32_t prec, uint32_t m )
     {
 
         uint_t r = (uint_t)rand();
-        // u[i] = r + (r == 0);
+        u[i] = r + (r == 0);
       //  u[i] = (uint_t)rand() ;
       //  u[i] = ((uint_t)rand() % 5) + 1;
         // if (rand() % 2 == 0) {
