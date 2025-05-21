@@ -414,55 +414,54 @@ gcd( typename Base::uint_t* u
     volatile uint_t* USh = (uint_t*)(VSh + M);
     uint_t VReg[Q];
     uint_t UReg[Q];
-    uint_t TReg[Q] = {0};
     uint_t RReg1[2*Q] = {0};
     uint_t* RReg2 = &RReg1[Q];
+    uint_t TReg[Q] = {0};
 
     cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, VReg);
     cpyGlb2Sh2Reg<uint_t, M, Q>(u, USh, UReg);
     __syncthreads();
 
-    while (!ez<uint_t, Q>(v, VSh)) {
-        #pragma unroll
-        for (int i = 0; i < Q; i++) {
-            TReg[i] = VReg[i];
+    do {
+        int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
+        int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
+
+        shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
+        __syncthreads();
+
+        bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
+        __syncthreads();
+
+        shiftDouble<uint_t, M, Q>(-h, RReg1, VSh, RReg1);
+        __syncthreads();
+
+        bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
+        __syncthreads();
+
+        if(lt<uint_t, Q>(UReg, RReg2, USh)) {
+            __syncthreads();
+            sub<Base, Q>(RReg1, 0, VSh);
+            bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
         }
-
-        {   // Division kernel without boiler plate
-            int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
-            int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
-
-            shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
+        __syncthreads();
+        bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
+        if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
             __syncthreads();
-
-            bmulRegsQComplete<Base, 1, Q/2>(USh, VSh, UReg, RReg1, RReg1, M);
-            __syncthreads();
-
-            shiftDouble<uint_t, M, Q>(-h, RReg1, VSh, RReg1);
-            __syncthreads();
-
-            bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg1, RReg2, M); 
-            __syncthreads();
-
-            if(lt<uint_t, Q>(UReg, RReg2, USh)) {
-                __syncthreads();
-                sub<Base, Q>(RReg1, 0, VSh);
-                bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
-            }
-            __syncthreads();
-            bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, UReg, RReg2, RReg2);
-            if (!lt<uint_t, Q>(RReg2, VReg, USh)) {
-                __syncthreads();
-                add1<Base, Q>(RReg1, USh);
-                bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, VReg);
-            }
+            add1<Base, Q>(RReg1, USh);
+            bsubRegs<uint_t, uint_t, carry_t, Q>((carry_t*)VSh, RReg2, VReg, RReg2);
         }
 
         #pragma unroll
         for (int i = 0; i < Q; i++) {
-            UReg[i] = TReg[i];
+            UReg[i] = VReg[i];
+            VReg[i] = RReg2[i];
         }
-    }
+        if (!lt<uint_t, Q>(RReg2, VReg, VSh)){
+            zeroAndSet<uint_t, Q>(UReg,1,0);
+            break;
+        }
+    } while ((!(ez<uint_t, Q>(VReg, VSh))));
+
     __syncthreads();
-    cpyReg2Sh2Glb<uint_t, M, Q>(r, VSh, UReg);
+    cpyReg2Sh2Glb<uint_t, M, Q>(r, USh, UReg);
 }
