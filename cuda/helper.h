@@ -237,6 +237,35 @@ void gmpDivOnce( uint_t* inst_as
     }
 }
 
+/**
+ * A wrapper for the GMP div operation
+ */
+ template<class uint_t, uint32_t m>
+ void gmpGCDOnce( uint_t* inst_as
+                , const uint32_t val
+                , uint_t* inst_rs
+ ) {
+     uint_t buff[4*m];
+     mpz_t a; mpz_t b; mpz_t r;   
+     mpz_init(a); mpz_init(b); mpz_init(r);
+
+ 
+     mpz_import(a, m, GMP_ORDER, sizeof(uint_t), 0, 0, inst_as);
+     mpz_import(b, 1, GMP_ORDER, sizeof(uint_t), 0, 0, &val);
+ 
+     mpz_gcd(r, a, b);
+         
+     size_t count = 0;
+     mpz_export (buff, &count, GMP_ORDER, sizeof(uint_t), 0, 0, r);
+         
+     for(int j=0; j<m; j++) {
+         inst_rs[j] = buff[j];
+     }      
+     for(int j=count; j < m; j++) {
+         inst_rs[j] = 0;
+     }
+ }
+
 /****************************/
 /***  support routines    ***/
 /****************************/
