@@ -146,22 +146,22 @@ refine3( volatile typename Base::uint_t* USh
 
     shift<uint_t, M, Q>(2, RReg, (uint_t*)USh, RReg);
 
-    for (int i = 0; i < log2f(h-k)+1; i++) {
+    for (int i = 0; i < (int)ceilf(max(log2f(h-k-1), 0.0f)) + 2; i++) {
         int n = min(h - k + 1 - l, l);      
         int s = max(0, k - 2 * l + 1 - 2);       
         shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         __syncthreads();
-        if (i == 0) {
-            shift<uint_t, M, Q>(-1 - (n > 1), RReg, USh, RReg);
+        if (i < 2) {
+            shift<uint_t, M, Q>(-(n > 0) - (n > 1), RReg, USh, RReg);
         }
         else {
             shift<uint_t, M, Q>(-1, RReg, USh, RReg);
             l = l + n - 1;
         }
     }
-    shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
+    shift<uint_t, M, Q>((h - k < 2) ? h - k - 4 : -2, RReg, VSh, RReg);
 }
 
 template<typename Base, uint32_t M, uint32_t Q>
@@ -179,22 +179,22 @@ refine2( volatile typename Base::uint_t* USh
 
     shift<uint_t, M, Q>(2, RReg, (uint_t*)USh, RReg);
 
-    for (int i = 0; i < log2f(h-k)+1; i++) {
+    for (int i = 0; i < (int)ceilf(max(log2f(h-k-1), 0.0f)) + 2; i++) {
         int n = min(h - k + 1 - l, l);      
-        int s = 0;
+        int s = 0;       
         shift<uint_t, M, Q>(-s, VReg, VSh, TReg);
         __syncthreads();
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         __syncthreads();
-        if (i == 0) {
-            shift<uint_t, M, Q>(-1 - (n > 1), RReg, USh, RReg);
+        if (i < 2) {
+            shift<uint_t, M, Q>(-(n > 0) - (n > 1), RReg, USh, RReg);
         }
         else {
             shift<uint_t, M, Q>(-1, RReg, USh, RReg);
             l = l + n - 1;
         }
     }
-    shift<uint_t, M, Q>(-2, RReg, VSh, RReg);
+    shift<uint_t, M, Q>((h - k < 2) ? h - k - 4 : -2, RReg, VSh, RReg);
 }
 
 template<typename Base, uint32_t M, uint32_t Q>
@@ -212,14 +212,15 @@ refine1( volatile typename Base::uint_t* USh
     h = h+1;
     shift<uint_t, M, Q>(h-k-l, RReg, (uint_t*)USh, RReg);
 
-    for (int i = 0; i < log2f(h-k); i++) {
+    for (int i = 0; i < (int)ceilf(max(log2f(h-k-1), 0.0f)) + 2; i++) {
         __syncthreads();
         shift<uint_t, M, Q>(0, VReg, VSh, TReg);
         __syncthreads();
         step<Base, M, Q>(USh, VSh, h, TReg, RReg, 0, l, 0);
         __syncthreads();
-    
-        l = min(2*l-1, h-k);
+        if (i > 1) {
+            l = min(2*l-1, h-k);
+        }
     }
     shift<uint_t, M, Q>(-1, RReg, VSh, RReg);
 }
@@ -264,10 +265,11 @@ shinv( volatile typename Base::uint_t* USh
         if (Base::bits == 64) {
             tmp = divide_u256_by_u128((__uint128_t)1 << 64, 0, V);
         } else {
-            tmp = (((uquad_t)1 << 3*Base::bits) - V) / V + 1;
+            tmp = ((uquad_t)1 << 3*Base::bits) / V;
         }
         RReg[0] = (uint_t)(tmp);
         RReg[1] = (uint_t)(tmp >> Base::bits);
+        if (tmp == 0) RReg[2] = 1;
     }
     __syncthreads();
 

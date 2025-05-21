@@ -357,10 +357,10 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
     // printf("m: %i, \n", m );
     // printf("w: %u, \n", prec(w, m));
     // printf("right: %u, \n", prec(tmp, m));
-    prnt("left",w,m);
-    prnt("right",tmp,m);
+    // prnt("left",w,m);
+    // prnt("right",tmp,m);
     mult_gmp(w, tmp, tmp, m);
-    prnt("resMul",tmp,m);
+    // prnt("resMul",tmp,m);
    // prnt("res",tmp,m);
    // int precr = prec(tmp, m);
     // if (precr >= m/2) printf("prec: %u\n", precr);
@@ -371,7 +371,7 @@ void step(int h, bigint_t v, bigint_t w, int n, int l, int g, prec_t m)
    // printf("m: %i, \n", n );
  //   printf("right: %u, \n", prec(tmp, m));
     shift(2 * n - h, tmp, tmp, m);
-    prnt("SHIFTED", tmp, m);
+    // prnt("SHIFTED", tmp, m);
   //  printf("right: %u, \n", prec(tmp, m));
   //  printf("left: %u, \n", prec(w, m));
     shift(n, w, w, m);

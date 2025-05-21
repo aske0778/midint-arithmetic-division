@@ -160,10 +160,16 @@ uint_t* randBigInt( uint32_t prec, uint32_t m )
 
     for (int i = 0; i < prec; i++)
     {
+
         uint_t r = (uint_t)rand();
-        u[i] = r + (r == 0);
+        // u[i] = r + (r == 0);
       //  u[i] = (uint_t)rand() ;
-        //u[i] = ((uint_t)rand() % 10) + 1;
+      //  u[i] = ((uint_t)rand() % 5) + 1;
+        // if (rand() % 2 == 0) {
+        //     u[i] = 1;
+        // } else {
+        //     u[i] = (uint_t)rand();
+        // }
     }
     return u;
 }
