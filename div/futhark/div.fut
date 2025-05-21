@@ -1,9 +1,7 @@
-import "futhark_new/div-helpers"
---import "big-add"
---import "sqr-mul"
-import "futhark_new/sub"
-import "futhark_new/add"
-import "futhark_new/mul"
+import "div-helpers"
+import "sub"
+import "add"
+import "mul"
 
 
 --
@@ -48,7 +46,6 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
 -- Iterate towards an approximation in at most log(M) steps
 --
 def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
-    --let (sign, tmp) = powDiff vs ws (h-n) (l-2)
     let (sign, tmp) = powDiff ws vs (h-n) (l-2)
     let tmp = convMulV2 ws tmp
         |> shift (2 * n - h)
@@ -66,15 +63,16 @@ def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n
 --
 def refine [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (k: i64) (l: i64) : [ipb*(4*m)]u16 =
     let ws = shift 2 ws
-    let (ws, _) = loop (ws, l) = (ws, l)
-        while h - k > l do
+    let (ws, _, _) = loop (ws, l, i) = (ws, l, 0)
+        while h - k > (l + 1) do
             let n = i64.min (h - k + 1 - l) l
             let s = i64.max 0 (k - 2 * l + 1 - 2)
             let vs = shift (-s) vs
-            let tmp = step vs ws (k + l + n - s + 2) n l
-            let ws = shift (-1) tmp
-            let l = l + n - 1
-            in (ws, l)
+            let tmp = step vs ws (k + l + n - s + 2) l n
+            let ws = shift (-1) tmp 
+            let l = l + n - 1 
+            let i = i + 1
+            in (ws, l, i)
     in shift (-2) ws
 
 --
@@ -91,7 +89,7 @@ def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
         zeroAndSet 1 (h - k) (ipb*(4*m)) :> [ipb*(4*m)]u16
     else 
         let l = i64.min k 2
-        let V = (u64.u16 vs[k - 2]) | (u64.u16 vs[k - 1]) << 1*16 | (u64.u16 vs[k]) << 2*16
+        let V = (u64.u16 vs[k - 2]) | ((u64.u16 vs[k - 1]) << 1*16) | ((u64.u16 vs[k]) << 2*16)
         let b2l = 1u64 << 4*16
         let tmp = (b2l - V) / (V + 1)
 
@@ -99,8 +97,7 @@ def shinv [m][ipb] (vs: [ipb*(4*m)]u16) (h: i64) (k: i64) : [ipb*(4*m)]u16 =
             if i == 0 then u16.u64 tmp
             else if i == 1 then u16.u64 (tmp >> 16)
             else 0u16 )
-
-        in if h - k <= l then
+        in if h - k < l then
             shift (h-k-l) ws
         else
             refine vs ws h k l
@@ -123,15 +120,11 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
         else
             (false, us, vs, h, k)
 
-    --let quo = shinv vs h k
-    --    |> convMulV2 us
-    --    |> shift (-h)
-
     let quo = 
         let m = m * 2
         let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
         let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
-        let mul_res = convMulV3 quo_padded us_padded
+        let mul_res = convMulV2 quo_padded us_padded
         let mul_shifted = shift (-h) mul_res
         let res = take (ipb*(4*(m/2))) mul_shifted
         in res
@@ -174,9 +167,15 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
         else
             (us, vs, h, k)
 
-    let quo = shinv vs h k
-        |> convMulV2 us
-        |> shift (-h)
+   let quo = 
+        let m = m * 2
+        let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let mul_res = convMulV2 quo_padded us_padded
+        let mul_shifted = shift (-h) mul_res
+        let res = take (ipb*(4*(m/2))) mul_shifted
+        in res
+    let quo = quo :> [ipb * (4 * m)]u16
 
     let rem = convMulV2 vs quo
         |> bsubu16 us
@@ -191,7 +190,7 @@ def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
 
 
 -- testing division
--- ==
+-- 
 -- entry: test_div
 -- compiled input { [20u16, 42u16, 10u16, 4u16, 63u16, 8u16, 22u16, 1u16] [5u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
 -- output { [4u16, 39330u16, 39323u16, 52429u16, 13119u16, 39323u16, 13111u16, 0u16] [0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
@@ -228,22 +227,21 @@ entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
 
 -- 
 -- entry: bench_div
--- compiled random input { [65536][2][64]u16   [65536][2][64]u16  }
--- compiled random input { [32768][2][128]u16  [32768][2][128]u16 }
--- compiled random input { [16384][2][256]u16  [16384][2][256]u16 }
--- compiled random input { [8192][2][512]u16   [8192][2][512]u16  }
--- compiled random input { [4096][2][1024]u16  [4096][2][1024]u16 }
--- compiled random input { [2048][2][2048]u16  [2048][2][2048]u16 }
--- compiled random input { [1024][2][4096]u16  [1024][2][4096]u16 }
--- compiled random input { [512][2][8192]u16   [512][2][8192]u16  }
--- compiled random input { [256][2][16384]u16  [256][2][16384]u16 }
-entry bench_div [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : ([n][ipb*(4*m)]u16, [n][ipb*(4*m)]u16) =
-    #[unsafe]
+-- compiled random input { [65536][64]u16   [65536][64]u16  }
+-- compiled random input { [32768][128]u16  [32768][128]u16 }
+-- compiled random input { [16384][256]u16  [16384][256]u16 }
+-- compiled random input { [8192][512]u16   [8192][512]u16  }
+-- compiled random input { [4096][1024]u16  [4096][1024]u16 }
+-- compiled random input { [2048][2048]u16  [2048][2048]u16 }
+-- compiled random input { [1024][4096]u16  [1024][4096]u16 }
+-- compiled random input { [512][8192]u16   [512][8192]u16  }
+-- compiled random input { [256][16384]u16  [256][16384]u16 }
+entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([][]u16, [][]u16) =
     let mdiv4 = m / 4
-    let us = (map flatten us) :> [n][ipb*(4*mdiv4)]u16
-    let vs = (map flatten vs) :> [n][ipb*(4*mdiv4)]u16
-    let ret = map2 div us vs |> unzip :> ([n][ipb*(4*m)]u16, [n][ipb*(4*m)]u16)
-    in  ret
+    let ipb = 1
+    let us = us :> [n][ipb*(4*mdiv4)]u16
+    let vs = vs :> [n][ipb*(4*mdiv4)]u16
+    in map2 div us vs |> unzip :> ([n][ipb*(4*mdiv4)]u16, [n][ipb*(4*mdiv4)]u16)
 
 -- 
 -- entry: bench_quo
@@ -265,7 +263,7 @@ entry bench_quo [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : [n][ipb*
     in  ret
 
 -- 
--- entry: bench_quo_single
+-- entry: bench_div_single
 -- compiled random input { [64]u16    [64]u16    }
 -- compiled random input { [128]u16   [128]u16   }
 -- compiled random input { [256]u16   [256]u16   }
@@ -275,8 +273,35 @@ entry bench_quo [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : [n][ipb*
 -- compiled random input { [4096]u16  [4096]u16  }
 -- compiled random input { [8192]u16  [8192]u16  }
 -- compiled random input { [16384]u16 [16384]u16 }
-entry bench_quo_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
+-- compiled random input { [32768]u16 [32768]u16 }
+-- compiled random input { [65536]u16 [65536]u16 }
+-- compiled random input { [131072]u16 [131072]u16 }
+-- compiled random input { [262144]u16 [262144]u16 }
+-- compiled random input { [524288]u16 [524288]u16 }
+entry bench_div_single [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
     let mdiv4 = m / 4
     let us = us :> [1*(4*mdiv4)]u16
     let vs = vs :> [1*(4*mdiv4)]u16
-    in quo us vs :> [m]u16
+    in div us vs :> ([m]u16, [m]u16)
+
+-- bench_div_replicated, is possible not to give th most accurate beching results.
+-- Since we replicated the inputs, they will all fall into the same fast or slow case of the algortihm 
+-- resulting the the bench marking varying based on the chosen random input.
+-- however only way we have managed to get batchd beching to work, with running out of memory.
+
+-- 
+-- entry: bench_div_replicated
+-- compiled random input { [64]u16    [64]u16    }
+-- compiled random input { [128]u16   [128]u16   }
+-- compiled random input { [256]u16   [256]u16   }
+-- compiled random input { [512]u16   [512]u16   }
+-- compiled random input { [1024]u16  [1024]u16  }
+-- compiled random input { [2048]u16  [2048]u16  }
+-- compiled random input { [4096]u16  [4096]u16  }
+-- compiled random input { [8192]u16  [8192]u16  }
+entry bench_div_replicated [m] (us: [m]u16) (vs: [m]u16) : ([][m]u16, [][m]u16) =
+    let mdiv4 = m / 4
+    let instances = 134217728 / m
+    let us = (us :> [1*(4*mdiv4)]u16) |> replicate instances
+    let vs = (vs :> [1*(4*mdiv4)]u16) |> replicate instances
+    in map2 div us vs |> unzip :> ([instances][m]u16, [instances][m]u16)

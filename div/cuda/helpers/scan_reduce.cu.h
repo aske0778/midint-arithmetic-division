@@ -16,6 +16,24 @@ scanIncWarp( int u
 }
 
 /**
+ * Operation invariant warp-level scan implementation
+ */
+template<class OP>
+__device__ inline typename OP::RedElTp
+scanIncWarp( volatile typename OP::RedElTp* ptr
+           , const unsigned int idx
+) {
+    const unsigned int lane = idx & (WARP-1);
+    #pragma unroll
+    for(uint32_t i=0; i<lgWARP; i++) {
+        const uint32_t p = (1<<i);
+        if( lane >= p ) ptr[idx] = OP::apply(ptr[idx-p], ptr[idx]);
+        __syncwarp();
+    }
+    return OP::remVolatile(ptr[idx]);
+}
+
+/**
  * Efficient operation invariant block-level reduce implementation
  */
 template<class OP, class uint_t>
@@ -44,25 +62,41 @@ reduceBlock( uint_t u
 } 
 
 /**
- * Operation invariant warp-level scan implementation
+ * Improved scan inclusive version but uses too many registers
  */
 template<class OP>
-__device__ inline typename OP::RedElTp
-scanIncWarp( volatile typename OP::RedElTp* ptr
-           , const unsigned int idx
+__device__ inline int
+scanIncBlock( uint32_t u
+            , volatile uint32_t* sh_mem
 ) {
-    const unsigned int lane = idx & (WARP-1);
-    #pragma unroll
-    for(uint32_t i=0; i<lgWARP; i++) {
-        const uint32_t p = (1<<i);
-        if( lane >= p ) ptr[idx] = OP::apply(ptr[idx-p], ptr[idx]);
-        __syncwarp();
+    __syncthreads();
+    int idx = threadIdx.x;
+    const unsigned int lane   = idx & (WARP-1);
+    const unsigned int warpid = idx >> lgWARP;
+
+    int res = scanIncWarp<OP>(u, lane);
+
+    if (lane == (WARP-1)) { sh_mem[warpid] = res; } 
+    __syncthreads();
+
+    if (warpid == 0) {
+        scanIncWarp<OP>(sh_mem[threadIdx.x], lane);
     }
-    return OP::remVolatile(ptr[idx]);
+    __syncthreads();
+
+    if (warpid > 0) {
+        res = OP::apply(sh_mem[warpid-1], res);
+    }
+    __syncthreads();
+
+    sh_mem[idx] = res;
+    __syncthreads();
+    
+    return res;
 }
 
 /**
- * Efficient operation invariant block-level reduce implementation
+ * Efficient operation invariant block-level scan implementation
  */
 template<class OP>
 __device__ inline typename OP::RedElTp
@@ -100,34 +134,3 @@ scanIncBlock( volatile typename OP::RedElTp* ptr
     
     return res;
 }
-
-
-//Improved scan inclusive version but uses too many registers
-//
-// template<class OP>
-// __device__ inline int scanIncBlock(uint32_t u, volatile uint32_t* sh_mem) {
-//     __syncthreads();
-//     int idx = threadIdx.x;
-//     const unsigned int lane   = idx & (WARP-1);
-//     const unsigned int warpid = idx >> lgWARP;
-
-//     int res = scanIncWarp<OP>(u, lane);
-
-//     if (lane == (WARP-1)) { sh_mem[warpid] = res; } 
-//     __syncthreads();
-
-//     if (warpid == 0) {
-//         scanIncWarp<OP>(sh_mem[threadIdx.x], lane);
-//     }
-//     __syncthreads();
-
-//     if (warpid > 0) {
-//         res = OP::apply(sh_mem[warpid-1], res);
-//     }
-//     __syncthreads();
-
-//     sh_mem[idx] = res;
-//     __syncthreads();
-    
-//     return res;
-// }

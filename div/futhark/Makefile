@@ -8,11 +8,11 @@ test:
 bench-quo:
 	futhark bench div.fut --backend=$(CXX) --entry=bench_quo
 
-bench-quo-single:
-	futhark bench div.fut --backend=$(CXX) --entry=bench_quo_single
-
 bench-div:
 	futhark bench div.fut --backend=$(CXX) --entry=bench_div
+
+bench-div-single:
+	futhark bench div.fut --backend=$(CXX) --entry=bench_div_single
 
 .PHONY: clean
 clean:

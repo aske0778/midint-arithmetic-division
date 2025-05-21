@@ -10,6 +10,7 @@ using namespace std;
 
 #define GPU_RUNS_MUL    25
 #define GPU_RUNS_DIV    15
+#define GPU_RUNS_GCD    15
 #define ERR         0.000005
 
 #define WITH_VALIDATION 1
@@ -322,6 +323,86 @@ void gpuDiv ( uint32_t num_instances
     cudaFree(d_rem);
 }
 
+template<class Base, uint32_t m>  // m is the size of the big word in Base::uint_t units
+void gpuGCD ( uint32_t num_instances
+            , typename Base::uint_t* u
+            , typename Base::uint_t* v
+            , typename Base::uint_t* r
+) {
+    using uint_t = typename Base::uint_t;
+    //using carry_t= typename Base::carry_t;
+    
+    uint_t* d_as;
+    uint_t* d_bs;
+    uint_t* d_rs;
+    uint32_t mem_size_nums = num_instances * m * sizeof(uint_t);
+
+    // 1. allocate device memory
+    cudaMalloc((void**)&d_as, mem_size_nums);
+    cudaMalloc((void**)&d_bs, mem_size_nums);
+    cudaMalloc((void**)&d_rs, mem_size_nums);
+ 
+    // 2. copy host memory to device
+    cudaMemcpy(d_as, u, mem_size_nums, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_bs, v, mem_size_nums, cudaMemcpyHostToDevice);
+
+    // 3. kernel dimensions
+    const uint32_t q = Q; // use 8 for A4500 
+
+    dim3 block( m/q, 1, 1 );
+    dim3 grid ( num_instances, 1, 1);
+    uint32_t sh_mem = 2 * m * sizeof(uint_t);
+
+    if (sh_mem >= 64000) { // maximize the amount of shared memory for the kernel
+        cudaFuncSetAttribute(divShinv<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
+    }    
+    
+    // 4. dry run
+    {
+        gcd<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_rs);
+        cudaDeviceSynchronize();
+        gpuAssert( cudaPeekAtLastError() );
+    }
+    
+    const uint32_t x = Base::bits/32;
+    assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
+    
+    // 5. timing instrumentation
+    {
+        uint64_t elapsed;
+        struct timeval t_start, t_end, t_diff;
+        gettimeofday(&t_start, NULL); 
+        
+        for(int i=0; i<GPU_RUNS_GCD; i++) {
+            gcd<Base, m, q><<< grid, block, sh_mem >>>(d_as, d_bs, d_rs);
+        }
+        
+        cudaDeviceSynchronize();
+
+        gettimeofday(&t_end, NULL);
+        timeval_subtract(&t_diff, &t_end, &t_start);
+        elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_GCD;
+
+        gpuAssert( cudaPeekAtLastError() );
+
+        double runtime_microsecs = elapsed; 
+        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
+
+        printf( "GCD on %d-bit Big-Numbers (base u%d) runs %d instances in: \
+%lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
+              , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
+              );
+    }
+    
+    cudaMemcpy(r, d_rs, mem_size_nums, cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+
+    cudaFree(d_as);
+    cudaFree(d_bs);
+    cudaFree(d_rs);
+}
+
 
 template<typename Base, int m>  // m is the size of the big word in u32 units
 void testNsqMul(  int num_instances
@@ -408,6 +489,35 @@ void testDivision( int num_instances
     }
 }
 
+template<class Base, int m>
+void testGCD( int num_instances
+            , typename Base::uint_t* res_gmp
+            , typename Base::uint_t* res_our
+            , uint32_t with_validation
+) {
+    using uint_t = typename Base::uint_t;
+    
+    
+    
+    const uint32_t x = Base::bits/32;
+    assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
+    
+    uint_t uPrec = (m/x)-Q;
+    uint_t vPrec = 3;
+    
+    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+
+    if(with_validation)
+        gmpGCD<uint_t, m/x>(num_instances, u, v, res_gmp);
+
+    gpuGCD<Base, m/x>(num_instances, u, v, res_our);
+
+    if(with_validation) {
+        validateExact(res_gmp, res_our, num_instances*(m/x));
+    }
+}
+
 
 /////////////////////////////////////////////////////////
 // Main program that runs test suits
@@ -472,7 +582,6 @@ void runDivisions(uint64_t total_work) {
     our_quo = (uint_t*)calloc(total_work, sizeof(uint_t));
     our_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-#if 1
     testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
@@ -482,11 +591,34 @@ void runDivisions(uint64_t total_work) {
     testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-#endif
+    
     free(gmp_quo);
     free(gmp_rem);
     free(our_quo);
     free(our_rem);
+}
+
+template<typename Base>
+void runGCDs(uint64_t total_work) {
+
+    using uint_t = typename Base::uint_t;
+    uint_t *gmp_rs, *our_rs;
+
+    gmp_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
+    our_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
+
+    // testGCD<Base, 2048>( total_work/2048, gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base, 4096>( total_work/4096, gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base, 1024>( total_work/1024, gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base,  512>( total_work/512,  gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base,  256>( total_work/256,  gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base,  128>( total_work/128,  gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base,   64>( total_work/64,   gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base,   32>( total_work/32,   gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,   16>( total_work/16,   gmp_rs, our_rs, WITH_VALIDATION );
+
+    free(gmp_rs);
+    free(our_rs);
 }
 
  
@@ -501,16 +633,20 @@ int main (int argc, char * argv[]) {
     // cudaSetDevice(1);
 
     {   // 32bit integer elements
-        runNaiveMuls<U32bits>(total_work);
+        // runNaiveMuls<U32bits>(total_work);
 
-        runQuotients<U32bits>(total_work);
+        // runQuotients<U32bits>(total_work);
         runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
-        runNaiveMuls<U64bits>(total_work);
+        // runNaiveMuls<U64bits>(total_work);
 
-        runQuotients<U64bits>(total_work);
+        // runQuotients<U64bits>(total_work);
         runDivisions<U64bits>(total_work);
     }
+
+    // {   // GCD computation
+    //     runGCDs<U32bits>(total_work);
+    // }
 }
