@@ -121,65 +121,65 @@ __global__ void kernel_poly(cgbn_error_report_t *report, instance_t *instances, 
   cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
 }
 
-/***********************/
+/************************/
 /*** Division Kernels ***/
-/***********************/
+/************************/
 
 __global__ void kernel_quo(cgbn_error_report_t *report, instance_t *instances, uint32_t count) {
   int32_t instance;
   
-  // decode an instance number from the blockIdx and threadIdx
   instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
   if(instance>=count)
     return;
 
   context_t      bn_context(cgbn_no_checks, NULL, instance);
-  env_t          bn_env(bn_context.env<env_t>());                     // construct an environment for 1024-bit math
-  env_t::cgbn_t  a, b, r;                                             // define a, b, r as 1024-bit bignums
+  env_t          bn_env(bn_context.env<env_t>());
+  env_t::cgbn_t  a, b, r;                              
 
-  cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
-  cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
-  cgbn_div(bn_env, r, a, b);                           // r=a+b
-  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into quo
+  cgbn_load(bn_env, a, &(instances[instance].a)); 
+  cgbn_load(bn_env, b, &(instances[instance].b));    
+  cgbn_div(bn_env, r, a, b);                       
+  cgbn_store(bn_env, &(instances[instance].sum), r); 
 }
 
 
 __global__ void kernel_div(cgbn_error_report_t *report, instance_div_t *instances, uint32_t count) {
   int32_t instance;
   
-  // decode an instance number from the blockIdx and threadIdx
   instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
   if(instance>=count)
     return;
 
-  //context_t      bn_context(cgbn_report_monitor/*, report, instance*/);   // construct a context
   context_t      bn_context(cgbn_no_checks, NULL, instance);
-  env_t          bn_env(bn_context.env<env_t>());                     // construct an environment for 1024-bit math
-  env_t::cgbn_t  a, b, q, r;                                             // define a, b, r as 1024-bit bignums
+  env_t          bn_env(bn_context.env<env_t>());      
+  env_t::cgbn_t  a, b, q, r;
 
-  cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
-  cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
-  cgbn_div_rem(bn_env, q, r, a, b);                           // r=a+b
+  cgbn_load(bn_env, a, &(instances[instance].a));  
+  cgbn_load(bn_env, b, &(instances[instance].b));  
+  cgbn_div_rem(bn_env, q, r, a, b);           
   cgbn_store(bn_env, &(instances[instance].quo), q);
-  cgbn_store(bn_env, &(instances[instance].rem), r);   // store r into rem
+  cgbn_store(bn_env, &(instances[instance].rem), r);
 }
 
-__global__ void kernel_gcd(cgbn_error_report_t *report, instance_t *instances, uint32_t count, uint32_t val) {
+/******************/
+/*** GCD Kernel ***/
+/******************/
+
+__global__ void kernel_gcd(cgbn_error_report_t *report, instance_t *instances, uint32_t count) {
   int32_t instance;
   
-  // decode an instance number from the blockIdx and threadIdx
   instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
   if(instance>=count)
     return;
 
-  //context_t      bn_context(cgbn_report_monitor/*, report, instance*/);   // construct a context
   context_t      bn_context(cgbn_no_checks, NULL, instance);
-  env_t          bn_env(bn_context.env<env_t>());                     // construct an environment for 1024-bit math
-  env_t::cgbn_t  a, r;                                             // define a, b, r as 1024-bit bignums
+  env_t          bn_env(bn_context.env<env_t>());                
+  env_t::cgbn_t  a, b, r;                                        
 
-  cgbn_load(bn_env, a, &(instances[instance].a));      // load my instance's a value
-  //cgbn_load(bn_env, b, &(instances[instance].b));      // load my instance's b value
-  cgbn_gcd_ui32(bn_env, a, val);                           // r=a+b
-  cgbn_store(bn_env, &(instances[instance].sum), r);   // store r into sum
+  cgbn_load(bn_env, a, &(instances[instance].a));   
+  cgbn_load(bn_env, b, &(instances[instance].b));      
+  cgbn_gcd(bn_env, r, a, b);                         
+  cgbn_store(bn_env, &(instances[instance].sum), r);  
 }
+
 #endif // CGBN_KERNELS
