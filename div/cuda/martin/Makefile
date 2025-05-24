@@ -3,6 +3,7 @@ CXX = nvcc -O3 -arch=sm_80
 SRC_MAIN = main
 SRC_MAIN_GCD = main_gcd
 SRC_TEST = test
+SRC_TEST_GCD = test_gcd
 SRC_BENCH = bench
 
 default: main
@@ -15,6 +16,9 @@ main_gcd:
 
 test:
 	$(CXX) $(SRC_TEST).cu -Xptxas -v -lgmp -o $(SRC_TEST).exe && ./$(SRC_TEST).exe
+
+test_gcd:
+	$(CXX) $(SRC_TEST_GCD).cu -Xptxas -v -lgmp -o $(SRC_TEST_GCD).exe && ./$(SRC_TEST_GCD).exe
 
 bench:
 	$(CXX) $(SRC_BENCH).cu -Xptxas -v -lgmp -o $(SRC_BENCH).exe && ./$(SRC_BENCH).exe

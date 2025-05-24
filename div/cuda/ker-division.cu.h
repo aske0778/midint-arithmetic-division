@@ -21,6 +21,8 @@ multMod( volatile typename Base::uint_t* USh
 ) {
     if (d <= blockDim.x) {
         naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
+    } else if (d <= 2*blockDim.x){
+        naiveMult2x<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
     } else {
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
         #pragma unroll
@@ -58,6 +60,8 @@ powDiff( volatile typename Base::uint_t* USh
         int maxMul = vPrec + rPrec;
         if (maxMul <= blockDim.x) {
             naiveMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
+        } else if (maxMul <= 2*blockDim.x) {
+            naiveMult2x<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
         } else {
             bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
         }
@@ -105,9 +109,13 @@ step( volatile typename Base::uint_t* USh
     bool sign = powDiff<Base, M, Q>(USh, VSh, VReg, RReg, h - n, l - g);
     __syncthreads();
 
-    int maxMul = (l+2)*3;                            
+    int rPrec = prec<uint_t, Q>(RReg, (uint32_t*)VSh);
+    int vPrec = prec<uint_t, Q>(VReg, (uint32_t*)USh);
+    int maxMul = rPrec+vPrec;                            
     if (maxMul <= blockDim.x) {
         naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
+    } else if (maxMul <= 2*blockDim.x){
+        naiveMult2x<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
     } else {
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
     }
@@ -154,7 +162,7 @@ refine3( volatile typename Base::uint_t* USh
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         __syncthreads();
         if (i < 2) {
-            shift<uint_t, M, Q>(-(n > 0) - (n > 1), RReg, USh, RReg);
+            shift<uint_t, M, Q>(-n, RReg, USh, RReg);
         }
         else {
             shift<uint_t, M, Q>(-1, RReg, USh, RReg);

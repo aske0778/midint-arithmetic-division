@@ -134,6 +134,47 @@ baddRegsNaive( volatile CT* Csh
     return rs;
 }
 
+template<class D, class S, class CT, D HIGHEST>
+__device__ inline void
+baddRegsNaive2x( volatile CT* Csh
+        , D Arg[2]
+        , S Brg[2]
+        , D rs[2]
+) {
+    CT cs[2];
+    {
+        CT accum = CarrySegBop<CT>::identity();
+        for(int i=0; i<2; i++) {
+            D a = Arg[i];
+            S b = Brg[i];
+            CT c;
+            
+            rs[i] = a + (D)b;
+            c = (CT) ( (rs[i] < a) );
+            c = c | ((rs[i] == HIGHEST) << 1);
+            
+            accum = CarrySegBop<CT>::apply(accum, c);
+            cs[i] = c;
+        }
+        Csh[threadIdx.x] = accum;
+    }
+    __syncthreads();
+   
+    scanIncBlock< CarrySegBop<CT> >(Csh, threadIdx.x);
+
+    {
+        CT carry = CarrySegBop<CT>::identity();
+        if(threadIdx.x > 0) {
+            carry = Csh[threadIdx.x - 1];
+        }
+        for(int i=0; i<2; i++) {
+            rs[i] += (carry & 1);
+            carry = CarrySegBop<CT>::apply(carry, cs[i]);         
+        }
+    }
+}
+
+
 template<class Base, uint32_t Q>
 __device__ inline void 
 add1( typename Base::uint_t u[Q]

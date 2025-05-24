@@ -429,3 +429,75 @@ bsubaddRegs(
 //     __syncthreads();
 //     cpyReg2Sh2Glb<uint_t, M, Q>(r, USh, UReg);
 // }
+
+
+template<class Base, uint32_t Q>
+__device__ 
+void naiveMult( volatile typename Base::uint_t* Ash
+              , volatile typename Base::uint_t* Bsh
+              , typename Base::uint_t Arg[Q]
+              , typename Base::uint_t Brg[Q]
+              , typename Base::uint_t Rrg[Q]
+              , uint32_t M
+) {
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+    
+    if (threadIdx.x < (M+Q-1)/Q) {
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            Ash[Q*threadIdx.x + i] = Arg[i];
+            Bsh[Q*threadIdx.x + i] = Brg[i];
+        }
+    }
+    __syncthreads();
+
+    ubig_t accum = 0;
+    carry_t carry = 0;
+    if (threadIdx.x < M) {
+        #pragma unroll
+        for (int i = 0; i <= threadIdx.x; i++) {
+            ubig_t ck = (ubig_t)Ash[i] * (ubig_t)Bsh[threadIdx.x - i];
+            uint_t accum_prev = (uint_t) (accum >> Base::bits);
+            accum += ck;
+            carry += (  ((uint_t)(accum >> Base::bits)) < accum_prev );
+        }
+    }
+    if (threadIdx.x == 0) {
+        Bsh[M] = 0;
+        Ash[2*M] = 0;
+        Ash[2*M + 1] = 0;
+    }
+    if (threadIdx.x < M) {
+        Ash[M + threadIdx.x] = (uint_t)accum;
+        Bsh[M + threadIdx.x + 1] = (uint_t) (accum >> Base::bits);
+        Ash[2*M + threadIdx.x + 2] = carry;
+    }
+    __syncthreads();
+
+    uint_t arg;
+    uint_t brg;
+    uint_t crg;
+    if (threadIdx.x < M) {
+        arg = Ash[M + threadIdx.x];
+        brg = Bsh[M + threadIdx.x];
+        crg = Ash[2*M + threadIdx.x];
+    }
+
+    uint_t res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)&Bsh[2*blockDim.x], arg, brg );
+    res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)Bsh, res, crg );
+
+    Ash[threadIdx.x] = res;
+    __syncthreads();
+
+    if (threadIdx.x < (M+Q-1)/Q) {
+        #pragma unroll
+        for(int i=0; i<Q; i++) {
+            int idx = Q*threadIdx.x + i;
+            if (idx < M) {
+                Rrg[i] = Ash[idx];
+            }
+        }
+    }
+}

@@ -404,9 +404,6 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     }
 }
 
-
-/**
- */
 template<class Base, uint32_t Q>
 __device__ 
 void naiveMult( volatile typename Base::uint_t* Ash
@@ -474,6 +471,99 @@ void naiveMult( volatile typename Base::uint_t* Ash
             if (idx < M) {
                 Rrg[i] = Ash[idx];
             }
+        }
+    }
+}
+
+template<class Base, uint32_t Q>
+__device__ 
+void naiveMult2x( volatile typename Base::uint_t* Ash
+              , volatile typename Base::uint_t* Bsh
+              , typename Base::uint_t Arg[Q]
+              , typename Base::uint_t Brg[Q]
+              , typename Base::uint_t Rrg[Q]
+              , uint32_t M
+) {
+    using uint_t = typename Base::uint_t;
+    using ubig_t = typename Base::ubig_t;
+    using carry_t= typename Base::carry_t;
+    
+    #pragma unroll
+    for(int i=0; i<Q; i++) {
+        int idx = Q*threadIdx.x + i;
+        if (idx < M) {
+            Ash[idx] = Arg[i];
+            Bsh[idx] = Brg[i];
+        }
+    }
+    __syncthreads();
+
+    ubig_t accum = 0;
+    carry_t carry = 0;
+    if (threadIdx.x < M) {
+        #pragma unroll
+        for (int i = 0; i <= threadIdx.x; i++) {
+            ubig_t ck = (ubig_t)Ash[i] * (ubig_t)Bsh[threadIdx.x - i];
+            uint_t accum_prev = (uint_t) (accum >> Base::bits);
+            accum += ck;
+            carry += (  ((uint_t)(accum >> Base::bits)) < accum_prev );
+        }
+    }
+    ubig_t accum1 = 0;
+    carry_t carry1 = 0;
+    if (blockDim.x < M && threadIdx.x < M-blockDim.x) {
+        #pragma unroll
+        for (int i = 0; i <= M-threadIdx.x-1; i++) {
+            ubig_t ck = (ubig_t)Ash[i] * (ubig_t)Bsh[M-threadIdx.x - i - 1];
+            uint_t accum_prev = (uint_t) (accum1 >> Base::bits);
+            accum1 += ck;
+            carry1 += (  ((uint_t)(accum1 >> Base::bits)) < accum_prev );
+        }
+    }
+    __syncthreads();
+
+    if (threadIdx.x == 0) {
+        Bsh[0] = 0;
+    }
+    if (threadIdx.x < M) {
+        Ash[threadIdx.x] = (uint_t)accum;
+        Bsh[threadIdx.x + 1] = (uint_t) (accum >> Base::bits);
+        Ash[M + threadIdx.x] = carry;
+    }
+    if (blockDim.x < M && threadIdx.x < M-blockDim.x) {
+        Ash[M-threadIdx.x-1] = (uint_t)accum1;
+        Bsh[M-threadIdx.x-1 + 1] = (uint_t) (accum1 >> Base::bits);
+        Ash[2*M-threadIdx.x-1] = carry1;
+    }
+    __syncthreads();
+
+    uint_t arg[2];
+    uint_t brg[2];
+    uint_t crg[2];
+    #pragma unroll
+    for(int i=0; i<2; i++) {
+        int idx = 2*threadIdx.x + i;
+        if (idx < M) {
+            arg[i] = Ash[idx];
+            brg[i] = Bsh[idx];
+            crg[i] = (idx > 1) ? Ash[M + idx - 2] : 0;
+        }
+    }
+    __syncthreads();
+
+    uint_t res[2] = {0};
+    baddRegsNaive2x<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)&Bsh[M+blockDim.x], arg, brg, res );
+    baddRegsNaive2x<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)Bsh, res, crg, res );
+
+    Ash[2*threadIdx.x] = res[0];
+    Ash[2*threadIdx.x+1] = res[1];
+    __syncthreads();
+
+    #pragma unroll
+    for(int i=0; i<Q; i++) {
+        int idx = Q*threadIdx.x + i;
+        if (idx < M) {
+            Rrg[i] = Ash[idx];
         }
     }
 }

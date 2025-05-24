@@ -54,7 +54,7 @@ int main()
         gpuAssert( cudaPeekAtLastError() );
         printf( "Multiplcation took %lu microsecs \n", mul_elapsed);
     }
-
+    cudaFuncSetAttribute(divShinvKer<Base,M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
     {   // dry run div
         divShinvKer<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         cudaDeviceSynchronize();
@@ -63,7 +63,7 @@ int main()
     {   // timing div
         struct timeval t_start, t_end, t_diff;
         gettimeofday(&t_start, NULL); 
-
+        
         for(int i=0; i<GPU_RUNS_DIV; i++) {
             divShinvKer<Base, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(d_u, d_v, d_quo, d_rem);
         }
