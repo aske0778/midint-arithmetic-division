@@ -421,6 +421,7 @@ void runNaiveMuls(uint64_t total_work) {
     mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
 
 #if 1
+    // testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
@@ -450,6 +451,7 @@ void runDivisions(uint64_t total_work) {
     our_quo = (uint_t*)calloc(total_work, sizeof(uint_t));
     our_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
+    testDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
@@ -503,16 +505,16 @@ int main (int argc, char * argv[]) {
     {   // 32bit integer elements
         // runNaiveMuls<U32bits>(total_work);
 
-       runDivisions<U32bits>(total_work);
+    //    runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
         // runNaiveMuls<U64bits>(total_work);
 
-       // runDivisions<U64bits>(total_work);
+        runDivisions<U64bits>(total_work);
     }
 
-    {   // GCD computation
-        runGCDs<U32bits>(total_work);
-    }
+    // {   // GCD computation
+    //     runGCDs<U32bits>(total_work);
+    // }
 }

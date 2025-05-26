@@ -111,6 +111,7 @@ step( volatile typename Base::uint_t* USh
 
     int rPrec = prec<uint_t, Q>(RReg, (uint32_t*)VSh);
     int vPrec = prec<uint_t, Q>(VReg, (uint32_t*)USh);
+    __syncthreads();
     int maxMul = rPrec+vPrec;                            
     if (maxMul <= blockDim.x) {
         naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
