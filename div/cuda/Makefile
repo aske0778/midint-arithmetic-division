@@ -9,8 +9,8 @@ SRC_time = timing
 
 FLAGS = -lgmp -diag-suppress 63
 
-BATCH_SIZE = 33554432
-# BATCH_SIZE = 134217728
+# BATCH_SIZE = 33554432
+BATCH_SIZE = 134217728
 
 default: main
 

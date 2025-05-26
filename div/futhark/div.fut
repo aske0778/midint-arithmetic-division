@@ -225,21 +225,25 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
 entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
     quo us vs
 
--- 
+
+-- ==
 -- entry: bench_div
--- compiled random input { [65536][64]u16   [65536][64]u16  }
--- compiled random input { [32768][128]u16  [32768][128]u16 }
--- compiled random input { [16384][256]u16  [16384][256]u16 }
--- compiled random input { [8192][512]u16   [8192][512]u16  }
--- compiled random input { [4096][1024]u16  [4096][1024]u16 }
--- compiled random input { [2048][2048]u16  [2048][2048]u16 }
--- compiled random input { [1024][4096]u16  [1024][4096]u16 }
--- compiled random input { [512][8192]u16   [512][8192]u16  }
--- compiled random input { [256][16384]u16  [256][16384]u16 }
+-- compiled random input { [262144][32]u16  [262144][32]u16 }
+-- compiled random input { [131072][64]u16  [131072][64]u16 }
+-- compiled random input { [65536][128]u16  [65536][128]u16 }
+-- compiled random input { [32768][256]u16  [32768][256]u16 }
+-- compiled random input { [16384][512]u16  [16384][512]u16 }
+-- compiled random input { [8192][1024]u16  [8192][1024]u16 }
+-- compiled random input { [4096][2048]u16  [4096][2048]u16 }
+-- compiled random input { [2048][4096]u16  [2048][4096]u16 }
+-- compiled random input { [1024][8192]u16  [1024][8192]u16 }
+-- compiled random input { [512][16384]u16  [512][16384]u16 }
 entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([][]u16, [][]u16) =
     let mdiv4 = m / 4
     let ipb = 1
+    let precV = m / 2 - 3
     let us = us :> [n][ipb*(4*mdiv4)]u16
+    let vs = map (\col -> tabulate m (\i -> if i < precV then col[i] else 0)) vs
     let vs = vs :> [n][ipb*(4*mdiv4)]u16
     in map2 div us vs |> unzip :> ([n][ipb*(4*mdiv4)]u16, [n][ipb*(4*mdiv4)]u16)
 

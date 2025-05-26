@@ -67,7 +67,7 @@ instance_div_t *generate_instances_div(uint32_t count) {
   printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
   for(int index=0;index<count;index++) {  
     ourMkRandom<BITS/32, BITS/32-8>(1, instances[index].a._limbs);
-    ourMkRandom<BITS/32, 3>(1, instances[index].b._limbs);
+    ourMkRandom<BITS/32, (BITS/32)/2-3>(1, instances[index].b._limbs);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
   }
@@ -511,7 +511,7 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 0
+  #if 1
   { // Division Benchmarks
     instancesDiv = generate_instances_div(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstancesDiv, sizeof(instance_div_t)*num_instances));
@@ -526,7 +526,7 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   { // GCD Benchmark
     instances = generate_instances(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstances, sizeof(instance_t)*num_instances));

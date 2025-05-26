@@ -1,4 +1,4 @@
-CXX = cuda
+CXX = c
 
 default: bench-div
 
