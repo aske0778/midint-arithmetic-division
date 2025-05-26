@@ -364,8 +364,8 @@ void testDivision( int num_instances
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t uPrec = (m/x)-Q;
-    uint_t vPrec = (rand() % (uPrec/2)) - 3;
+    uint_t uPrec = (m/x)-2;
+    uint_t vPrec = (rand() % (uPrec/2)) +1;
     
     uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
@@ -505,13 +505,13 @@ int main (int argc, char * argv[]) {
     {   // 32bit integer elements
         // runNaiveMuls<U32bits>(total_work);
 
-       runDivisions<U16bits>(total_work);
+     //  runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
         // runNaiveMuls<U64bits>(total_work);
 
-        // runDivisions<U64bits>(total_work);
+        runDivisions<U64bits>(total_work);
     }
 
     // {   // GCD computation
