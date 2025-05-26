@@ -255,14 +255,14 @@ shinv( volatile typename Base::uint_t* USh
         quo<Base, Q>(h, VSh[0], VSh, RReg);
         return;
     }
-    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[8])) {
+    if (k >= h && !eq<uint_t, Q>(VReg, h, &USh[2])) {
         return;
     }
     if (k == h-1 && VSh[k] > Base::HIGHEST / 2 ) {
         set<uint_t, Q>(RReg, 1, 0);
         return;
     }
-    if (eq<uint_t, Q>(VReg, k, &USh[12])) {
+    if (eq<uint_t, Q>(VReg, k, &USh[3])) {
         set<uint_t, Q>(RReg, 1, h - k);
         return;
     }
@@ -302,7 +302,7 @@ divShinv( volatile typename Base::uint_t* USh
     using carry_t = typename Base::carry_t;
 
     int h = prec<uint_t, Q>(UReg, (uint32_t*)USh);     
-    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[4]) - 1; 
+    int k = prec<uint_t, Q>(VReg, (uint32_t*)&USh[1]) - 1; 
 
     shinv<Base, M, Q>(USh, VSh, VReg, RReg2, h, k, RReg1);
     __syncthreads();
