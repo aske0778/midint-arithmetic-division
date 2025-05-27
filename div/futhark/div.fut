@@ -12,6 +12,16 @@ def multmod [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (d: i64) : [ipb*(
     in tabulate (ipb*(4*m)) (\i -> if i >= d then 0u16 else res[i])
 
 --
+-- Calculates (a * b) rem B^d using irregular nested multiplication
+--
+def multmod_irreg [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) (d: i64) : [ipb*(4*m)]u16 = 
+    let precs = i64.min (d) (4*m)
+    let us = (take (4*((precs+3)/4)) us) :> [1*(4*((precs+3)/4))]u16
+    let vs = (take (4*((precs+3)/4)) vs) :> [1*(4*((precs+3)/4))]u16
+    let res = convMulV2 us vs
+    in tabulate (ipb*(4*m)) (\i -> if i >= d then 0u16 else res[i])
+
+--
 -- Calculates B^h-v*w
 --
 def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) : (u32, [ipb*(4*m)]u16) =
@@ -43,11 +53,69 @@ def powDiff [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64)
             in (1, ret)
 
 --
+-- Calculates B^h-v*w using irregular nested multiplication
+--
+def powDiff_irreg [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) : (u32, [ipb*(4*m)]u16) =
+    let precV = prec vs
+    let precW = prec ws
+    let L = precW + precV - l + 1
+
+    in if (precV == 0 || precW == 0) then
+        let ret = zeroAndSet 1u16 h (ipb*(4*m))
+        let ret = ret :> [ipb*(4*m)]u16
+        in (1, ret)
+    else if (L >= h) then
+        let precs = i64.min (precV + precW) (4*m)
+        let vs = (take (4*((precs+3)/4)) vs) :> [1*(4*((precs+3)/4))]u16
+        let ws = (take (4*((precs+3)/4)) ws) :> [1*(4*((precs+3)/4))]u16
+        let ret = convMulV2 vs ws
+        let ret = tabulate (ipb*(4*m)) (\i -> if i >= precs then 0u16 else ret[i])
+        in if ltBpow ret h then
+            let bpow = zeroAndSet 1 h (ipb*(4*m))
+            let (ret, _) = bsub bpow ret
+            in (1, ret)
+        else
+            let bpow = zeroAndSet 1 h (ipb*(4*m))
+            let (ret, _) = bsub ret bpow
+            in (0, ret)
+    else 
+        let ret = multmod vs ws L
+        in if !(ez ret) && ret[L-1] == 0 then 
+            (0, ret)
+        else 
+            let bpow = zeroAndSet 1 L (ipb*(4*m))
+            let (ret, _) = bsub bpow ret
+            in (1, ret)
+
+--
 -- Iterate towards an approximation in at most log(M) steps
 --
 def step [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
     let (sign, tmp) = powDiff ws vs (h-n) (l-2)
     let tmp = convMulV2 ws tmp
+        |> shift (2 * n - h)
+    let ws = shift n ws
+    in if sign != 0 then
+        --baddu16 ws tmp
+        baddV3 ws tmp
+    else
+        -- bsubu16 ws tmp
+        let (ret, _) = bsub tmp ws 
+        in ret
+
+--
+-- Iterate towards an approximation in at most log(M) steps using irregular nested multiplication
+--
+def step_irreg [m][ipb] (vs: [ipb*(4*m)]u16) (ws: [ipb*(4*m)]u16) (h: i64) (l: i64) (n: i64) : [ipb*(4*m)]u16 =
+    let (sign, tmp) = powDiff ws vs (h-n) (l-2)
+    let precW = prec ws
+    let precTmp = prec tmp
+    let precs = i64.min (precTmp + precW) (4*m)
+    let small_tmp = (take (4*((precs+3)/4)) tmp) :> [1*(4*((precs+3)/4))]u16
+    let small_ws = (take (4*((precs+3)/4)) ws) :> [1*(4*((precs+3)/4))]u16
+    -- let tmp = convMulV2 ws tmp
+    let tmp = convMulV2 small_ws small_tmp
+    let tmp = tabulate (ipb*(4*m)) (\i -> if i >= precs then 0u16 else tmp[i])
         |> shift (2 * n - h)
     let ws = shift n ws
     in if sign != 0 then
@@ -228,16 +296,17 @@ entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
 
 -- ==
 -- entry: bench_div
--- compiled random input { [262144][32]u16  [262144][32]u16 }
--- compiled random input { [131072][64]u16  [131072][64]u16 }
--- compiled random input { [65536][128]u16  [65536][128]u16 }
--- compiled random input { [32768][256]u16  [32768][256]u16 }
--- compiled random input { [16384][512]u16  [16384][512]u16 }
--- compiled random input { [8192][1024]u16  [8192][1024]u16 }
--- compiled random input { [4096][2048]u16  [4096][2048]u16 }
--- compiled random input { [2048][4096]u16  [2048][4096]u16 }
--- compiled random input { [1024][8192]u16  [1024][8192]u16 }
--- compiled random input { [512][16384]u16  [512][16384]u16 }
+-- compiled random input { [8388608][32]u16  [8388608][32]u16  }
+-- compiled random input { [4194304][64]u16  [4194304][64]u16  }
+-- compiled random input { [2097152][128]u16 [2097152][128]u16 }
+-- compiled random input { [1048576][256]u16 [1048576][256]u16 }
+-- compiled random input { [524288][512]u16  [524288][512]u16  }
+
+-- compiled random input { [262144][1024]u16 [262144][1024]u16 }
+-- compiled random input { [131072][2048]u16 [131072][2048]u16 }
+-- compiled random input { [65536][4096]u16  [65536][4096]u16  }
+-- compiled random input { [32768][8192]u16  [32768][8192]u16  }
+-- compiled random input { [16384][16384]u16 [16384][16384]u16 }
 entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([][]u16, [][]u16) =
     let mdiv4 = m / 4
     let ipb = 1
