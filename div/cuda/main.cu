@@ -9,11 +9,11 @@
 using namespace std;
 
 #define GPU_RUNS_MUL    25
-#define GPU_RUNS_DIV    15
+#define GPU_RUNS_DIV    25
 #define GPU_RUNS_GCD    15
 #define ERR         0.000005
 
-#define WITH_VALIDATION 1
+#define WITH_VALIDATION 0
 
 #define Q 4
 
@@ -191,6 +191,46 @@ void gmpBenchDiv ( uint32_t num_instances
     }
 }
 
+template<class Base, uint32_t m>  // m is the size of the big word in Base::uint_t units
+void gmpBenchGCD ( uint32_t num_instances
+                 , typename Base::uint_t* u
+                 , typename Base::uint_t* v
+                 , typename Base::uint_t* h_quo
+                 , typename Base::uint_t* h_rem
+) {
+    using uint_t = typename Base::uint_t;
+    
+    {
+        gmpGCD<uint_t, m>(num_instances, u, v, h_quo, h_rem);
+    }
+    
+    const uint32_t x = Base::bits/32;
+    assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
+    
+    {
+        uint64_t elapsed;
+        struct timeval t_start, t_end, t_diff;
+        gettimeofday(&t_start, NULL); 
+        
+        for(int i=0; i<GPU_RUNS_DIV; i++) {
+            gmpGCD<uint_t, m>(num_instances, u, v, h_quo, h_rem);
+        }
+        
+        gettimeofday(&t_end, NULL);
+        timeval_subtract(&t_diff, &t_end, &t_start);
+        elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_DIV;
+
+        double runtime_microsecs = elapsed; 
+        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
+
+        printf( "GMP GCD on %d-bit Big-Numbers (base u%d) runs %d instances in: \
+%lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
+              , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
+              );
+    }
+}
+
 /****************************/
 /***** Single Division ******/
 /****************************/
@@ -362,7 +402,26 @@ void gpuGCD ( uint32_t num_instances
 
 
 template<class Base, int m>
-void testGMP( int num_instances
+void testGMPDivision( int num_instances
+                 , typename Base::uint_t* gmp_quo
+                 , typename Base::uint_t* gmp_rem
+) {
+    using uint_t = typename Base::uint_t;
+    
+    const uint32_t x = Base::bits/32;
+    assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
+    
+    uint_t uPrec = (m/x)-2;
+    uint_t vPrec = (rand() % (uPrec/2))+1;
+    
+    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+
+    gmpBenchDiv<Base, m/x>(num_instances, u, v, gmp_quo, gmp_rem);
+}
+
+template<class Base, int m>
+void testGMPGCD( int num_instances
                  , typename Base::uint_t* gmp_quo
                  , typename Base::uint_t* gmp_rem
 ) {
@@ -445,13 +504,11 @@ void testGCD( int num_instances
 ) {
     using uint_t = typename Base::uint_t;
     
-    
-    
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
     uint_t uPrec = (m/x)-Q;
-    uint_t vPrec = 3;
+    uint_t vPrec = (rand() % (uPrec/2)) +1;
     
     uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
@@ -472,7 +529,7 @@ void testGCD( int num_instances
 /////////////////////////////////////////////////////////
 
 template<typename Base>
-void runGMP(uint64_t total_work) {
+void runGMPDiv(uint64_t total_work) {
 
     using uint_t = typename Base::uint_t;
     uint_t *gmp_quo, *gmp_rem;
@@ -480,16 +537,40 @@ void runGMP(uint64_t total_work) {
     gmp_quo = (uint_t*)calloc(total_work, sizeof(uint_t));
     gmp_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-    testGMP<Base, 8192>( total_work/8192, gmp_quo, gmp_rem );
-    testGMP<Base, 4096>( total_work/4096, gmp_quo, gmp_rem );
-    testGMP<Base, 2048>( total_work/2048, gmp_quo, gmp_rem );
-    testGMP<Base, 1024>( total_work/1024, gmp_quo, gmp_rem );
-    testGMP<Base,  512>( total_work/512,  gmp_quo, gmp_rem );
-    testGMP<Base,  256>( total_work/256,  gmp_quo, gmp_rem );
-    testGMP<Base,  128>( total_work/128,  gmp_quo, gmp_rem );
-    testGMP<Base,   64>( total_work/64,   gmp_quo, gmp_rem );
-    testGMP<Base,   32>( total_work/32,   gmp_quo, gmp_rem );
-    testGMP<Base,   16>( total_work/16,   gmp_quo, gmp_rem );
+    testGMPDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem );
+    testGMPDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem );
+    testGMPDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem );
+    testGMPDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem );
+    testGMPDivision<Base,  512>( total_work/512,  gmp_quo, gmp_rem );
+    testGMPDivision<Base,  256>( total_work/256,  gmp_quo, gmp_rem );
+    testGMPDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem );
+    testGMPDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem );
+    testGMPDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem );
+    testGMPDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem );
+    
+    free(gmp_quo);
+    free(gmp_rem);
+}
+
+template<typename Base>
+void runGMPGCD(uint64_t total_work) {
+
+    using uint_t = typename Base::uint_t;
+    uint_t *gmp_quo, *gmp_rem;
+
+    gmp_quo = (uint_t*)calloc(total_work, sizeof(uint_t));
+    gmp_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
+
+    testGMPGCD<Base,   16>( total_work/16,   gmp_quo, gmp_rem );
+    testGMPGCD<Base,   32>( total_work/32,   gmp_quo, gmp_rem );
+    testGMPGCD<Base,   64>( total_work/64,   gmp_quo, gmp_rem );
+    testGMPGCD<Base,  128>( total_work/128,  gmp_quo, gmp_rem );
+    testGMPGCD<Base,  256>( total_work/256,  gmp_quo, gmp_rem );
+    testGMPGCD<Base,  512>( total_work/512,  gmp_quo, gmp_rem );
+    testGMPGCD<Base, 1024>( total_work/1024, gmp_quo, gmp_rem );
+    testGMPGCD<Base, 2048>( total_work/2048, gmp_quo, gmp_rem );
+    testGMPGCD<Base, 4096>( total_work/4096, gmp_quo, gmp_rem );
+    testGMPGCD<Base, 8192>( total_work/8192, gmp_quo, gmp_rem );
     
     free(gmp_quo);
     free(gmp_rem);
@@ -558,15 +639,16 @@ void runGCDs(uint64_t total_work) {
     gmp_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
     our_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-    // testGCD<Base, 2048>( total_work/2048, gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base, 4096>( total_work/4096, gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base, 1024>( total_work/1024, gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base,  512>( total_work/512,  gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base,  256>( total_work/256,  gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base,  128>( total_work/128,  gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base,   64>( total_work/64,   gmp_rs, our_rs, WITH_VALIDATION );
-    // testGCD<Base,   32>( total_work/32,   gmp_rs, our_rs, WITH_VALIDATION );
+    // testGCD<Base, 8192>( total_work/8192, gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base,   16>( total_work/16,   gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,   32>( total_work/32,   gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,   64>( total_work/64,   gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,  128>( total_work/128,  gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,  256>( total_work/256,  gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base,  512>( total_work/512,  gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base, 1024>( total_work/1024, gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base, 2048>( total_work/2048, gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base, 4096>( total_work/4096, gmp_rs, our_rs, WITH_VALIDATION );
 
     free(gmp_rs);
     free(our_rs);
@@ -591,12 +673,12 @@ int main (int argc, char * argv[]) {
 
     {   // 64bit integer elements
         // runNaiveMuls<U64bits>(total_work);
-        runGMP<U64bits>(total_work);
+        // runGMPDiv<U64bits>(total_work);
 
         // runDivisions<U64bits>(total_work);
     }
 
-    // {   // GCD computation
-    //     runGCDs<U32bits>(total_work);
-    // }
+    {   // GCD computation
+        runGCDs<U64bits>(total_work);
+    }
 }
