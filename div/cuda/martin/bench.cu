@@ -10,7 +10,7 @@
 
 int main()
 {
-    using Base = U32bits;
+    using Base = U64bits;
     using uint_t = Base::uint_t;
     const uint64_t num_instances = 10000;
     const uint32_t M = 4096;
@@ -19,7 +19,7 @@ int main()
     uint64_t mul_elapsed;
     uint64_t div_elapsed;
 
-    uint_t uPrec = M-Q;
+    uint_t uPrec = M-2;
     uint_t vPrec = 3;
     uint_t* u = randBigInt<uint_t>(uPrec, M, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, M, num_instances);
@@ -33,8 +33,9 @@ int main()
     cudaMemcpy(d_u, u, mem_size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_v, v, mem_size, cudaMemcpyHostToDevice);
 
+    cudaFuncSetAttribute(bmulKerQ<Base,1,M,Q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
     {   // dry run mul
-        bmulKerQ<Base, 1, M, Q><<<num_instances, M/Q>>>(num_instances, d_u, d_v, d_mul);
+        bmulKerQ<Base, 1, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(num_instances, d_u, d_v, d_mul);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -43,7 +44,7 @@ int main()
         gettimeofday(&t_start, NULL); 
 
         for(int i=0; i<GPU_RUNS_MUL; i++) {
-            bmulKerQ<Base, 1, M, Q><<<num_instances, M/Q>>>(num_instances, d_u, d_v, d_mul);
+            bmulKerQ<Base, 1, M, Q><<<num_instances, M/Q, 2 * M * sizeof(uint_t)>>>(num_instances, d_u, d_v, d_mul);
         }
         cudaDeviceSynchronize();
 

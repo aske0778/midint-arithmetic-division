@@ -582,8 +582,12 @@ __global__ void bmulKerQ( uint32_t num_instances
     const uint32_t M_lft = LIFT_LEN(M, Q);
     const uint32_t shmem_len = IPB*M_lft;
 
-    __shared__ uint_t Ash[shmem_len];
-    __shared__ uint_t Bsh[shmem_len];
+    // __shared__ uint_t Ash[shmem_len];
+    // __shared__ uint_t Bsh[shmem_len];
+
+    extern __shared__ uint_t shmem[];
+    uint_t* Ash = shmem;
+    uint_t* Bsh = &shmem[shmem_len];
 
     uint_t Arg[Q];
     uint_t Brg[Q];

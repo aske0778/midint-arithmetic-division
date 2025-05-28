@@ -17,12 +17,12 @@ int main() {
    // srand(time(NULL));
     bool stop = false;
     const uint32_t Q = 4;
-    const uint32_t M = 2048;
+    const uint32_t M = 4096;
 
     for (int i = 0; i < 1000000 && !stop; i++) {
         printf("Iteration: %u \n", i);
-        uint32_t uPrec = min((rand() % M)+3, M/4);
-        uint32_t vPrec = (rand() % uPrec) + -2;
+        uint32_t uPrec = 1056; //min((rand() % M)+3, M/4);
+        uint32_t vPrec = 1024; //(rand() % uPrec) + 2;
         uint_t* u = randBigInt<uint_t>(uPrec, M);
         uint_t* v = randBigInt<uint_t>(vPrec, M);
         // prnt<uint_t>("u", u, M);
