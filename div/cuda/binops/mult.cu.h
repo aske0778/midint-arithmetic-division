@@ -184,8 +184,8 @@ void bmulRegsQ( volatile typename Base::uint_t* Ash
     using carry_t= typename Base::carry_t;
     
     // 1. copy from global to shared to register memory
-    cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
-    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
+    cpyReg2Shm<uint_t,2*Q>( Arg, Ash, M );
+    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh, M );
     __syncthreads();
 
     // 2. perform the convolution
@@ -361,8 +361,8 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     using carry_t= typename Base::carry_t;
     
     // 1. copy from global to shared to register memory
-    cpyReg2Shm<uint_t,2*Q>( Arg, Ash );
-    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh );
+    cpyReg2Shm<uint_t,2*Q>( Arg, Ash, M );
+    cpyReg2Shm<uint_t,2*Q>( Brg, Bsh, M );
     __syncthreads();
   
     // 2. perform the convolution
@@ -404,9 +404,32 @@ void bmulRegsQComplete( volatile typename Base::uint_t* Ash
     }
 }
 
+template<class Base, class ubig_t, class carry_t, uint32_t Q>
+__device__
+void reg2ShmConv ( ubig_t accum
+                 , carry_t carry
+                 , volatile typename Base::uint_t* Ash
+                 , volatile typename Base::uint_t* Bsh
+                 , typename Base::uint_t M
+) { 
+    using uint_t = typename Base::uint_t;
+
+    if (threadIdx.x == 0) {
+        Bsh[M] = 0;
+        Ash[2*M] = 0;
+        Ash[2*M + 1] = 0;
+    }
+    if (threadIdx.x < M) {
+        Ash[M + threadIdx.x] = (uint_t)accum;
+        Bsh[M + threadIdx.x + 1] = (uint_t) (accum >> Base::bits);
+        Ash[2*M + threadIdx.x + 2] = carry;
+    }
+}
+
+
 template<class Base, uint32_t Q>
 __device__ 
-void naiveMult( volatile typename Base::uint_t* Ash
+void smallMult( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
               , typename Base::uint_t Arg[Q]
               , typename Base::uint_t Brg[Q]
@@ -417,15 +440,12 @@ void naiveMult( volatile typename Base::uint_t* Ash
     using ubig_t = typename Base::ubig_t;
     using carry_t= typename Base::carry_t;
     
-    if (threadIdx.x < (M+Q-1)/Q) {
-        #pragma unroll
-        for(int i=0; i<Q; i++) {
-            Ash[Q*threadIdx.x + i] = Arg[i];
-            Bsh[Q*threadIdx.x + i] = Brg[i];
-        }
-    }
+    // 1. copy from shared to register memory
+    cpyReg2Shm<uint_t,Q>( Arg, Ash, M );
+    cpyReg2Shm<uint_t,Q>( Brg, Bsh, M );
     __syncthreads();
-
+    
+    // 2. perform small convolution
     ubig_t accum = 0;
     carry_t carry = 0;
     if (threadIdx.x < M) {
@@ -437,47 +457,32 @@ void naiveMult( volatile typename Base::uint_t* Ash
             carry += (  ((uint_t)(accum >> Base::bits)) < accum_prev );
         }
     }
-    if (threadIdx.x == 0) {
-        Bsh[M] = 0;
-        Ash[2*M] = 0;
-        Ash[2*M + 1] = 0;
-    }
-    if (threadIdx.x < M) {
-        Ash[M + threadIdx.x] = (uint_t)accum;
-        Bsh[M + threadIdx.x + 1] = (uint_t) (accum >> Base::bits);
-        Ash[2*M + threadIdx.x + 2] = carry;
-    }
+
+    // 3. publish convolution to shared memory
+    reg2ShmConv<Base, ubig_t, carry_t, Q>(accum, carry, Ash, Bsh, M);
     __syncthreads();
 
-    uint_t arg;
-    uint_t brg;
-    uint_t crg;
+    // 4. load back to registers.
+    uint_t arg; uint_t brg; uint_t crg;
     if (threadIdx.x < M) {
         arg = Ash[M + threadIdx.x];
         brg = Bsh[M + threadIdx.x];
         crg = Ash[2*M + threadIdx.x];
     }
 
+    // 5. perform the addition of the carries.
     uint_t res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)&Bsh[2*blockDim.x], arg, brg );
     res = baddRegsNaive<uint_t, uint_t, carry_t, Base::HIGHEST>( (carry_t*)Bsh, res, crg );
 
+    // 6. copy the result back to registers.
     Ash[threadIdx.x] = res;
     __syncthreads();
-
-    if (threadIdx.x < (M+Q-1)/Q) {
-        #pragma unroll
-        for(int i=0; i<Q; i++) {
-            int idx = Q*threadIdx.x + i;
-            if (idx < M) {
-                Rrg[i] = Ash[idx];
-            }
-        }
-    }
+    cpyShm2Reg<uint_t, Q>( Ash, Rrg, M );
 }
 
 template<class Base, uint32_t Q>
 __device__ 
-void naiveMult2x( volatile typename Base::uint_t* Ash
+void smallMult2x( volatile typename Base::uint_t* Ash
               , volatile typename Base::uint_t* Bsh
               , typename Base::uint_t Arg[Q]
               , typename Base::uint_t Brg[Q]
@@ -584,7 +589,6 @@ __global__ void bmulKerQ( uint32_t num_instances
 
     // __shared__ uint_t Ash[shmem_len];
     // __shared__ uint_t Bsh[shmem_len];
-
     extern __shared__ uint_t shmem[];
     uint_t* Ash = shmem;
     uint_t* Bsh = &shmem[shmem_len];

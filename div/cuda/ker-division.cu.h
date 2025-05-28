@@ -1,4 +1,5 @@
 #include "helpers/types.cu.h"
+#include "helpers/copy.cu.h"
 #include "helpers/scan_reduce.cu.h"
 #include "helpers/ker-helpers.cu.h"
 #include "binops/add.cu.h"
@@ -20,9 +21,9 @@ multMod( volatile typename Base::uint_t* USh
        , typename Base::uint_t RReg[Q]
 ) {
     if (d <= blockDim.x) {
-        naiveMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
+        smallMult<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
     } else if (d <= 2*blockDim.x){
-        naiveMult2x<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
+        smallMult2x<Base, Q>(USh, VSh, UReg, VReg, RReg, d); 
     } else {
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, UReg, VReg, RReg, M);
         #pragma unroll
@@ -59,9 +60,9 @@ powDiff( volatile typename Base::uint_t* USh
         __syncthreads();
         int maxMul = vPrec + rPrec;
         if (maxMul <= blockDim.x) {
-            naiveMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
+            smallMult<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
         } else if (maxMul <= 2*blockDim.x) {
-            naiveMult2x<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
+            smallMult2x<Base, Q>(USh, VSh, VReg, RReg, VReg, maxMul); 
         } else {
             bmulRegsQ<Base, 1, Q/2>(USh, VSh, VReg, RReg, VReg, M); 
         }
@@ -114,9 +115,9 @@ step( volatile typename Base::uint_t* USh
     __syncthreads();
     int maxMul = rPrec+vPrec;                            
     if (maxMul <= blockDim.x) {
-        naiveMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
+        smallMult<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
     } else if (maxMul <= 2*blockDim.x){
-        naiveMult2x<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
+        smallMult2x<Base, Q>(USh, VSh, RReg, VReg, VReg, maxMul); 
     } else {
         bmulRegsQ<Base, 1, Q/2>(USh, VSh, RReg, VReg, VReg, M);
     }
