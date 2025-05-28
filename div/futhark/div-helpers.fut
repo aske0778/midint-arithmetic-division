@@ -1,3 +1,10 @@
+-- the below definition cT, cTfromBool, two_cT, carryOpNE, carryOp and carrySegOp
+-- are taken from the file "big-add.fut", developed by Cosmin E. Oancea
+-- for the paper "GPU Implementations for Midsize Integer Addition and Multiplication"
+-- by Cosmin E. Oancea and Stephen M. Wat. 
+-- The github repository can be seen at: https://github.com/coancea/midint-arithmetic
+-- Used for our implementation of special/fast cases of subtraction and addition of multi-precision integers
+
 type cT         = u32      --u8
 let  cTfromBool = u32.bool --u8.bool
 let  two_cT     = 2u32     --2u8
@@ -36,13 +43,20 @@ def ez [n] (u : [n]u16) : bool =
     all (== 0) u    
 
 
--- less than taken from thorbjørn, musch cleaner than mine 
+-- less than taken from Thorbjørn Bülow Bringgaard, much cleaner than mine 
 -- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
 def lt [m][ipb] (u: [ipb*(4*m)]u16) (v: [ipb*(4*m)]u16) : bool =
   let res = map2 (\ x y -> (x < y, x == y) ) u v
   |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
   in res.0
 
+-- shift was created by us, but can see that it is basicly the same as Thorbjørn Bülow Bringgaard
+-- i dont think there is alot of other ways to do make a function like this. 
+-- but putting in a citation/source just in case.
+-- source : https://github.com/tossenxD/big-int/blob/main/futhark/helper.fut
+def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
+    map (\ idx -> let newIdx = idx - shft 
+           in if newIdx < (ipb*(4*m)) && newIdx >= 0 then u[newIdx] else 0) (iota (ipb*(4*m)))
 
 
 -- set a given index of the bigint to 
@@ -63,9 +77,6 @@ def ltbpow [m][ipb] (u: [ipb*(4*m)]u16) (bpow: i64) : bool =
   |> reduce (\ (l1, e1) (l2, e2) -> (l2 || (e2 && l1), e1 && e2) ) (false, true)
   in res.0
  
-def shift [m][ipb] (shft : i64) (u : [ipb*(4*m)]u16) : ([ipb*(4*m)]u16) =
-    map (\ idx -> let offset = idx - shft 
-           in if offset < (ipb*(4*m)) && offset >= 0 then u[offset] else 0) (iota (ipb*(4*m)))
 
 def eqBpow [m][ipb] (u : [ipb*(4*m)]u16) (b : i64) : bool =
     let bpow = zeroAndSet 1 b (ipb*(4*m))
@@ -98,11 +109,6 @@ let subbpowbigint [ipb][m] (bpow : i64) (us : [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
     else if i < bpow then (if i == min_idx then (! us[i]) + 1 else (! us[i]))   --1 - us[i]
     else us[i] )
 
-let subbigintbpow [ipb][m] (us : [ipb*(4*m)]u16) (bpow : i64) : [ipb*(4*m)]u16 =
-  let min_idx = reduce u16.min u16.highest us |> i64.u16
-  in tabulate (ipb* (4*m)) (\i -> 
-    if (i >= bpow && i <= min_idx) then us[i] - 1
-    else us[i] )
 
 let subPairwiseu16 (m: i32) (ash: []u16) (bsh: []u16) (tid: i32) (i: i32) : (u16, cT)=
   let ind = tid * 4 + i
@@ -150,6 +156,8 @@ let bsub0u16 (ipb: i64) (n:i64) (ash : []u16) (bsh : []u16) : [ipb*(4*n)]u16 =
 
 
 -- our implementation of big-int subtraction.
+-- inspired implementation of addition by Cosmin E. Oancea. 
+-- The github repository can be seen at: https://github.com/coancea/midint-arithmetic
 let bsubu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u16 =
   let g = ipb * n
 
@@ -169,24 +177,4 @@ let bsubu16 [ipb][n] (as : [ipb*(4*n)]u16) (bs : [ipb*(4*n)]u16) : [ipb*(4*n)]u1
   
   in  (bsub0u16 ipb n ash bsh) :> [ipb*(4*n)]u16
 
-
-
-
-
-
-entry test_quo_single [m] (bpow : i64) (d :[m]u16) (n : i64) : ([m]u16) =
-    let mdiv4 = m / 4
-    let ds = d :> [1 * (4 * mdiv4)]u16
-    let ret = (quo_single bpow ds n) :> [m]u16
-    in ret
-
-entry test_lt [m] (us: [m]u16) (vs: [m]u16) : bool =
-    let mdiv4 = m / 4
-    let us' = us :> [1 * (4 * mdiv4)]u16
-    let vs' = vs :> [1 * (4 * mdiv4)]u16
-    in
-    lt us' vs'
-
-entry test_prec [n] (u : [n]u16) : (i64) = 
-    prec u 
 

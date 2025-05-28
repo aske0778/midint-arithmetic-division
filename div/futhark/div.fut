@@ -233,7 +233,7 @@ def gcd [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
 
 
 -- testing division
--- 
+-- ==
 -- entry: test_div
 -- compiled input { [20u16, 42u16, 10u16, 4u16, 63u16, 8u16, 22u16, 1u16] [5u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
 -- output { [4u16, 39330u16, 39323u16, 52429u16, 13119u16, 39323u16, 13111u16, 0u16] [0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
@@ -260,7 +260,7 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
     let ret = div us vs :> ([m]u16, [m]u16)
     in ret
 
--- ==
+-- 
 -- entry: bench_div
 -- compiled random input { [8388608][32]u16  [8388608][32]u16  }
 -- compiled random input { [4194304][64]u16  [4194304][64]u16  }
@@ -329,25 +329,3 @@ entry bench_div_single [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
 -- compiled random input { [16384]u16 [16384]u16 }
 entry bench_gcd_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
     gcd us vs
-
--- bench_div_replicated, is possible not to give th most accurate beching results.
--- Since we replicated the inputs, they will all fall into the same fast or slow case of the algortihm 
--- resulting the the bench marking varying based on the chosen random input.
--- however only way we have managed to get batchd beching to work, with running out of memory.
-
--- 
--- entry: bench_div_replicated
--- compiled random input { [64]u16    [64]u16    }
--- compiled random input { [128]u16   [128]u16   }
--- compiled random input { [256]u16   [256]u16   }
--- compiled random input { [512]u16   [512]u16   }
--- compiled random input { [1024]u16  [1024]u16  }
--- compiled random input { [2048]u16  [2048]u16  }
--- compiled random input { [4096]u16  [4096]u16  }
--- compiled random input { [8192]u16  [8192]u16  }
-entry bench_div_replicated [m] (us: [m]u16) (vs: [m]u16) : ([][m]u16, [][m]u16) =
-    let mdiv4 = m / 4
-    let instances = 134217728 / m
-    let us = (us :> [1*(4*mdiv4)]u16) |> replicate instances
-    let vs = (vs :> [1*(4*mdiv4)]u16) |> replicate instances
-    in map2 div us vs |> unzip :> ([instances][m]u16, [instances][m]u16)
