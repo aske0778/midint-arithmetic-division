@@ -233,7 +233,7 @@ def gcd [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
 
 
 -- testing division
--- ==
+-- 
 -- entry: test_div
 -- compiled input { [20u16, 42u16, 10u16, 4u16, 63u16, 8u16, 22u16, 1u16] [5u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
 -- output { [4u16, 39330u16, 39323u16, 52429u16, 13119u16, 39323u16, 13111u16, 0u16] [0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
@@ -260,7 +260,7 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
     let ret = div us vs :> ([m]u16, [m]u16)
     in ret
 
--- 
+-- ==
 -- entry: bench_div
 -- compiled random input { [8388608][32]u16  [8388608][32]u16  }
 -- compiled random input { [4194304][64]u16  [4194304][64]u16  }
