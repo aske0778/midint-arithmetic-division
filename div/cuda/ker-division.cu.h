@@ -383,11 +383,10 @@ gcd( typename Base::uint_t* u
     cpyGlb2Sh2Reg<uint_t, M, Q>(u, USh, VReg);
     cpyGlb2Sh2Reg<uint_t, M, Q>(v, VSh, RReg2);
     __syncthreads();
-
     while(!(ez<uint_t, Q>(VReg, USh))) {
         cpyReg2Reg<uint_t, Q>(VReg, UReg);
         cpyReg2Reg<uint_t, Q>(RReg2, VReg);
-        cpyReg2Shm<uint_t,Q>(VReg, VSh);
+        cpyReg2Shm<uint_t,Q>(VReg, VSh, M);
         zeroReg<uint_t, Q>(RReg1);
         zeroReg<uint_t, Q>(RReg2);
         __syncthreads();

@@ -17,6 +17,10 @@ using namespace std;
 
 #define Q 4
 
+// Combination of u and v results in 6 iterations of the GCD algorithm
+#define GCD_U_VAL 46 
+#define GCD_V_VAL 28
+
 
 template<int m, int nz>
 void mkRandArrays ( int num_instances
@@ -133,7 +137,7 @@ void gpuMultiply( int num_instances
 
         double runtime_microsecs = elapsed;
         //double num_u32_ops = 4.0 * num_instances * m * m * x * x; 
-        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint_t>(m);
         double gigaopsu32  = num_u32_ops / (runtime_microsecs * 1000);
 
         printf( "N^2 Multiplication of %d-bits Big-Numbers (in base = %d bits) runs %d instances in: \
@@ -220,7 +224,7 @@ void gmpBenchGCD ( uint32_t num_instances
         elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_GCD;
 
         double runtime_microsecs = elapsed; 
-        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double num_u32_ops = num_instances * numAd32OpsOfGCDInst<uint_t>(m);
         double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
         printf( "GMP GCD on %d-bit Big-Numbers (base u%d) runs %d instances in: \
@@ -382,7 +386,7 @@ void gpuGCD ( uint32_t num_instances
         gpuAssert( cudaPeekAtLastError() );
 
         double runtime_microsecs = elapsed; 
-        double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint_t>(m);
+        double num_u32_ops = num_instances * numAd32OpsOfGCDInst<uint_t>(m);
         double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
         printf( "GCD on %d-bit Big-Numbers (base u%d) runs %d instances in: \
@@ -421,18 +425,15 @@ void testGMPDivision( int num_instances
 
 template<class Base, int m>
 void testGMPGCD( int num_instances
-                 , typename Base::uint_t* gmp_quo
+               , typename Base::uint_t* gmp_quo
 ) {
     using uint_t = typename Base::uint_t;
     
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t uPrec = (m/x)-2;
-    uint_t vPrec = (rand() % (uPrec/2))+1;
-    
-    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+    uint_t* u = setBigInt<uint_t>(GCD_U_VAL, (m/x)-1, m/x, num_instances);
+    uint_t* v = setBigInt<uint_t>(GCD_V_VAL, (m/x)-1, m/x, num_instances);
 
     gmpBenchGCD<Base, m/x>(num_instances, u, v, gmp_quo);
 }
@@ -505,11 +506,8 @@ void testGCD( int num_instances
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t uPrec = (m/x)-Q;
-    uint_t vPrec = (rand() % (uPrec/2)) +1;
-    
-    uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+    uint_t* u = setBigInt<uint_t>(GCD_U_VAL, (m/x)-1, m/x, num_instances);
+    uint_t* v = setBigInt<uint_t>(GCD_V_VAL, (m/x)-1, m/x, num_instances);
 
     if(with_validation)
         gmpGCD<uint_t, m/x>(num_instances, u, v, res_gmp);
@@ -637,7 +635,6 @@ void runGCDs(uint64_t total_work) {
     gmp_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
     our_rs = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-    // testGCD<Base, 8192>( total_work/8192, gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base,   16>( total_work/16,   gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base,   32>( total_work/32,   gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base,   64>( total_work/64,   gmp_rs, our_rs, WITH_VALIDATION );
@@ -647,6 +644,7 @@ void runGCDs(uint64_t total_work) {
     testGCD<Base, 1024>( total_work/1024, gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base, 2048>( total_work/2048, gmp_rs, our_rs, WITH_VALIDATION );
     testGCD<Base, 4096>( total_work/4096, gmp_rs, our_rs, WITH_VALIDATION );
+    testGCD<Base, 8192>( total_work/8192, gmp_rs, our_rs, WITH_VALIDATION );
 
     free(gmp_rs);
     free(our_rs);
@@ -677,7 +675,8 @@ int main (int argc, char * argv[]) {
     }
 
     {   // GCD computation
-        // runGCDs<U64bits>(total_work);
-        runGMPGCD<U64bits>(total_work);
+        // runGCDs<U32bits>(total_work);
+        runGCDs<U64bits>(total_work);
+        // runGMPGCD<U64bits>(total_work);
     }
 }

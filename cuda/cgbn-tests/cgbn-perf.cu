@@ -12,7 +12,11 @@
 #define GPU_RUNS_CMUL 200
 #define GPU_RUNS_DIV  200
 #define GPU_RUNS_POLY 125
-#define GPU_RUNS_GCD  100
+#define GPU_RUNS_GCD  50
+
+// Combination of u and v results in 6 iterations of the GCD algorithm
+#define GCD_U_VAL 46 
+#define GCD_V_VAL 28
 
 
 /****************************/
@@ -68,6 +72,18 @@ instance_div_t *generate_instances_div(uint32_t count) {
   for(int index=0;index<count;index++) {  
     ourMkRandom<BITS/32, BITS/32-8>(1, instances[index].a._limbs);
     ourMkRandom<BITS/32, (BITS/32)/2-3>(1, instances[index].b._limbs);
+    //random_words(instances[index].a._limbs, BITS/32);
+    //random_words(instances[index].b._limbs, BITS/32);
+  }
+  return instances;
+}
+
+instance_t *generate_instances_gcd(uint32_t count) {
+  instance_t *instances=(instance_t *)malloc(sizeof(instance_t)*count);
+  printf("BITS = %d, nz = %d \n", BITS, (BITS/32));
+  for(int index=0;index<count;index++) {  
+    ourMkSet<BITS/32>(1, instances[index].a._limbs, GCD_U_VAL, (BITS/32)-1);
+    ourMkSet<BITS/32>(1, instances[index].b._limbs, GCD_V_VAL, (BITS/32)-1);
     //random_words(instances[index].a._limbs, BITS/32);
     //random_words(instances[index].b._limbs, BITS/32);
   }
@@ -261,7 +277,7 @@ void runMul ( const uint32_t num_instances, const uint32_t cuda_block
     const uint32_t m = BITS / 32;
     double runtime_microsecs = elapsed;
     //double num_u32_ops = 4.0 * num_instances * m * m; 
-    double num_u32_ops = num_instances * numAd32OpsOfMultInst<uint32_t>(m);
+    double num_u32_ops = num_instances * numAd32OpsOfClassicalMultInst<uint32_t>(m);
     double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
     printf( "CGBN Multiply (num-instances = %d, num-word-len = %d, total-size: %d), \
@@ -461,7 +477,7 @@ void runGCD ( const uint32_t num_instances, const uint32_t cuda_block
 
   const uint32_t m = BITS / 32;
   double runtime_microsecs = elapsed;
-  double num_u32_ops = num_instances * numAd32OpsOfDivInst<uint32_t>(m);
+  double num_u32_ops = num_instances * numAd32OpsOfGCDInst<uint32_t>(m);
   double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
   printf( "CGBN GCD (num-instances = %d, num-word-len = %d, total-size: %d), \
@@ -511,7 +527,7 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   { // Division Benchmarks
     instancesDiv = generate_instances_div(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstancesDiv, sizeof(instance_div_t)*num_instances));
@@ -526,9 +542,9 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 0
+  #if 1
   { // GCD Benchmark
-    instances = generate_instances(num_instances);
+    instances = generate_instances_gcd(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstances, sizeof(instance_t)*num_instances));
     CUDA_CHECK(cudaMemcpy(gpuInstances, instances, sizeof(instance_t)*num_instances, cudaMemcpyHostToDevice));
     CUDA_CHECK(cgbn_error_report_alloc(&report)); 

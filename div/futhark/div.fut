@@ -221,15 +221,15 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
 -- Implementation of the Euclidean GCD algorithm using
 -- our division implementation for multi-precision integers.
 --
-def gcd [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
-    let (us, _) =
-        loop (us, vs) = (us, vs) while !(ez vs) do
-            let us = us :> [1*(4*(m/4))]u16
-            let vs = vs :> [1*(4*(m/4))]u16
-            let (_, rem) = div us vs
-            let rem = rem :> [m]u16
-            in (vs, rem)
-    in us :> [m]u16
+-- def gcd [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
+--     let (us, _) =
+--         loop (us, vs) = (us, vs) while !(ez vs) do
+--             let us = us :> [1*(4*(m/4))]u16
+--             let vs = vs :> [1*(4*(m/4))]u16
+--             let (_, rem) = div us vs
+--             let rem = rem :> [m]u16
+--             in (vs, rem)
+--     in us :> [m]u16
 
 
 -- testing division
@@ -267,6 +267,7 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
 -- compiled random input { [2097152][128]u16 [2097152][128]u16 }
 -- compiled random input { [1048576][256]u16 [1048576][256]u16 }
 -- compiled random input { [524288][512]u16  [524288][512]u16  }
+
 -- compiled random input { [262144][1024]u16 [262144][1024]u16 }
 -- compiled random input { [131072][2048]u16 [131072][2048]u16 }
 -- compiled random input { [65536][4096]u16  [65536][4096]u16  }
@@ -293,10 +294,10 @@ entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([][]u16, [][]u16) =
 -- compiled random input { [65536][4096]u16  [65536][4096]u16  }
 -- compiled random input { [32768][8192]u16  [32768][8192]u16  }
 -- compiled random input { [16384][16384]u16 [16384][16384]u16 }
-entry bench_gcd [n][m] (us: [n][m]u16) (vs: [n][m]u16) : [n][m]u16 =
-    let precV = m / 2 - 3
-    let vs = map (\col -> tabulate m (\i -> if i < precV then col[i] else 0)) vs
-    in map2 gcd us vs :> [n][m]u16
+-- entry bench_gcd [n][m] (us: [n][m]u16) (vs: [n][m]u16) : [n][m]u16 =
+--     let precV = m / 2 - 3
+--     let vs = map (\col -> tabulate m (\i -> if i < precV then col[i] else 0)) vs
+--     in map2 gcd us vs :> [n][m]u16
 
 -- 
 -- entry: bench_div_single
@@ -327,5 +328,5 @@ entry bench_div_single [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
 -- compiled random input { [4096]u16  [4096]u16  }
 -- compiled random input { [8192]u16  [8192]u16  }
 -- compiled random input { [16384]u16 [16384]u16 }
-entry bench_gcd_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
-    gcd us vs
+-- entry bench_gcd_single [m] (us: [m]u16) (vs: [m]u16) : [m]u16 =
+--     gcd us vs
