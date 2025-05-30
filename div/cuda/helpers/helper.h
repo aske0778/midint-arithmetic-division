@@ -77,11 +77,25 @@ void set( uint_t* u
         , uint_t d
         , uint32_t m
 ) {
-    for (int i = 0; i < m; i++)
-    {
+    for (int i = 0; i < m; i++) {
         u[i] = 0;
     }
     u[0] = d;
+}
+
+/**
+ * Zeros a bigint and sets the the digit at index idx to d
+ */
+template<class uint_t>
+void setIdx( uint_t* u
+           , uint_t d
+           , uint32_t idx
+           , uint32_t m
+) {
+    for (int i = 0; i < m; i++) {
+        u[i] = 0;
+    }
+    u[idx] = d;
 }
 
 /**
@@ -192,28 +206,44 @@ uint_t* randBigInt( uint32_t prec
     return u;
 }
 
+/**
+ * Returns multiple bigints of precision prec where all digits are set to x
+ */
+template<class uint_t>
+uint_t* setBigInt(  uint_t d
+                  , uint32_t idx
+                  , uint32_t m
+                  , uint32_t num_instances
+) {
+    uint_t* u = (uint_t*)calloc(m*num_instances, sizeof(uint_t));
+    for (int j = 0; j < num_instances; j++) {
+        setIdx<uint_t>(&u[j*m], d, idx, m);
+    }
+    return u;
+}
+
 template<typename uint_t>
 uint64_t numAd32OpsOfMultInst(uint32_t m0) {
     uint32_t m = m0*sizeof(uint_t) / 4;
-    uint32_t lgm = 0, mm = m;
-    for( ; mm > 1; mm >>= 1) lgm++;
-    //printf("Log %d is %d\n", m, lgm);
-    return 300 * m * lgm;
+    return m*m;
 }
 
 /**
- * Number of giga-u32-bit unit operations.
+ * Number of operations of division.
  */
 template<typename uint_t>
 uint64_t numAd32OpsOfDivInst(uint32_t m0) {
     uint32_t m = m0*sizeof(uint_t) / 4;
     return 7*m*m;
+}
 
-    // uint32_t lgm = 0, mm = m;
-    // for( ; mm > 1; mm >>= 1) lgm++;
-    // uint32_t lglgm = 0, lgmm = lgm;
-    // for( ; lgmm > 1; lgmm >>= 1) lglgm++;
-    // return m*m * lglgm;
+/**
+ * Number of operations of GCD.
+ */
+template<typename uint_t>
+uint64_t numAd32OpsOfGCDInst(uint32_t m0) {
+    uint32_t m = m0*sizeof(uint_t) / 4;
+    return 6*7*m*m;
 }
 
 /**

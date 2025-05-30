@@ -1,5 +1,10 @@
 import "helper"
 
+-- Addition libary develop by Thorbjørn Bülow Bringgaard for his master thesis "Efficient Big Integer Arithmetic Using GPGPU"
+-- GitHub repositry: https://github.com/tossenxD/big-int
+-- used as a framework during this thesis
+-- to provide the needed functionallity to make an implementation of division on multi-precision integers  
+
 --------------------------------------------------------------------------------
 --- Big Integer Addition
 --------------------------------------------------------------------------------
