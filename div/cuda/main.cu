@@ -105,11 +105,15 @@ void gpuMultiply( int num_instances
 
     dim3 block( ipb*m_lft/q, 1, 1 );
     dim3 grid ( (num_instances+ipb-1)/ipb, 1, 1);  // BUG: it might not fit exactly!
-   
+    uint32_t sh_mem = 2 * m * sizeof(uint_t) * ipb;
+    if (sh_mem >= 64000) { // maximize the amount of shared memory for the kernel
+        cudaFuncSetAttribute(bmulKerQ<Base,ipb,m,q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
+    }    
+    
     { // 4. dry run
         //bmulKer<Base,ipb,m><<< grid, block, ipb*2*m*sizeof(uint_t) >>>(d_as, d_bs, d_rs);
         //bmulKer<Base,ipb,m><<< grid, block >>>(d_as, d_bs, d_rs);
-        bmulKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+        bmulKerQ<Base,ipb,m,q><<< grid, block, sh_mem >>>(num_instances, d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -124,7 +128,7 @@ void gpuMultiply( int num_instances
         
         for(int i=0; i<GPU_RUNS_MUL; i++) {
             //bmulKer<Base,ipb,m><<< grid, block >>>(d_as, d_bs, d_rs);
-            bmulKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+            bmulKerQ<Base,ipb,m,q><<< grid, block, sh_mem >>>(num_instances, d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -354,7 +358,7 @@ void gpuGCD ( uint32_t num_instances
     uint32_t sh_mem = 2 * m * sizeof(uint_t);
 
     if (sh_mem >= 64000) { // maximize the amount of shared memory for the kernel
-        cudaFuncSetAttribute(divShinvKer<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
+        cudaFuncSetAttribute(gcd<Base, m, q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 98000);
     }    
     
     // 4. dry run
@@ -579,7 +583,7 @@ void runNaiveMuls(uint64_t total_work) {
     mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
 
 #if 1
-    // testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+ //   testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
@@ -668,7 +672,7 @@ int main (int argc, char * argv[]) {
     }
 
     {   // 64bit integer elements
-        // runNaiveMuls<U64bits>(total_work);
+        runNaiveMuls<U64bits>(total_work);
         // runGMPDiv<U64bits>(total_work);
 
         // runDivisions<U64bits>(total_work);
@@ -676,7 +680,7 @@ int main (int argc, char * argv[]) {
 
     {   // GCD computation
         // runGCDs<U32bits>(total_work);
-        runGCDs<U64bits>(total_work);
+        // runGCDs<U64bits>(total_work);
         // runGMPGCD<U64bits>(total_work);
     }
 }

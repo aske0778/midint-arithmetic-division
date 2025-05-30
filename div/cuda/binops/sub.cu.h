@@ -92,6 +92,7 @@ sub( typename Base::uint_t u[Q]
     sh_mem[0] = tmp;
     __syncthreads();
 
+    // find lowest non-zero digit with index >= bpow
     #pragma unroll
     for (int i = 0; i < Q; i++) {
         int rev_i = Q - i - 1;
@@ -103,6 +104,7 @@ sub( typename Base::uint_t u[Q]
     atomicMin((uint32_t*)sh_mem, tmp);
     __syncthreads();
 
+    // take 1 from all digits between bpow and the computed index
     uint32_t ind = sh_mem[0];
     #pragma unroll
     for (int i = 0; i < Q; i++) {
