@@ -604,7 +604,8 @@ __global__ void bmulKerQ( uint32_t num_instances
 
     uint_t Rrg[Q];
     bmulRegsQ<Base, IPB, Q/2>(Ash, Bsh, Arg, Brg, Rrg, M);
-
+    __syncthreads();
+    
     { // write to global memory
         const uint32_t ipb = min(num_instances - IPB*blockIdx.x, IPB);
         cpReg2Glb<uint_t,IPB,M,Q>(ipb, Ash, Rrg, rss);

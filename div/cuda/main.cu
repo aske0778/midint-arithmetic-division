@@ -13,7 +13,7 @@ using namespace std;
 #define GPU_RUNS_GCD    10
 #define ERR         0.000005
 
-#define WITH_VALIDATION 0
+#define WITH_VALIDATION 1
 
 #define Q 4
 
@@ -583,7 +583,7 @@ void runNaiveMuls(uint64_t total_work) {
     mkRandArrays<32,32>( total_work/32, &h_as, &h_bs, &h_rs_gmp, &h_rs_our );
 
 #if 1
- //   testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
+    testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 1024>( total_work/1024, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
