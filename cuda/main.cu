@@ -260,10 +260,10 @@ void gpuMultiply( int num_instances
     dim3 block( ipb*m_lft/q, 1, 1 );
     dim3 grid ( (num_instances+ipb-1)/ipb, 1, 1);  // BUG: it might not fit exactly!
    
-#if 0 
+#if 1
     { // maximize the amount of shared memory for the kernel
-        cudaFuncSetAttribute(bmulKer<Base,ipb,m>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
-        cudaFuncSetAttribute(polyKer<Base,ipb,m>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
+        cudaFuncSetAttribute(bmulKerQ<Base,ipb,m,q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
+     //   cudaFuncSetAttribute(polyKerQ<Base,ipb,m,q>, cudaFuncAttributeMaxDynamicSharedMemorySize, 65536);
 
         printf( "Cosmin shmem size: %ld, B: %d, ipb: %d, num-inst: %d, m_lft: %d\n"
               , ipb*2*m_lft*sizeof(uint_t), ipb*m_lft/q, ipb, num_instances, m_lft);
@@ -273,7 +273,7 @@ void gpuMultiply( int num_instances
     { // 4. dry run
         //bmulKer<Base,ipb,m><<< grid, block, ipb*2*m*sizeof(uint_t) >>>(d_as, d_bs, d_rs);
         //bmulKer<Base,ipb,m><<< grid, block >>>(d_as, d_bs, d_rs);
-        bmulKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+        bmulKerQ<Base,ipb,m,q><<< grid, block, 2 * m * sizeof(uint_t)>>>(num_instances, d_as, d_bs, d_rs);
         cudaDeviceSynchronize();
         gpuAssert( cudaPeekAtLastError() );
     }
@@ -288,7 +288,7 @@ void gpuMultiply( int num_instances
         
         for(int i=0; i<GPU_RUNS_MUL; i++) {
             //bmulKer<Base,ipb,m><<< grid, block >>>(d_as, d_bs, d_rs);
-            bmulKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+            bmulKerQ<Base,ipb,m,q><<< grid, block, 2 * m * sizeof(uint_t)>>>(num_instances, d_as, d_bs, d_rs);
         }
         
         cudaDeviceSynchronize();
@@ -314,41 +314,41 @@ void gpuMultiply( int num_instances
     cudaDeviceSynchronize();
     gpuAssert( cudaPeekAtLastError() );
 
-    if(1)
-    { // 5. timing instrumentation for Polynomial Computation
-        // dry run    
-        polyKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+//     if(0)
+//     { // 5. timing instrumentation for Polynomial Computation
+//         // dry run    
+//         polyKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
 
-        cudaDeviceSynchronize();
-        gpuAssert( cudaPeekAtLastError() );
+//         cudaDeviceSynchronize();
+//         gpuAssert( cudaPeekAtLastError() );
 
     
-        uint64_t elapsed;
-        struct timeval t_start, t_end, t_diff;
-        gettimeofday(&t_start, NULL); 
+//         uint64_t elapsed;
+//         struct timeval t_start, t_end, t_diff;
+//         gettimeofday(&t_start, NULL); 
         
-        for(int i=0; i<GPU_RUNS_MUL; i++) {
-            polyKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
-        }
+//         for(int i=0; i<GPU_RUNS_MUL; i++) {
+//             polyKerQ<Base,ipb,m,q><<< grid, block >>>(num_instances, d_as, d_bs, d_rs);
+//         }
         
-        cudaDeviceSynchronize();
+//         cudaDeviceSynchronize();
 
-        gettimeofday(&t_end, NULL);
-        timeval_subtract(&t_diff, &t_end, &t_start);
-        elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_MUL;
+//         gettimeofday(&t_end, NULL);
+//         timeval_subtract(&t_diff, &t_end, &t_start);
+//         elapsed = (t_diff.tv_sec*1e6+t_diff.tv_usec) / GPU_RUNS_MUL;
 
-        gpuAssert( cudaPeekAtLastError() );
+//         gpuAssert( cudaPeekAtLastError() );
 
-        double runtime_microsecs = elapsed;
-        //double num_u32_ops = 4.0 * 4.0 * num_instances * m * m * x * x; 
-        double num_u32_ops = 4.0 * num_instances * numAd32OpsOfMultInst<uint_t>(m);
-        double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
+//         double runtime_microsecs = elapsed;
+//         //double num_u32_ops = 4.0 * 4.0 * num_instances * m * m * x * x; 
+//         double num_u32_ops = 4.0 * num_instances * numAd32OpsOfMultInst<uint_t>(m);
+//         double gigaopsu32 = num_u32_ops / (runtime_microsecs * 1000);
 
-        printf( "Our Polynomial of %d-bits Big-Numbers (in base = %d bits) runs %d instances in: \
-%lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
-              , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
-              );
-    }
+//         printf( "Our Polynomial of %d-bits Big-Numbers (in base = %d bits) runs %d instances in: \
+// %lu microsecs, Gu32ops/sec: %.2f, Mil-Instances/sec: %.2f\n"
+//               , m*x*32, Base::bits, num_instances, elapsed, gigaopsu32, num_instances / runtime_microsecs
+//               );
+//     }
 
     cudaFree(d_as);
     cudaFree(d_bs);
@@ -690,6 +690,7 @@ void runNaiveMuls(uint64_t total_work) {
 
 //    testNsqMul<Base, 2048>( total_work/(2048), h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION ); 
 #if 1
+    testNsqMul<Base, 8192>( total_work/8192, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 4096>( total_work/4096, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
     testNsqMul<Base, 2048>( total_work/2048, h_as, h_bs, h_rs_gmp, h_rs_our, WITH_VALIDATION );
 
@@ -760,10 +761,10 @@ int main (int argc, char * argv[]) {
 
     //runPartValidationFFT();
 
-    runAdditions<U64bits>(total_work);
+   // runAdditions<U64bits>(total_work);
     runNaiveMuls<U64bits> (total_work);
     //runFFTMuls<FftPrime64>(total_work);
-    runFFTMuls<FftPrime32>(total_work);
+   // runFFTMuls<FftPrime32>(total_work);
 
 #if 0       
     runAdditions<U32bits>(total_work);

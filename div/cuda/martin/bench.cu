@@ -20,7 +20,7 @@ int main()
     uint64_t div_elapsed;
 
     uint_t uPrec = M-2;
-    uint_t vPrec = 3;
+    uint_t vPrec = 2000;
     uint_t* u = randBigInt<uint_t>(uPrec, M, num_instances);
     uint_t* v = randBigInt<uint_t>(vPrec, M, num_instances);
 
