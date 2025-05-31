@@ -419,10 +419,10 @@ void testGMPDivision( int num_instances
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
     uint_t uPrec = (m/x)-2;
-    uint_t vPrec = (rand() % (uPrec/2))+1;
+    //uint_t vPrec = (uPrec/2);
     
     uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+    uint_t* v = randBigIntPrecs<uint_t>(uPrec, m/x, num_instances);
 
     gmpBenchDiv<Base, m/x>(num_instances, u, v, gmp_quo, gmp_rem);
 }
@@ -484,10 +484,10 @@ void testDivision( int num_instances
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
     uint_t uPrec = (m/x)-2;
-    uint_t vPrec = (rand() % (uPrec/2)) +1;
+   // uint_t vPrec = (rand() % (uPrec/2)) +1;
     
     uint_t* u = randBigInt<uint_t>(uPrec, m/x, num_instances);
-    uint_t* v = randBigInt<uint_t>(vPrec, m/x, num_instances);
+    uint_t* v = randBigIntPrecs<uint_t>(uPrec, m/x, num_instances);
 
     if(with_validation)
         gmpDiv<uint_t, m/x>(num_instances, u, v, gmp_quo, gmp_rem);
@@ -613,7 +613,7 @@ void runDivisions(uint64_t total_work) {
     our_quo = (uint_t*)calloc(total_work, sizeof(uint_t));
     our_rem = (uint_t*)calloc(total_work, sizeof(uint_t));
 
-    testDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+  //  testDivision<Base, 8192>( total_work/8192, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 4096>( total_work/4096, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 2048>( total_work/2048, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base, 1024>( total_work/1024, gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
@@ -668,14 +668,14 @@ int main (int argc, char * argv[]) {
     {   // 32bit integer elements
         // runNaiveMuls<U32bits>(total_work);
 
-     //  runDivisions<U32bits>(total_work);
+      //  runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
         runNaiveMuls<U64bits>(total_work);
         // runGMPDiv<U64bits>(total_work);
 
-        // runDivisions<U64bits>(total_work);
+      //  runDivisions<U64bits>(total_work);
     }
 
     {   // GCD computation

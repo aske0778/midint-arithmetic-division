@@ -206,6 +206,21 @@ uint_t* randBigInt( uint32_t prec
     return u;
 }
 
+template<class uint_t>
+uint_t* randBigIntPrecs( uint32_t maxPrec
+                  , uint32_t m
+                  , uint32_t num_instances
+) {
+    uint_t* u = (uint_t*)calloc(m*num_instances, sizeof(uint_t));
+    for (int j = 0; j < num_instances; j++){
+        for (int i = 0; i < (rand() % (maxPrec/2)) + 2; i++)
+        {
+            u[j*m + i] = (uint_t)rand();
+        }
+    }
+    return u;
+}
+
 /**
  * Returns multiple bigints of precision prec where all digits are set to x
  */
