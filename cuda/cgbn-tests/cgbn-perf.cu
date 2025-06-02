@@ -527,7 +527,7 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 0
+  #if 1
   { // Division Benchmarks
     instancesDiv = generate_instances_div(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstancesDiv, sizeof(instance_div_t)*num_instances));
@@ -542,7 +542,7 @@ int main(int argc, char * argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   { // GCD Benchmark
     instances = generate_instances_gcd(num_instances);
     CUDA_CHECK(cudaMalloc((void **)&gpuInstances, sizeof(instance_t)*num_instances));
