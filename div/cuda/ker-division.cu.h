@@ -174,6 +174,9 @@ refine3( volatile typename Base::uint_t* USh
     shift<uint_t, M, Q>((h - k < 2) ? h - k - 4 : -2, RReg, VSh, RReg);
 }
 
+/**
+ * Refine the approximation of the quotient
+ */
 template<typename Base, uint32_t M, uint32_t Q>
 __device__ inline void
 refine2( volatile typename Base::uint_t* USh
@@ -197,7 +200,7 @@ refine2( volatile typename Base::uint_t* USh
         step<Base, M, Q>(USh, VSh, k + l + n - s + 2, TReg, RReg, n, l, 2);
         __syncthreads();
         if (i < 2) {
-            shift<uint_t, M, Q>(-(n > 0) - (n > 1), RReg, USh, RReg);
+            shift<uint_t, M, Q>(-n, RReg, USh, RReg);
         }
         else {
             shift<uint_t, M, Q>(-1, RReg, USh, RReg);
@@ -207,6 +210,9 @@ refine2( volatile typename Base::uint_t* USh
     shift<uint_t, M, Q>((h - k < 2) ? h - k - 4 : -2, RReg, VSh, RReg);
 }
 
+/**
+ * Refine the approximation of the quotient
+ */
 template<typename Base, uint32_t M, uint32_t Q>
 __device__ inline void
 refine1( volatile typename Base::uint_t* USh
@@ -331,6 +337,9 @@ divShinv( volatile typename Base::uint_t* USh
     }
 }
 
+/**
+ * Main division kernel
+ */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void 
 __launch_bounds__(M/Q, BLOCKS_PER_SM*1024*Q/M)
@@ -361,7 +370,7 @@ divShinvKer( typename Base::uint_t* u
 }
 
 /**
- * Implementation of Euclidean algorithm (GCD)
+ * Kernel of Euclidean algorithm (GCD)
  */
 template<typename Base, uint32_t M, uint32_t Q>
 __global__ void 

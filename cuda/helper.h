@@ -63,7 +63,7 @@ uint64_t numAd32OpsOfDivInst(uint32_t m0) {
 template<typename uint_t>
 uint64_t numAd32OpsOfGCDInst(uint32_t m0) {
     uint32_t m = m0*sizeof(uint_t) / 4;
-    return 6*7*m*m;
+    return (0.58*m*32)*3*m*m;
 }
 
 /**

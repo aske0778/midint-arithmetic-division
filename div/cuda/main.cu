@@ -10,7 +10,7 @@ using namespace std;
 
 #define GPU_RUNS_MUL    25
 #define GPU_RUNS_DIV    25
-#define GPU_RUNS_GCD    10
+#define GPU_RUNS_GCD    2
 #define ERR         0.000005
 
 #define WITH_VALIDATION 1
@@ -436,8 +436,8 @@ void testGMPGCD( int num_instances
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t* u = setBigInt<uint_t>(GCD_U_VAL, (m/x)-1, m/x, num_instances);
-    uint_t* v = setBigInt<uint_t>(GCD_V_VAL, (m/x)-1, m/x, num_instances);
+    uint_t* u = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
 
     gmpBenchGCD<Base, m/x>(num_instances, u, v, gmp_quo);
 }
@@ -510,8 +510,8 @@ void testGCD( int num_instances
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t* u = setBigInt<uint_t>(GCD_U_VAL, (m/x)-1, m/x, num_instances);
-    uint_t* v = setBigInt<uint_t>(GCD_V_VAL, (m/x)-1, m/x, num_instances);
+    uint_t* u = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
 
     if(with_validation)
         gmpGCD<uint_t, m/x>(num_instances, u, v, res_gmp);
@@ -672,10 +672,10 @@ int main (int argc, char * argv[]) {
     }
 
     {   // 64bit integer elements
-        runNaiveMuls<U64bits>(total_work);
+       // runNaiveMuls<U64bits>(total_work);
         // runGMPDiv<U64bits>(total_work);
 
-      //  runDivisions<U64bits>(total_work);
+        runDivisions<U64bits>(total_work);
     }
 
     {   // GCD computation
