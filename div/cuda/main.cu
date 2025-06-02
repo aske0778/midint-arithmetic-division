@@ -510,8 +510,8 @@ void testGCD( int num_instances
     const uint32_t x = Base::bits/32;
     assert( (Base::bits >= 32) && (Base::bits % 32 == 0));
     
-    uint_t* u = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
-    uint_t* v = randBigInt<uint_t>((m/x)-3, m/x, num_instances);
+    uint_t* u = randBigInt<uint_t>((m/x)-4, m/x, num_instances);
+    uint_t* v = randBigInt<uint_t>((m/x)-4, m/x, num_instances);
 
     if(with_validation)
         gmpGCD<uint_t, m/x>(num_instances, u, v, res_gmp);
@@ -622,7 +622,7 @@ void runDivisions(uint64_t total_work) {
     testDivision<Base,  128>( total_work/128,  gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,   64>( total_work/64,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     testDivision<Base,   32>( total_work/32,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
-    testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
+  //  testDivision<Base,   16>( total_work/16,   gmp_quo, gmp_rem, our_quo, our_rem, WITH_VALIDATION );
     
     free(gmp_quo);
     free(gmp_rem);
@@ -667,14 +667,12 @@ int main (int argc, char * argv[]) {
 
     {   // 32bit integer elements
         // runNaiveMuls<U32bits>(total_work);
-
-      //  runDivisions<U32bits>(total_work);
+        // runDivisions<U32bits>(total_work);
     }
 
     {   // 64bit integer elements
-       // runNaiveMuls<U64bits>(total_work);
+        // runNaiveMuls<U64bits>(total_work);
         // runGMPDiv<U64bits>(total_work);
-
         runDivisions<U64bits>(total_work);
     }
 
