@@ -218,6 +218,45 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
     in (quo, rem)
 
 --
+-- Implementation of multi-precision integer quotient using
+-- the shifted inverse and classical multiplication
+--
+def quo [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : [ipb*(4*m)]u16 =
+    let h = prec us
+    let k = (prec vs) - 1
+
+    let (us, vs, h, k) =
+        if k == 1 then
+            let h = h + 1
+            let k = k + 1
+            let us = shift (-1) us
+            let vs = shift (-1) vs
+            in (us, vs, h, k)
+        else
+            (us, vs, h, k)
+
+   let quo = 
+        let m = m * 2
+        let quo_padded = ((shinv vs h k) ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let us_padded = (us ++ (replicate (ipb*(4*(m/2))) 0u16)) :> [ipb * (4 * m)]u16
+        let mul_res = convMulV2 quo_padded us_padded
+        let mul_shifted = shift (-h) mul_res
+        let res = take (ipb*(4*(m/2))) mul_shifted
+        in res
+    let quo = quo :> [ipb * (4 * m)]u16
+
+    let rem = convMulV2 vs quo
+        |> bsubu16 us
+
+    let quo =
+        if not (lt rem vs) then
+            badd1u16 quo
+        else
+            quo
+
+    in quo
+
+--
 -- Implementation of the Euclidean GCD algorithm using
 -- our division implementation for multi-precision integers.
 --
@@ -230,6 +269,23 @@ def div [m][ipb] (us: [ipb*(4*m)]u16) (vs: [ipb*(4*m)]u16) : ([ipb*(4*m)]u16, [i
 --             let rem = rem :> [m]u16
 --             in (vs, rem)
 --     in us :> [m]u16
+
+-- 
+-- entry: bench_gcd
+-- compiled random input { [8388608][32]u16  [8388608][32]u16  }
+-- compiled random input { [4194304][64]u16  [4194304][64]u16  }
+-- compiled random input { [2097152][128]u16 [2097152][128]u16 }
+-- compiled random input { [1048576][256]u16 [1048576][256]u16 }
+-- compiled random input { [524288][512]u16  [524288][512]u16  }
+-- compiled random input { [262144][1024]u16 [262144][1024]u16 }
+-- compiled random input { [131072][2048]u16 [131072][2048]u16 }
+-- compiled random input { [65536][4096]u16  [65536][4096]u16  }
+-- compiled random input { [32768][8192]u16  [32768][8192]u16  }
+-- compiled random input { [16384][16384]u16 [16384][16384]u16 }
+-- entry bench_gcd [n][m] (us: [n][m]u16) (vs: [n][m]u16) : [n][m]u16 =
+--     let precV = m / 2 - 3
+--     let vs = map (\col -> tabulate m (\i -> if i < precV then col[i] else 0)) vs
+--     in map2 gcd us vs :> [n][m]u16
 
 
 -- testing division
@@ -260,6 +316,15 @@ entry test_div  [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
     let ret = div us vs :> ([m]u16, [m]u16)
     in ret
 
+-- 
+-- entry: test_quo
+-- compiled input { [39017u16, 18547u16, 56401u16, 23807u16, 37962u16, 22764u16, 7977u16, 31949u16, 22714u16, 55211u16, 16882u16, 7931u16, 43491u16, 57670u16, 124u16, 25282u16, 2132u16, 10232u16, 8987u16, 59880u16, 52711u16, 17293u16, 3958u16, 9562u16, 63790u16, 29283u16, 49715u16, 55199u16, 50377u16, 1946u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16]
+-- [64358u16, 23858u16, 20493u16, 55223u16, 47665u16, 58456u16, 12451u16, 55642u16, 24869u16, 35165u16, 45317u16, 41751u16, 43096u16, 23273u16, 33886u16, 43220u16, 48555u16, 36018u16, 53453u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+-- output { [19472u16, 62163u16, 27479u16, 13589u16, 47175u16, 43963u16, 55342u16, 58871u16, 55235u16, 53043u16, 2386u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16, 0u16] }
+entry test_quo (us: [1*(4*16)]u16) (vs: [1*(4*16)]u16) : [1*(4*16)]u16 =
+    quo us vs
+
+
 -- ==
 -- entry: bench_div
 -- compiled random input { [8388608][32]u16  [8388608][32]u16  }
@@ -283,21 +348,23 @@ entry bench_div [n][m] (us: [n][m]u16) (vs: [n][m]u16) : ([][]u16, [][]u16) =
     in map2 div us vs |> unzip :> ([n][ipb*(4*mdiv4)]u16, [n][ipb*(4*mdiv4)]u16)
 
 -- 
--- entry: bench_gcd
--- compiled random input { [8388608][32]u16  [8388608][32]u16  }
--- compiled random input { [4194304][64]u16  [4194304][64]u16  }
--- compiled random input { [2097152][128]u16 [2097152][128]u16 }
--- compiled random input { [1048576][256]u16 [1048576][256]u16 }
--- compiled random input { [524288][512]u16  [524288][512]u16  }
--- compiled random input { [262144][1024]u16 [262144][1024]u16 }
--- compiled random input { [131072][2048]u16 [131072][2048]u16 }
--- compiled random input { [65536][4096]u16  [65536][4096]u16  }
--- compiled random input { [32768][8192]u16  [32768][8192]u16  }
--- compiled random input { [16384][16384]u16 [16384][16384]u16 }
--- entry bench_gcd [n][m] (us: [n][m]u16) (vs: [n][m]u16) : [n][m]u16 =
---     let precV = m / 2 - 3
---     let vs = map (\col -> tabulate m (\i -> if i < precV then col[i] else 0)) vs
---     in map2 gcd us vs :> [n][m]u16
+-- entry: bench_quo
+-- compiled random input { [65536][2][64]u16   [65536][2][64]u16  }
+-- compiled random input { [32768][2][128]u16  [32768][2][128]u16 }
+-- compiled random input { [16384][2][256]u16  [16384][2][256]u16 }
+-- compiled random input { [8192][2][512]u16   [8192][2][512]u16  }
+-- compiled random input { [4096][2][1024]u16  [4096][2][1024]u16 }
+-- compiled random input { [2048][2][2048]u16  [2048][2][2048]u16 }
+-- compiled random input { [1024][2][4096]u16  [1024][2][4096]u16 }
+-- compiled random input { [512][2][8192]u16   [512][2][8192]u16  }
+-- compiled random input { [256][2][16384]u16  [256][2][16384]u16 }
+entry bench_quo [n][ipb][m] (us: [n][ipb][m]u16) (vs: [n][ipb][m]u16) : [n][ipb*(4*m)]u16 =
+    #[unsafe]
+    let mdiv4 = m / 4
+    let us = (map flatten us) :> [n][ipb*(4*mdiv4)]u16
+    let vs = (map flatten vs) :> [n][ipb*(4*mdiv4)]u16
+    let ret = map2 quo us vs :> [n][ipb*(4*m)]u16
+    in  ret
 
 -- 
 -- entry: bench_div_single
@@ -315,6 +382,29 @@ entry bench_div_single [m] (us: [m]u16) (vs: [m]u16) : ([m]u16, [m]u16) =
     let us = us :> [1*(4*mdiv4)]u16
     let vs = vs :> [1*(4*mdiv4)]u16
     in div us vs :> ([m]u16, [m]u16)
+
+-- bench_div_replicated, is possible not to give th most accurate beching results.
+-- Since we replicated the inputs, they will all fall into the same fast or slow case of the algortihm 
+-- resulting the the bench marking varying based on the chosen random input.
+-- however only way we have managed to get batchd beching to work, with running out of memory.
+
+-- 
+-- entry: bench_div_replicated
+-- compiled random input { [64]u16    [64]u16    }
+-- compiled random input { [128]u16   [128]u16   }
+-- compiled random input { [256]u16   [256]u16   }
+-- compiled random input { [512]u16   [512]u16   }
+-- compiled random input { [1024]u16  [1024]u16  }
+-- compiled random input { [2048]u16  [2048]u16  }
+-- compiled random input { [4096]u16  [4096]u16  }
+-- compiled random input { [8192]u16  [8192]u16  }
+entry bench_div_replicated [m] (us: [m]u16) (vs: [m]u16) : ([][m]u16, [][m]u16) =
+    let mdiv4 = m / 4
+    let instances = 134217728 / m
+    let us = (us :> [1*(4*mdiv4)]u16) |> replicate instances
+    let vs = (vs :> [1*(4*mdiv4)]u16) |> replicate instances
+    in map2 div us vs |> unzip :> ([instances][m]u16, [instances][m]u16)
+
 
 -- 
 -- entry: bench_gcd_single
